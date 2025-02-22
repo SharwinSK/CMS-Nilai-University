@@ -40,7 +40,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 <body>
     <div class="container">
-        <a href="Index.php">
+        <a href="index.php">
             <img src="NU logo.png" alt="University Logo" class="logo">
         </a>
         <h1>Coordinator Login</h1>

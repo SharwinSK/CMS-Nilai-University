@@ -41,7 +41,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 <body>
     <div class="container">
-        <a href="Index.php"><img src="NU logo.png" alt="University Logo" class="logo"></a>
+        <a href="index.php"><img src="NU logo.png" alt="University Logo" class="logo"></a>
         <h1>Advisor Login</h1>
         <?php if (isset($error)) {
             echo "<p class='error visible'>$error</p>";

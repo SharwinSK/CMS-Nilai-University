@@ -67,7 +67,7 @@
 
 <body>
     <div class="container">
-        <a href="Index.php"><img src="NU logo.png" alt="University Logo" class="logo"></a>
+        <a href="index.php"><img src="NU logo.png" alt="University Logo" class="logo"></a>
 
         <h1>Welcome to CMS GA</h1>
         <div class="user-type">
