@@ -1,0 +1,163 @@
+Array
+(
+)
+Array
+(
+)
+Array
+(
+)
+Array
+(
+)
+Array
+(
+    [stu_name] => Dinesh N Suresh Kumar
+    [ev_name] => Badminton
+    [ev_nature] => Badminton
+    [ev_objectives] => Badminton
+    [ev_intro] => Badminton
+    [ev_details] => Badminton
+    [ev_pax] => 44
+    [ev_date] => 2025-02-12
+    [ev_start_time] => 11:00
+    [ev_end_time] => 17:00
+    [ev_type] => Outdoor
+    [ev_venue] => 17
+    [excluded_venues] => 6,7,11,15,17
+    [reshuffle_count] => 0
+    [pic_name] => Mr Hamizan
+    [pic_id] => 00020568
+    [pic_phone] => 0195028082
+    [student_id] => Array
+        (
+            [0] => 00020271
+        )
+
+    [student_name] => Array
+        (
+            [0] => Richard
+        )
+
+    [student_position] => Array
+        (
+            [0] => Head
+        )
+
+    [student_department] => Array
+        (
+            [0] => BSB
+        )
+
+    [student_phone] => Array
+        (
+            [0] => 0128849541
+        )
+
+    [student_job] => Array
+        (
+            [0] => manage the team
+        )
+
+    [cocu_claimers] => Array
+        (
+            [0] => 1
+        )
+
+    [description] => Array
+        (
+            [0] => Refreshments
+        )
+
+    [amount] => Array
+        (
+            [0] => 6666
+        )
+
+    [income_expense] => Array
+        (
+            [0] => Income
+        )
+
+    [remarks] => Array
+        (
+            [0] => Badminton Club
+        )
+
+)
+Array
+(
+    [stu_name] => Dinesh N Suresh Kumar
+    [club_id] => 1
+    [ev_name] => Badminton
+    [ev_nature] => Badminton
+    [ev_objectives] => Badminton
+    [ev_intro] => Badminton
+    [ev_details] => Badminton
+    [ev_pax] => 63
+    [ev_date] => 2025-02-11
+    [ev_start_time] => 08:00
+    [ev_end_time] => 13:00
+    [ev_type] => Indoor
+    [ev_venue] => 16
+    [excluded_venues] => 11,15,16
+    [reshuffle_count] => 0
+    [pic_name] => Mr Hamizan
+    [pic_id] => 00020568
+    [pic_phone] => 0195028082
+    [student_id] => Array
+        (
+            [0] => 00020271
+        )
+
+    [student_name] => Array
+        (
+            [0] => Richard
+        )
+
+    [student_position] => Array
+        (
+            [0] => Head
+        )
+
+    [student_department] => Array
+        (
+            [0] => BITC
+        )
+
+    [student_phone] => Array
+        (
+            [0] => 0128849541
+        )
+
+    [student_job] => Array
+        (
+            [0] => manage the team
+        )
+
+    [cocu_claimers] => Array
+        (
+            [0] => 1
+        )
+
+    [description] => Array
+        (
+            [0] => Refreshments
+        )
+
+    [amount] => Array
+        (
+            [0] => 2
+        )
+
+    [income_expense] => Array
+        (
+            [0] => Income
+        )
+
+    [remarks] => Array
+        (
+            [0] => Badminton Club
+        )
+
+)
