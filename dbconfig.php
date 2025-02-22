@@ -3,7 +3,7 @@
 $host = "localhost";        // Host name
 $user = "root";             // MySQL username
 $password = "";             // MySQL password
-$database = "cocuricular management system"; // Database name
+$database = "cms nilai university"; // Database name
 
 // Create connection
 $conn = new mysqli($host, $user, $password, $database);

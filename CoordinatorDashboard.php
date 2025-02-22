@@ -208,7 +208,7 @@ $start_time = microtime(true);
                         <?php endwhile; ?>
                     <?php else: ?>
                         <div class="carousel-item active">
-                            <img src="placeholder.jpg" class="carousel-img" alt="No Events">
+                            <img src="PlaceHolder.png" class="carousel-img" alt="No Events">
                         </div>
                     <?php endif; ?>
                 </div>
