@@ -74,6 +74,7 @@
             <a href="StudentLogin.php">STUDENT</a>
             <a href="AdvisorLogin.php">ADVISOR</a>
             <a href="CoordinatorLogin.php">COORDINATOR</a>
+
         </div>
 
         <div class="footer">
