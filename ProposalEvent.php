@@ -3,12 +3,9 @@ session_start();
 include('dbconfig.php');
 
 $stu_id = $_SESSION['Stu_ID'];
-
 $result = $conn->query("SELECT Stu_Name FROM Student WHERE Stu_ID='$stu_id'");
 $student = $result->fetch_assoc();
 $clubs = $conn->query("SELECT Club_ID, Club_Name FROM Club");
-$start_time = microtime(true);
-
 ?>
 
 <!DOCTYPE html>
@@ -192,31 +189,50 @@ $start_time = microtime(true);
                             </div>
                         </div>
                     </div>
-                    <!-- Event Type -->
-                    <div class="mb-3">
-                        <label class="form-label">Event Type</label><br>
-                        <input type="radio" id="indoor" name="ev_type" value="Indoor" required>
-                        <label for="indoor">Indoor</label>
-                        <input type="radio" id="outdoor" name="ev_type" value="Outdoor" required>
-                        <label for="outdoor">Outdoor</label>
-                    </div>
 
                     <div class="mb-3">
-                        <label for="inputVenue" class="form-label">Suggested Venue</label>
+                        <label for="inputVenue" class="form-label">Venue</label>
                         <select class="form-select" id="inputVenue" name="ev_venue" required>
                             <option selected disabled>Select a venue</option>
+                            <option value="Classroom R301">Classroom R301</option>
+                            <option value="Classroom R302">Classroom R302</option>
+                            <option value="Classroom R303">Classroom R303</option>
+                            <option value="Classroom R304">Classroom R304</option>
+                            <option value="Classroom R305">Classroom R305</option>
+                            <option value="Classroom R306">Classroom R306</option>
+                            <option value="Classroom T101">Classroom T101</option>
+                            <option value="Classroom T102">Classroom T102</option>
+                            <option value="Classroom T103">Classroom T103</option>
+                            <option value="Classroom T104">Classroom T104</option>
+                            <option value="Lecture Hall LH201">Lecture Hall LH201</option>
+                            <option value="Lecture Hall LH202">Lecture Hall LH202</option>
+                            <option value="Lecture Hall LH203">Lecture Hall LH203</option>
+                            <option value="Lecture Hall LH204">Lecture Hall LH204</option>
+                            <option value="Lecture Hall S501">Lecture Hall S501</option>
+                            <option value="Lecture Hall S502">Lecture Hall S502</option>
+                            <option value="President Hall(PH)">President Hall(PH)</option>
+                            <option value="PH Foyer">PH Foyer</option>
+                            <option value="PH VIP Room">PH VIP Room</option>
+                            <option value="Gymnasium">Gymnasium</option>
+                            <option value="PH WalkWay">PH WalkWay</option>
+                            <option value="Resource Centre(RC)">Resource Centre(RC)</option>
+                            <option value="RC WalkWay">RC WalkWay</option>
+                            <option value="Common Room">Common Room</option>
+                            <option value="Meeting of Minds(MOM)">Meeting of Minds(MOM)</option>
+                            <option value="Cafeteria">Cafeteria</option>
+                            <option value="Badminton Court">Badminton Court</option>
+                            <option value="Tennis Court">Tennis Court</option>
+                            <option value="Basketball Court">Basketball Court</option>
+                            <option value="Volleyball Court">Volleyball Court</option>
+                            <option value="Main Field">Main Field</option>
+                            <option value="RC Field">RC Field</option>
+                            <option value="Lakeside Field">Lakeside Field</option>
+                            <option value="Netball Court">Netball Court</option>
+                            <option value="4 in 1 Court">4 in 1 Court</option>
+
                         </select>
                     </div>
-                    <div class="mb-3">
-                        <button type="button" id="checkVenue" class="btn btn-success">Check Venue</button>
-                        <button type="button" id="clearTimeDate" class="btn btn-secondary">Clear</button>
-                        <!-- Show GA Process Button -->
-                        <button type="button" id="showGAProcess" class="btn btn-info">Show GA Process</button>
 
-                        <div id="venueSuggestion" class="mt-2 text-success"></div>
-                    </div>
-                    <input type="hidden" id="excludedVenues" name="excluded_venues" value="">
-                    <input type="hidden" id="reshuffleCount" name="reshuffle_count" value="0">
                     <!-- Upload Poster -->
                     <div class="mb-3">
                         <label for="inputPoster" class="form-label">Upload Poster</label>
@@ -376,67 +392,6 @@ $start_time = microtime(true);
             document.getElementById("rangeValue").textContent = value;
         }
 
-        let excludedVenues = [];
-        const excludedVenuesField = document.getElementById('excludedVenues');
-        document.getElementById('clearTimeDate').addEventListener('click', function () {
-            document.querySelector('input[name="ev_date"]').value = '';
-            document.querySelector('select[name="ev_start_time"]').value = '';
-            document.querySelector('select[name="ev_end_time"]').value = '';
-            const venueDropdown = document.getElementById('inputVenue');
-            venueDropdown.innerHTML = '<option selected disabled>Select a venue</option>';
-            document.getElementById('venueSuggestion').textContent = '';
-            excludedVenues = [];
-            excludedVenuesField.value = '';
-        });
-
-        document.getElementById('checkVenue').addEventListener('click', function () {
-            const form = document.querySelector('form');
-            const participants = form.querySelector('input[name="ev_pax"]').value;
-            const date = form.querySelector('input[name="ev_date"]').value;
-            const startTime = form.querySelector('select[name="ev_start_time"]').value;
-            const endTime = form.querySelector('select[name="ev_end_time"]').value;
-            const eventType = form.querySelector('input[name="ev_type"]:checked');
-
-            if (!participants || !date || !startTime || !endTime || !eventType) {
-                alert('Please select Estimated Participants, Date, Time and Event Type.');
-                return;
-            }
-
-            const formData = new FormData(form);
-            formData.append('excluded_venues', excludedVenues.join(','));
-
-            fetch('CheckVenue.php', {
-                method: 'POST',
-                body: formData,
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        const venueDropdown = document.getElementById('inputVenue');
-                        venueDropdown.innerHTML = '';
-                        const option = document.createElement('option');
-                        option.value = data.venue_id;
-                        option.textContent = data.venue_name;
-                        venueDropdown.appendChild(option);
-                        excludedVenues.push(data.venue_id);
-                        excludedVenuesField.value = excludedVenues.join(',');
-                    } else {
-                        alert(data.message);
-                    }
-                })
-                .catch(error => console.error('Error:', error));
-        });
-
-        document.getElementById('clearTimeDate').addEventListener('click', function () {
-            document.querySelector('input[name="ev_date"]').value = '';
-            document.querySelector('select[name="ev_start_time"]').value = '';
-            document.querySelector('select[name="ev_end_time"]').value = '';
-            const venueDropdown = document.getElementById('inputVenue');
-            venueDropdown.innerHTML = '<option selected disabled>Select a venue</option>';
-            document.getElementById('venueSuggestion').textContent = '';
-            console.log('Date and Time fields cleared!');
-        });
-
         function validateRows(sectionName, rowSelector, requiredFields) {
             const rows = document.querySelectorAll(rowSelector);
             if (rows.length === 0) {
@@ -472,10 +427,7 @@ $start_time = microtime(true);
                     break;
                 }
             }
-            const venueDropdown = document.querySelector('select[name="ev_venue"]');
-            if (!venueDropdown || venueDropdown.value === '' || venueDropdown.value === 'Select a venue') {
-                errorMessages.push('Please choose a venue from the suggestions.');
-            }
+
             const posterInput = document.getElementById('inputPoster');
             if (!posterInput.files.length) {
                 errorMessages.push('Please upload a poster before submitting.');
@@ -506,35 +458,9 @@ $start_time = microtime(true);
             }
         });
 
-        document.getElementById('showGAProcess').addEventListener('click', function () {
-            const form = document.querySelector('form');
-
-            const participants = form.querySelector('input[name="ev_pax"]').value;
-            const date = form.querySelector('input[name="ev_date"]').value;
-            const startTime = form.querySelector('select[name="ev_start_time"]').value;
-            const endTime = form.querySelector('select[name="ev_end_time"]').value;
-            const eventType = form.querySelector('input[name="ev_type"]:checked');
-
-            if (!participants || !date || !startTime || !endTime || !eventType) {
-                alert('Please fill in all required fields before viewing GA process.');
-                return;
-            }
-
-            // Redirect to ShowGAProcess.php with form values
-            window.location.href = `ShowGAProcess.php?ev_pax=${participants}&ev_date=${date}&ev_start_time=${startTime}&ev_end_time=${endTime}&ev_type=${eventType.value}`;
-        });
-
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <?php
-    // End time after processing the page
-    $end_time = microtime(true);
-    $page_load_time = round(($end_time - $start_time) * 1000, 2); // Convert to milliseconds
-    
-    echo "<p style='color: green; font-weight: bold; text-align: center;'>
-      Page Load Time: " . $page_load_time . " ms
-      </p>";
-    ?>
+
 
 </body>
 

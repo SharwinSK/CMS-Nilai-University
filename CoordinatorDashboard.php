@@ -39,7 +39,7 @@ $postmortems_query = "
     WHERE ep.Rep_PostStatus = 'Pending Coordinator Review'
 ";
 $postmortems_result = $conn->query($postmortems_query);
-$start_time = microtime(true);
+
 ?>
 
 <!DOCTYPE html>
