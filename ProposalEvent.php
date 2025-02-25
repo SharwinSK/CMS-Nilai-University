@@ -257,6 +257,38 @@ $clubs = $conn->query("SELECT Club_ID, Club_Name FROM Club");
                         <input type="text" class="form-control" id="inputPICPhone" name="pic_phone"
                             placeholder="Enter phone number">
                     </div>
+                    <h5>Event Flow</h5>
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Flow</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="Eventflow-table-body"></tbody>
+                        </table>
+                    </div>
+                    <button type="button" class="btn btn-success mb-3" onclick="addEventRow()">Add Row</button>
+                    <!-- Minutes of Meeting -->
+                    <h5>Minutes of Meeting</h5>
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Start Time</th>
+                                    <th>End Time</th>
+                                    <th>Location</th>
+                                    <th>Discussion</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="meeting-table-body"></tbody>
+                        </table>
+                    </div>
+                    <button type="button" class="btn btn-success mb-3" onclick="addMeetingRow()">Add Row</button>
                     <!-- Committee Section -->
                     <h5 class="card-title mb-3">Committee Members</h5>
                     <div class="table-responsive">
@@ -305,6 +337,35 @@ $clubs = $conn->query("SELECT Club_ID, Club_Name FROM Club");
     </div>
 
     <script>
+        function addEventRow() {
+            const tableBody = document.getElementById("Eventflow-table-body");
+            const newRow = `
+            <tr>
+                <td><input type="time" class="form-control" name="event_time[]" required></td>
+                <td><input type="text" class="form-control" name="event_flow[]" placeholder="Describe flow" required></td>
+                <td><button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">Remove</button></td>
+            </tr>`;
+            tableBody.insertAdjacentHTML('beforeend', newRow);
+        }
+
+        function addMeetingRow() {
+            const tableBody = document.getElementById("meeting-table-body");
+            const newRow = `
+            <tr>
+                <td><input type="date" class="form-control" name="meeting_date[]" required></td>
+                <td><input type="time" class="form-control" name="meeting_start_time[]" required></td>
+                <td><input type="time" class="form-control" name="meeting_end_time[]" required></td>
+                <td><input type="text" class="form-control" name="meeting_location[]" placeholder="Location" required></td>
+                <td><textarea class="form-control" name="meeting_discussion[]" placeholder="Discussion" required></textarea></td>
+                <td><button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">Remove</button></td>
+            </tr>`;
+            tableBody.insertAdjacentHTML('beforeend', newRow);
+        }
+
+        function removeRow(button) {
+            const row = button.parentElement.parentElement;
+            row.remove();
+        }
         function addCommitteeRow() {
             const tableBody = document.getElementById("committee-table-body");
             const newRow = `
