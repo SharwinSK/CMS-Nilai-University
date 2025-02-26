@@ -124,17 +124,14 @@ $clubs = $conn->query("SELECT Club_ID, Club_Name FROM Club");
                         <textarea class="form-control" id="inputDetails" rows="4" name="ev_details"
                             placeholder="Enter event details"></textarea>
                     </div>
-                    <div class="row mb-3">
-                        <div class="col-md-8">
-                            <label for="customRange1" class="form-label">Estimated Participants</label>
-                            <input type="range" class="form-range" id="customRange1" name="ev_pax" min="0" max="800"
-                                value="0" oninput="updateRangeValue(this.value)">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Selected Value 1-800:</label>
-                            <p id="rangeValue" class="form-text">0</p>
-                        </div>
+
+                    <div class="col-md-6">
+                        <label for="range" class="form-label">Estimated Participants</label>
+                        <input type="text" class="form-control" name="ev_pax" id="customRange1"
+                            placeholder="Enter estimated participants">
                     </div>
+
+
                     <div class="mb-3">
                         <div class="row g-2">
                             <!-- Date Picker -->
@@ -257,6 +254,7 @@ $clubs = $conn->query("SELECT Club_ID, Club_Name FROM Club");
                         <input type="text" class="form-control" id="inputPICPhone" name="pic_phone"
                             placeholder="Enter phone number">
                     </div>
+                    <!-- Event Flow Section -->
                     <h5>Event Flow</h5>
                     <div class="table-responsive">
                         <table class="table table-bordered">
@@ -449,9 +447,7 @@ $clubs = $conn->query("SELECT Club_ID, Club_Name FROM Club");
             row.remove();
         }
 
-        function updateRangeValue(value) {
-            document.getElementById("rangeValue").textContent = value;
-        }
+
 
         function validateRows(sectionName, rowSelector, requiredFields) {
             const rows = document.querySelectorAll(rowSelector);
@@ -475,19 +471,7 @@ $clubs = $conn->query("SELECT Club_ID, Club_Name FROM Club");
 
         document.querySelector('form').addEventListener('submit', function (event) {
             const errorMessages = [];
-            const requiredFields = [
-                'stu_name', 'club_id', 'ev_name', 'ev_nature', 'ev_objectives',
-                'ev_intro', 'ev_details', 'ev_pax', 'ev_date', 'ev_start_time',
-                'ev_end_time', 'ev_type', 'ev_venue',
-                'pic_name', 'pic_id', 'pic_phone'
-            ];
-            for (const fieldName of requiredFields) {
-                const field = document.querySelector(`[name="${fieldName}"]`);
-                if (!field || !field.value.trim()) {
-                    errorMessages.push('Please fill in all the Event detail section.');
-                    break;
-                }
-            }
+
 
             const posterInput = document.getElementById('inputPoster');
             if (!posterInput.files.length) {

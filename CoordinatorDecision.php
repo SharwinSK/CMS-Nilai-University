@@ -14,11 +14,10 @@ $type = $_GET['type'];
 $id = $_GET['id'];
 
 if ($type === 'proposal') {
-    $query = "SELECT e.*, s.Stu_Name, c.Club_Name, v.Venue_Name 
+    $query = "SELECT e.*, s.Stu_Name, c.Club_Name
               FROM events e
               LEFT JOIN student s ON e.Stu_ID = s.Stu_ID
               LEFT JOIN club c ON e.Club_ID = c.Club_ID
-              LEFT JOIN venue v ON e.Ev_Venue = v.Venue_ID
               WHERE e.Ev_ID = ?";
     $stmt = $conn->prepare($query);
     $stmt->bind_param("i", $id);
@@ -46,6 +45,18 @@ if ($type === 'proposal') {
     $budget_stmt->bind_param("i", $id);
     $budget_stmt->execute();
     $budget_details = $budget_stmt->get_result();
+
+    $event_flow_query = "SELECT * FROM eventflow WHERE Ev_ID = ?";
+    $event_flow_stmt = $conn->prepare($event_flow_query);
+    $event_flow_stmt->bind_param("i", $id);
+    $event_flow_stmt->execute();
+    $event_flows = $event_flow_stmt->get_result();
+
+    $mom_query = "SELECT * FROM meeting WHERE Ev_ID = ?";
+    $mom_stmt = $conn->prepare($mom_query);
+    $mom_stmt->bind_param("i", $id);
+    $mom_stmt->execute();
+    $mom_details = $mom_stmt->get_result();
 } elseif ($type === 'postmortem') {
     $query = "
     SELECT 
@@ -84,17 +95,7 @@ if ($type === 'proposal') {
     $individual_stmt->execute();
     $individual_reports = $individual_stmt->get_result();
 
-    $event_flow_query = "SELECT * FROM eventflow WHERE Rep_ID = ?";
-    $event_flow_stmt = $conn->prepare($event_flow_query);
-    $event_flow_stmt->bind_param("i", $id);
-    $event_flow_stmt->execute();
-    $event_flows = $event_flow_stmt->get_result();
 
-    $mom_query = "SELECT * FROM meeting WHERE Rep_ID = ?";
-    $mom_stmt = $conn->prepare($mom_query);
-    $mom_stmt->bind_param("i", $id);
-    $mom_stmt->execute();
-    $mom_details = $mom_stmt->get_result();
 }
 
 
@@ -326,7 +327,7 @@ $start_time = microtime(true);
                 <div class="mb-3">
                     <label for="ev_venue" class="form-label">Event Venue</label>
                     <input type="text" class="form-control" id="ev_venue" name="ev_venue"
-                        value="<?php echo $details['Venue_Name']; ?>" required readonly>
+                        value="<?php echo $details['Ev_Venue']; ?>" required readonly>
                 </div>
                 <div class="mb-3">
                     <label for="ev_date" class="form-label">Event Date</label>
@@ -364,6 +365,50 @@ $start_time = microtime(true);
                         <input type="text" class="form-control" id="pic_phone" name="pic_phone"
                             value="<?php echo $person_in_charge['PIC_PhnNum']; ?>" required readonly>
                     </div>
+
+                    <!-- Event Flow -->
+                    <div class="postmortem-header">Event Flow</div>
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php while ($flow = $event_flows->fetch_assoc()): ?>
+                                <tr>
+                                    <td><?php echo date("H:i A", strtotime($flow['Flow_Time'])); ?></td>
+                                    <td><?php echo $flow['Flow_Description']; ?></td>
+                                </tr>
+                            <?php endwhile; ?>
+                        </tbody>
+                    </table>
+
+                    <!-- Meeting of Minutes Flow -->
+                    <div class="postmortem-header">Event Minutes of Meeting</div>
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Start Time</th>
+                                <th>End Time</th>
+                                <th>Location</th>
+                                <th>Discussion</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php while ($mom = $mom_details->fetch_assoc()): ?>
+                                <tr>
+                                    <td><?php echo date("d-m-Y", strtotime($mom['Meeting_Date'])); ?></td>
+                                    <td><?php echo date("H:i A", strtotime($mom['Meeting_StartTime'])); ?></td>
+                                    <td><?php echo date("H:i A", strtotime($mom['Meeting_EndTime'])); ?></td>
+                                    <td><?php echo $mom['Meeting_Location']; ?></td>
+                                    <td><?php echo $mom['Meeting_Discussion']; ?></td>
+                                </tr>
+                            <?php endwhile; ?>
+                        </tbody>
+                    </table>
 
                     <!-- Budget -->
                     <div class="section-header">Budget</div>
@@ -469,49 +514,7 @@ $start_time = microtime(true);
                         <p class="text-muted">No receipt uploaded for this event.</p>
                     <?php endif; ?>
 
-                    <!-- Event Flow -->
-                    <div class="postmortem-header">Event Flow</div>
-                    <table class="table table-bordered">
-                        <thead>
-                            <tr>
-                                <th>Time</th>
-                                <th>Description</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php while ($flow = $event_flows->fetch_assoc()): ?>
-                                <tr>
-                                    <td><?php echo $flow['Flow_Time']; ?></td>
-                                    <td><?php echo $flow['Flow_Description']; ?></td>
-                                </tr>
-                            <?php endwhile; ?>
-                        </tbody>
-                    </table>
 
-                    <!-- Meeting of Minutes Flow -->
-                    <div class="postmortem-header">Event Minutes of Meeting</div>
-                    <table class="table table-bordered">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Start Time</th>
-                                <th>End Time</th>
-                                <th>Location</th>
-                                <th>Discussion</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php while ($mom = $mom_details->fetch_assoc()): ?>
-                                <tr>
-                                    <td><?php echo $mom['Meeting_Date']; ?></td>
-                                    <td><?php echo $mom['Meeting_StartTime']; ?></td>
-                                    <td><?php echo $mom['Meeting_EndTime']; ?></td>
-                                    <td><?php echo $mom['Meeting_Location']; ?></td>
-                                    <td><?php echo $mom['Meeting_Discussion']; ?></td>
-                                </tr>
-                            <?php endwhile; ?>
-                        </tbody>
-                    </table>
                     <!-- Individual report -->
                     <div class="section-header">Individual Reports</div>
                     <table class="table table-bordered">

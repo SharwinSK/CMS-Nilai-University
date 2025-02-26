@@ -7,9 +7,8 @@ if (!isset($_GET['event_id'])) {
 }
 $event_id = $_GET['event_id'];
 
-$query = "SELECT e.*, v.Venue_Name, c.Club_Name 
+$query = "SELECT e.*,c.Club_Name 
           FROM events e
-          LEFT JOIN venue v ON e.Ev_Venue = v.Venue_ID
           LEFT JOIN club c ON e.Club_ID = c.Club_ID
           WHERE e.Ev_ID = '$event_id'";
 $result = $conn->query($query);
@@ -26,6 +25,11 @@ $budget_result = $conn->query($budget_query);
 $pic_query = "SELECT * FROM personincharge WHERE Ev_ID = '$event_id'";
 $pic_result = $conn->query($pic_query);
 $person_in_charge = $pic_result->fetch_assoc();
+$eventflow_query = "SELECT * FROM eventflow WHERE Ev_ID = '$event_id'";
+$eventflow_result = $conn->query($eventflow_query);
+$meeting_query = "SELECT * FROM meeting WHERE Ev_ID = '$event_id'";
+$meeting_result = $conn->query($meeting_query);
+
 
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -73,6 +77,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         Bud_Type = '$bud_type', 
                         Bud_Remarks = '$bud_remarks' 
                       WHERE Bud_ID = '$bud_id' AND Ev_ID = '$event_id'";
+        }
+        $conn->query($query);
+    }
+
+    foreach ($_POST['eventflow_id'] as $index => $flow_id) {
+        $flow_desc = $_POST['eventflow_description'][$index];
+        $flow_time = $_POST['eventflow_time'][$index];
+
+        if (empty($flow_id)) {
+            $query = "INSERT INTO eventflow (Ev_ID, Flow_Desc, Flow_Time) 
+                      VALUES ('$event_id', '$flow_desc', '$flow_time')";
+        } elseif ($_POST['eventflow_delete'][$index] == "1") {
+            $query = "DELETE FROM eventflow WHERE Flow_ID = '$flow_id' AND Ev_ID = '$event_id'";
+        } else {
+            $query = "UPDATE eventflow SET 
+                        Flow_Desc = '$flow_desc', 
+                        Flow_Time = '$flow_time' 
+                      WHERE Flow_ID = '$flow_id' AND Ev_ID = '$event_id'";
+        }
+        $conn->query($query);
+    }
+    foreach ($_POST['meeting_id'] as $index => $meet_id) {
+        $meet_date = $_POST['meeting_date'][$index];
+        $meet_start = $_POST['meeting_starttime'][$index];
+        $meet_end = $_POST['meeting_endtime'][$index];
+        $meet_location = $_POST['meeting_location'][$index];
+        $meet_discussion = $_POST['meeting_discussion'][$index];
+
+        if (empty($meet_id)) {
+            $query = "INSERT INTO meeting (Ev_ID, Meeting_Date, Meeting_StartTime, Meeting_EndTime, Meeting_Location, Meeting_Discussion) 
+                      VALUES ('$event_id', '$meet_date', '$meet_start', '$meet_end', '$meet_location', '$meet_discussion')";
+        } elseif ($_POST['meeting_delete'][$index] == "1") {
+            $query = "DELETE FROM meeting WHERE Meeting_ID = '$meet_id' AND Ev_ID = '$event_id'";
+        } else {
+            $query = "UPDATE meeting SET 
+                        Meeting_Date = '$meet_date', 
+                        Meeting_StartTime = '$meet_start', 
+                        Meeting_EndTime = '$meet_end', 
+                        Meeting_Location = '$meet_location', 
+                        Meeting_Discussion = '$meet_discussion' 
+                      WHERE Meeting_ID = '$meet_id' AND Ev_ID = '$event_id'";
         }
         $conn->query($query);
     }
@@ -291,7 +336,7 @@ if (isset($_GET['success']) && $_GET['success'] == '1') {
             <!-- Venue Name -->
             <div class="mb-3">
                 <label class="form-label">Venue Name</label>
-                <input type="text" class="form-control" value="<?php echo htmlspecialchars($event['Venue_Name']); ?>"
+                <input type="text" class="form-control" value="<?php echo htmlspecialchars($event['Ev_Venue']); ?>"
                     readonly>
             </div>
 
@@ -340,7 +385,70 @@ if (isset($_GET['success']) && $_GET['success'] == '1') {
                 <input type="text" class="form-control" id="pic_phone" name="pic_phone"
                     value="<?php echo $person_in_charge['PIC_PhnNum']; ?>" required>
             </div>
+            <h5>Event Flow</h5>
+            <table class="table table-bordered" id="eventFlowTable">
+                <thead>
+                    <tr>
+                        <th>Description</th>
+                        <th>Time</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php while ($eventflow = $eventflow_result->fetch_assoc()): ?>
+                        <tr>
+                            <input type="hidden" name="eventflow_id[]" value="<?php echo $eventflow['Flow_ID']; ?>">
+                            <td><input type="text" name="eventflow_description[]"
+                                    value="<?php echo $eventflow['Flow_Description']; ?>" class="form-control"></td>
+                            <td><input type="time" name="eventflow_time[]" value="<?php echo $eventflow['Flow_Time']; ?>"
+                                    class="form-control"></td>
+                            <td>
+                                <input type="hidden" name="eventflow_delete[]" value="0">
+                                <button type="button" class="btn btn-danger btn-sm"
+                                    onclick="deleteRow(this)">Delete</button>
+                            </td>
+                        </tr>
+                    <?php endwhile; ?>
+                </tbody>
+            </table>
+            <button type="button" class="btn btn-success btn-sm" onclick="addRow('eventFlowTable')">Add Row</button>
 
+            <h5>Meeting Minutes</h5>
+            <table class="table table-bordered" id="meetingTable">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Start Time</th>
+                        <th>End Time</th>
+                        <th>Location</th>
+                        <th>Discussion</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php while ($meeting = $meeting_result->fetch_assoc()): ?>
+                        <tr>
+                            <input type="hidden" name="meeting_id[]" value="<?php echo $meeting['Meeting_ID']; ?>">
+                            <td><input type="date" name="meeting_date[]" value="<?php echo $meeting['Meeting_Date']; ?>"
+                                    class="form-control"></td>
+                            <td><input type="time" name="meeting_starttime[]"
+                                    value="<?php echo $meeting['Meeting_StartTime']; ?>" class="form-control"></td>
+                            <td><input type="time" name="meeting_endtime[]"
+                                    value="<?php echo $meeting['Meeting_EndTime']; ?>" class="form-control"></td>
+                            <td><input type="text" name="meeting_location[]"
+                                    value="<?php echo $meeting['Meeting_Location']; ?>" class="form-control"></td>
+                            <td><input type="text" name="meeting_discussion[]"
+                                    value="<?php echo $meeting['Meeting_Discussion']; ?>" class="form-control"></td>
+                            <td>
+                                <input type="hidden" name="meeting_delete[]" value="0">
+                                <button type="button" class="btn btn-danger btn-sm"
+                                    onclick="deleteRow(this)">Delete</button>
+                            </td>
+                        </tr>
+                    <?php endwhile; ?>
+                </tbody>
+            </table>
+            <button type="button" class="btn btn-success btn-sm" onclick="addRow('meetingTable')">Add Row</button>
 
             <!-- Committee Members -->
             <h5>Committee Members</h5>
@@ -452,6 +560,36 @@ if (isset($_GET['success']) && $_GET['success'] == '1') {
             const row = button.closest('tr');
             row.querySelector('input[name="budget_delete[]"]').value = "1";
             row.style.display = "none"; //
+        }
+
+        function addEventRow() {
+            const tableBody = document.getElementById("Eventflow-table-body");
+            const newRow = `
+            <tr>
+                <td><input type="time" class="form-control" name="event_time[]" required></td>
+                <td><input type="text" class="form-control" name="event_flow[]" placeholder="Describe flow" required></td>
+                <td><button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">Remove</button></td>
+            </tr>`;
+            tableBody.insertAdjacentHTML('beforeend', newRow);
+        }
+
+        function addMeetingRow() {
+            const tableBody = document.getElementById("meeting-table-body");
+            const newRow = `
+            <tr>
+                <td><input type="date" class="form-control" name="meeting_date[]" required></td>
+                <td><input type="time" class="form-control" name="meeting_start_time[]" required></td>
+                <td><input type="time" class="form-control" name="meeting_end_time[]" required></td>
+                <td><input type="text" class="form-control" name="meeting_location[]" placeholder="Location" required></td>
+                <td><textarea class="form-control" name="meeting_discussion[]" placeholder="Discussion" required></textarea></td>
+                <td><button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">Remove</button></td>
+            </tr>`;
+            tableBody.insertAdjacentHTML('beforeend', newRow);
+        }
+
+        function removeRow(button) {
+            const row = button.parentElement.parentElement;
+            row.remove();
         }
     </script>
 </body>
