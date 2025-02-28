@@ -8,13 +8,12 @@ $event_query = "
     SELECT 
         e.*, 
         s.Stu_Name, 
-        c.Club_Name, 
-        v.Venue_Name AS Ev_Venue 
+        c.Club_Name
     FROM 
         events e 
     LEFT JOIN student s ON e.Stu_ID = s.Stu_ID 
     LEFT JOIN club c ON e.Club_ID = c.Club_ID 
-    LEFT JOIN venue v ON e.Ev_Venue = v.Venue_ID 
+   
     WHERE e.Ev_ID = '$event_id'";
 
 $event_result = $conn->query($event_query);
@@ -29,6 +28,12 @@ $committee_result = $conn->query($committee_query);
 
 $budget_query = "SELECT * FROM budget WHERE Ev_ID = '$event_id'";
 $budget_result = $conn->query($budget_query);
+
+$eventflow_query = "SELECT Flow_Time, Flow_Description FROM eventflow WHERE Ev_ID = '$event_id'";
+$eventflow_result = $conn->query($eventflow_query);
+
+$meeting_query = "SELECT * FROM meeting WHERE Ev_ID = '$event_id'";
+$meeting_result = $conn->query($meeting_query);
 
 $pdf = new TCPDF();
 $pdf->SetMargins(10, 10, 10);
@@ -59,6 +64,29 @@ $html .= '<table cellspacing="3" cellpadding="4">';
 $html .= '<tr><td><strong>Name:</strong></td><td>' . $pic['PIC_Name'] . '</td></tr>';
 $html .= '<tr><td><strong>ID:</strong></td><td>' . $pic['PIC_ID'] . '</td></tr>';
 $html .= '<tr><td><strong>Phone:</strong></td><td>' . $pic['PIC_PhnNum'] . '</td></tr>';
+$html .= '</table><br>';
+
+
+$html .= '<h3>Event Flow</h3>';
+$html .= '<table border="1" cellpadding="4">';
+$html .= '<tr><th>Time</th><th>Flow Description</th></tr>';
+while ($flow = $eventflow_result->fetch_assoc()) {
+    $html .= '<tr><td>' . $flow['Flow_Time'] . '</td><td>' . $flow['Flow_Description'] . '</td></tr>';
+}
+$html .= '</table><br>';
+
+$html .= '<h3>Minutes of Meeting</h3>';
+$html .= '<table border="1" cellpadding="4">';
+$html .= '<tr><th>Date</th><th>Start Time</th><th>End Time</th><th>Location</th><th>Discussion</th></tr>';
+while ($meeting = $meeting_result->fetch_assoc()) {
+    $html .= '<tr>
+                <td>' . $meeting['Meeting_Date'] . '</td>
+                <td>' . $meeting['Meeting_StartTime'] . '</td>
+                <td>' . $meeting['Meeting_EndTime'] . '</td>
+                <td>' . $meeting['Meeting_Location'] . '</td>
+                <td>' . $meeting['Meeting_Discussion'] . '</td>
+              </tr>';
+}
 $html .= '</table><br>';
 $html .= '<h3>Committee Members</h3>';
 $html .= '<table border="1" cellpadding="4">';
@@ -108,8 +136,8 @@ $pdf->writeHTML($html, true, false, true, false, '');
 if (!empty($event['Ev_Poster'])) {
     $pdf->AddPage();
     $pdf->SetFont('dejavusans', 'B', 12);
-    $pdf->Cell(0, 10, 'Event Poster', 0, 1, 'C'); 
-    $pdf->Ln(10); 
+    $pdf->Cell(0, 10, 'Event Poster', 0, 1, 'C');
+    $pdf->Ln(10);
 
     $pdf->Image($event['Ev_Poster'], 40, 50, 120, 150, '', '', '', true, 150);
 }

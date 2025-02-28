@@ -30,7 +30,18 @@ $committee_stmt = $conn->prepare($committee_query);
 $committee_stmt->bind_param("i", $event_id);
 $committee_stmt->execute();
 $committee_result = $committee_stmt->get_result();
-$start_time = microtime(true);
+
+$mom_query = "SELECT * FROM meeting WHERE Ev_ID = ?";
+$mom_stmt = $conn->prepare($mom_query);
+$mom_stmt->bind_param("i", $event_id);
+$mom_stmt->execute();
+$mom_details = $mom_stmt->get_result();
+
+$event_flow_query = "SELECT * FROM eventflow WHERE Ev_ID = ?";
+$event_flow_stmt = $conn->prepare($event_flow_query);
+$event_flow_stmt->bind_param("i", $event_id);
+$event_flow_stmt->execute();
+$event_flows = $event_flow_stmt->get_result();
 ?>
 
 <!DOCTYPE html>
@@ -126,20 +137,50 @@ $start_time = microtime(true);
                         </div>
                     </div>
                     <!-- Event Flow -->
-                    <h5>Event Flow</h5>
-                    <div class="table-responsive">
-                        <table class="table table-bordered">
-                            <thead>
+                    <div class="section-header">Event Flow</div>
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php while ($flow = $event_flows->fetch_assoc()): ?>
                                 <tr>
-                                    <th>Time</th>
-                                    <th>Flow</th>
-                                    <th>Action</th>
+                                    <td><?php echo date("H:i A", strtotime($flow['Flow_Time'])); ?></td>
+                                    <td><?php echo $flow['Flow_Description']; ?></td>
                                 </tr>
-                            </thead>
-                            <tbody id="Eventflow-table-body"></tbody>
-                        </table>
-                    </div>
-                    <button type="button" class="btn btn-success mb-3" onclick="addEventRow()">Add Row</button>
+                            <?php endwhile; ?>
+                        </tbody>
+                    </table>
+
+
+                    <!-- Meeting of Minutes Flow -->
+                    <div class="section-header">Event Minutes of Meeting</div>
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Start Time</th>
+                                <th>End Time</th>
+                                <th>Location</th>
+                                <th>Discussion</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php while ($mom = $mom_details->fetch_assoc()): ?>
+                                <tr>
+                                    <td><?php echo date("d/m/Y", strtotime($mom['Meeting_Date'])); ?></td>
+                                    <td><?php echo date("h:i A", strtotime($mom['Meeting_StartTime'])); ?></td>
+                                    <td><?php echo date("h:i A", strtotime($mom['Meeting_EndTime'])); ?></td>
+                                    <td><?php echo $mom['Meeting_Location']; ?></td>
+                                    <td><?php echo $mom['Meeting_Discussion']; ?></td>
+                                </tr>
+                            <?php endwhile; ?>
+                        </tbody>
+                    </table>
+
                     <!-- Uploads -->
                     <div class="mb-3">
                         <label for="inputPhoto" class="form-label">Upload Event Photos</label>
@@ -149,24 +190,7 @@ $start_time = microtime(true);
                         <label for="inputReceipt" class="form-label">Upload Expense Receipts</label>
                         <input type="file" class="form-control" id="inputReceipt" name="expense_receipts[]" multiple>
                     </div>
-                    <!-- Minutes of Meeting -->
-                    <h5>Minutes of Meeting</h5>
-                    <div class="table-responsive">
-                        <table class="table table-bordered">
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Start Time</th>
-                                    <th>End Time</th>
-                                    <th>Location</th>
-                                    <th>Discussion</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody id="meeting-table-body"></tbody>
-                        </table>
-                    </div>
-                    <button type="button" class="btn btn-success mb-3" onclick="addMeetingRow()">Add Row</button>
+
                     <!-- Challenges and Conclusion -->
                     <div class="mb-3">
                         <label for="inputChallenges" class="form-label">Challenges and Difficulties</label>
@@ -330,15 +354,7 @@ $start_time = microtime(true);
         });
     </script>
 
-    <?php
-    // End time after processing the page
-    $end_time = microtime(true);
-    $page_load_time = round(($end_time - $start_time) * 1000, 2); // Convert to milliseconds
-    
-    echo "<p style='color: green; font-weight: bold; text-align: center;'>
-      Page Load Time: " . $page_load_time . " ms
-      </p>";
-    ?>
+
 </body>
 
 

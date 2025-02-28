@@ -86,13 +86,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $flow_time = $_POST['eventflow_time'][$index];
 
         if (empty($flow_id)) {
-            $query = "INSERT INTO eventflow (Ev_ID, Flow_Desc, Flow_Time) 
+            $query = "INSERT INTO eventflow (Ev_ID, Flow_Description, Flow_Time) 
                       VALUES ('$event_id', '$flow_desc', '$flow_time')";
         } elseif ($_POST['eventflow_delete'][$index] == "1") {
             $query = "DELETE FROM eventflow WHERE Flow_ID = '$flow_id' AND Ev_ID = '$event_id'";
         } else {
             $query = "UPDATE eventflow SET 
-                        Flow_Desc = '$flow_desc', 
+                        Flow_Description = '$flow_desc', 
                         Flow_Time = '$flow_time' 
                       WHERE Flow_ID = '$flow_id' AND Ev_ID = '$event_id'";
         }
