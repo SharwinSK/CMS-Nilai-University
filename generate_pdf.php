@@ -35,45 +35,72 @@ $eventflow_result = $conn->query($eventflow_query);
 $meeting_query = "SELECT * FROM meeting WHERE Ev_ID = '$event_id'";
 $meeting_result = $conn->query($meeting_query);
 
-$pdf = new TCPDF();
-$pdf->SetMargins(10, 10, 10);
+
+
+class MYPDF extends TCPDF
+{
+    // Custom Header
+    public function Header()
+    {
+        $this->SetFont('dejavusans', 'B', 12);
+        $this->Cell(0, 10, 'PROPOSAL FOR PROJECT/ACTIVITY', 0, 1, 'C');
+
+        // Add Logo (Change path if needed)
+        $this->Image('NU logo2.jpeg', 5, 5, 20); // (file, X, Y, width)
+
+        // Add "Co-Cu Project" Box
+        $this->SetXY(60, 15); // Position the box
+        $this->SetFont('dejavusans', '', 10);
+        $this->Cell(40, 8, 'Co-Cu Project', 1, 0, 'C'); // (width, height, text, border, next line, align)
+
+        // Add Reference Number (Aligned to Right)
+        $this->SetFont('dejavusans', 'B', 10);
+        $this->SetXY(160, 15); // Adjust position
+        $this->Cell(40, 8, 'NU/SOP/SHSS/001/F01 (rev. 1)', 0, 0, 'R');
+
+        // Add Line Below Header
+        $this->Ln(15);
+        $this->Cell(0, 0, '', 'T', 1, 'C');
+    }
+}
+
+$pdf = new MYPDF(); // Use custom class
+$pdf->SetMargins(10, 30, 10);
 $pdf->AddPage();
 $pdf->SetFont('dejavusans', '', 10);
 
 
-$html = '<h2 style="text-align:center;">Event Proposal Details</h2>';
-$html .= '<h3>Event Details</h3>';
+
+
+$html = '<h3>Event Details</h3>';
 $html .= '<table cellspacing="3" cellpadding="4">';
 $html .= '<tr><td><strong>Event ID:</strong></td><td>' . $event['Ev_ID'] . '</td></tr>';
 $html .= '<tr><td><strong>Date Submission:</strong></td><td>' . date('Y-m-d') . '</td></tr>';
 $html .= '<tr><td><strong>Student Name:</strong></td><td>' . $event['Stu_Name'] . '</td></tr>';
 $html .= '<tr><td><strong>Club Name:</strong></td><td>' . $event['Club_Name'] . '</td></tr>';
 $html .= '<tr><td><strong>Event Name:</strong></td><td>' . $event['Ev_Name'] . '</td></tr>';
-$html .= '<tr><td><strong>Event Nature:</strong></td><td>' . $event['Ev_ProjectNature'] . '</td></tr>';
-$html .= '<tr><td><strong>Event Introduction:</strong></td><td>' . $event['Ev_Intro'] . '</td></tr>';
-$html .= '<tr><td><strong>Event Details:</strong></td><td>' . $event['Ev_Details'] . '</td></tr>';
-$html .= '<tr><td><strong>Event Objectives:</strong></td><td>' . $event['Ev_Objectives'] . '</td></tr>';
 $html .= '<tr><td><strong>Event Date:</strong></td><td>' . $event['Ev_Date'] . '</td></tr>';
-$html .= '<tr><td><strong>Start Time:</strong></td><td>' . $event['Ev_StartTime'] . '</td></tr>';
-$html .= '<tr><td><strong>End Time:</strong></td><td>' . $event['Ev_EndTime'] . '</td></tr>';
-$html .= '<tr><td><strong>Participants:</strong></td><td>' . $event['Ev_Pax'] . '</td></tr>';
 $html .= '<tr><td><strong>Venue:</strong></td><td>' . $event['Ev_Venue'] . '</td></tr>';
 $html .= '</table><br>';
+
 $html .= '<h3>Person in Charge</h3>';
 $html .= '<table cellspacing="3" cellpadding="4">';
 $html .= '<tr><td><strong>Name:</strong></td><td>' . $pic['PIC_Name'] . '</td></tr>';
 $html .= '<tr><td><strong>ID:</strong></td><td>' . $pic['PIC_ID'] . '</td></tr>';
 $html .= '<tr><td><strong>Phone:</strong></td><td>' . $pic['PIC_PhnNum'] . '</td></tr>';
-$html .= '</table><br>';
+$html .= '</table>';
+
+$pdf->writeHTML($html);
 
 
-$html .= '<h3>Event Flow</h3>';
-$html .= '<table border="1" cellpadding="4">';
-$html .= '<tr><th>Time</th><th>Flow Description</th></tr>';
-while ($flow = $eventflow_result->fetch_assoc()) {
-    $html .= '<tr><td>' . $flow['Flow_Time'] . '</td><td>' . $flow['Flow_Description'] . '</td></tr>';
+
+$pdf->AddPage();
+$html = '<h3>Event Flow</h3>';
+$html .= '<table border="1" cellpadding="4"><tr><th>Time</th><th>Description</th></tr>';
+while ($row = $eventflow_result->fetch_assoc()) {
+    $html .= '<tr><td>' . $row['Flow_Time'] . '</td><td>' . $row['Flow_Description'] . '</td></tr>';
 }
-$html .= '</table><br>';
+$html .= '</table>';
 
 $html .= '<h3>Minutes of Meeting</h3>';
 $html .= '<table border="1" cellpadding="4">';
@@ -88,7 +115,12 @@ while ($meeting = $meeting_result->fetch_assoc()) {
               </tr>';
 }
 $html .= '</table><br>';
-$html .= '<h3>Committee Members</h3>';
+$pdf->writeHTML($html);
+$html = ''; // Clear the $html variable
+
+// Committee Members and Budget Section
+$pdf->AddPage();
+$html = '<h3>Committee Members</h3>';
 $html .= '<table border="1" cellpadding="4">';
 $html .= '<tr>
             <th>ID</th>
@@ -130,6 +162,9 @@ while ($budget = $budget_result->fetch_assoc()) {
               </tr>';
 }
 $html .= '</table><br>';
+$pdf->writeHTML($html);
+$html = ''; // Clear the $html variable
+
 
 $pdf->writeHTML($html, true, false, true, false, '');
 

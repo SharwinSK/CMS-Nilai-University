@@ -167,14 +167,10 @@ $start_time = microtime(true);
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
     <?php
-    // End time after processing the page
-    $end_time = microtime(true);
-    $page_load_time = round(($end_time - $start_time) * 1000, 2); // Convert to milliseconds
-    
-    echo "<p style='color: green; font-weight: bold; text-align: center;'>
-      Page Load Time: " . $page_load_time . " ms
-      </p>";
+    $execution_time = microtime(true) - $start_time;
+    echo "<!-- Page executed in " . number_format($execution_time, 3) . " seconds -->";
     ?>
 </body>
 

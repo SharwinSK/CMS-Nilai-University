@@ -12,7 +12,7 @@ $advisor_id = $_SESSION['Adv_ID'];
 $club_id = $_SESSION['Club_ID'];
 
 $stmt = $conn->prepare("SELECT Adv_Name FROM advisor WHERE Adv_ID = ?");
-$stmt->bind_param('s', $advisor_id); // Bind the advisor ID
+$stmt->bind_param('s', $advisor_id);
 $stmt->execute();
 $result = $stmt->get_result();
 $advisor_name = $result->fetch_assoc()['Adv_Name'] ?? 'Unknown Advisor';
@@ -25,7 +25,7 @@ $query = "
 ";
 
 $stmt = $conn->prepare($query);
-$stmt->bind_param('s', $advisor_id); // Bind the advisor ID
+$stmt->bind_param('s', $advisor_id);
 $stmt->execute();
 $result = $stmt->get_result();
 
@@ -40,7 +40,7 @@ $pending_proposals_query = "
 ";
 
 $stmt = $conn->prepare($pending_proposals_query);
-$stmt->bind_param('i', $club_id); // Bind the club ID
+$stmt->bind_param('i', $club_id);
 $stmt->execute();
 $pending_proposals = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
@@ -226,7 +226,6 @@ $start_time = microtime(true);
       Page Load Time: " . $page_load_time . " ms
       </p>";
             ?>
-
 </body>
 
 </html>

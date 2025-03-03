@@ -467,8 +467,6 @@ $start_time = microtime(true);
                         </div>
                     </div>
                 </form>
-
-
                 <script>
                     function setDecision(decision) {
                         document.getElementById('decision').value = decision;
@@ -491,7 +489,6 @@ $start_time = microtime(true);
       Page Load Time: " . $page_load_time . " ms
       </p>";
                 ?>
-
 </body>
 
 </html>
