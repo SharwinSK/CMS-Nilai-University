@@ -282,35 +282,6 @@ $budget_details = $budget_stmt->get_result();
         </div>
     </div>
     <script>
-        function addEventRow() {
-            const tableBody = document.getElementById("Eventflow-table-body");
-            const newRow = `
-            <tr>
-                <td><input type="time" class="form-control" name="event_time[]" required></td>
-                <td><input type="text" class="form-control" name="event_flow[]" placeholder="Describe flow" required></td>
-                <td><button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">Remove</button></td>
-            </tr>`;
-            tableBody.insertAdjacentHTML('beforeend', newRow);
-        }
-
-        function addMeetingRow() {
-            const tableBody = document.getElementById("meeting-table-body");
-            const newRow = `
-            <tr>
-                <td><input type="date" class="form-control" name="meeting_date[]" required></td>
-                <td><input type="time" class="form-control" name="meeting_start_time[]" required></td>
-                <td><input type="time" class="form-control" name="meeting_end_time[]" required></td>
-                <td><input type="text" class="form-control" name="meeting_location[]" placeholder="Location" required></td>
-                <td><textarea class="form-control" name="meeting_discussion[]" placeholder="Discussion" required></textarea></td>
-                <td><button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">Remove</button></td>
-            </tr>`;
-            tableBody.insertAdjacentHTML('beforeend', newRow);
-        }
-
-        function removeRow(button) {
-            const row = button.parentElement.parentElement;
-            row.remove();
-        }
 
         document.querySelector("form").addEventListener("submit", function (e) {
             let isValid = true;
@@ -328,35 +299,8 @@ $budget_details = $budget_stmt->get_result();
                 errorMessages.push("Please fill in the Conclusion field.");
             }
 
-            const eventRows = document.querySelectorAll("#Eventflow-table-body tr");
-            if (eventRows.length === 0) {
-                isValid = false;
-                errorMessages.push("Please fill in the Event Flow.");
-            } else {
-                eventRows.forEach((row, index) => {
-                    const timeInput = row.querySelector("input[name='event_time[]']");
-                    const flowInput = row.querySelector("input[name='event_flow[]']");
-                    if (!timeInput.value.trim() || !flowInput.value.trim()) {
-                        isValid = false;
-                        errorMessages.push(`Event Flow Row ${index + 1}: Both time and description are required.`);
-                    }
-                });
-            }
 
-            const meetingRows = document.querySelectorAll("#meeting-table-body tr");
-            if (meetingRows.length === 0) {
-                isValid = false;
-                errorMessages.push("Please fill in the Minutes of Meeting.");
-            } else {
-                meetingRows.forEach((row, index) => {
-                    const dateInput = row.querySelector("input[name='meeting_date[]']");
-                    const discussionInput = row.querySelector("textarea[name='meeting_discussion[]']");
-                    if (!dateInput.value.trim() || !discussionInput.value.trim()) {
-                        isValid = false;
-                        errorMessages.push(`Minutes of Meeting Row ${index + 1}: Date and Discussion are required.`);
-                    }
-                });
-            }
+
 
             const eventPhotos = document.getElementById("inputPhoto").files.length;
             if (eventPhotos === 0) {

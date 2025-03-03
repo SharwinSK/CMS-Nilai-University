@@ -9,14 +9,12 @@ $report_query = "
         e.*, 
         ep.*, 
         s.Stu_Name, 
-        c.Club_Name, 
-        v.Venue_Name AS Ev_Venue 
+        c.Club_Name
     FROM 
         events e 
     LEFT JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID 
     LEFT JOIN student s ON e.Stu_ID = s.Stu_ID 
     LEFT JOIN club c ON e.Club_ID = c.Club_ID 
-    LEFT JOIN venue v ON e.Ev_Venue = v.Venue_ID 
     WHERE ep.Rep_ID = '$report_id'";
 
 $report_result = $conn->query($report_query);
@@ -26,11 +24,12 @@ if (!$report) {
     die("Invalid Report ID.");
 }
 
-$eventflow_query = "SELECT Flow_Time, Flow_Description FROM eventflow WHERE Rep_ID = '$report_id'";
+$eventflow_query = "SELECT Flow_Time, Flow_Description FROM eventflow WHERE Ev_ID = '$report_id'";
 $eventflow_result = $conn->query($eventflow_query);
 
-$meeting_query = "SELECT * FROM meeting WHERE Rep_ID = '$report_id'";
+$meeting_query = "SELECT * FROM meeting WHERE Ev_ID = '$report_id'";
 $meeting_result = $conn->query($meeting_query);
+
 
 $individual_query = "
     SELECT ir.Rep_ID, ir.Com_ID, ir.IRS_Duties, ir.IRS_Attendance, ir.IRS_Experience, 

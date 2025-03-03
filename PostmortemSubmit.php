@@ -61,25 +61,6 @@ try {
     $stmt->bind_param("ssssss", $report_id, $event_id, $challenges, $conclusion, $photos, $receipts);
     $stmt->execute();
 
-    foreach ($_POST['event_time'] as $index => $time) {
-        $description = htmlspecialchars(trim($_POST['event_flow'][$index]));
-        $stmt = $conn->prepare("INSERT INTO EventFlow (Rep_ID, Flow_Time, Flow_Description) VALUES (?, ?, ?)");
-        $stmt->bind_param("sss", $report_id, $time, $description);
-        $stmt->execute();
-    }
-
-    foreach ($_POST['meeting_date'] as $index => $date) {
-        $start_time = htmlspecialchars(trim($_POST['meeting_start_time'][$index]));
-        $end_time = htmlspecialchars(trim($_POST['meeting_end_time'][$index]));
-        $location = htmlspecialchars(trim($_POST['meeting_location'][$index]));
-        $discussion = htmlspecialchars(trim($_POST['meeting_discussion'][$index]));
-
-        $stmt = $conn->prepare("INSERT INTO Meeting (Rep_ID, Meeting_Date, Meeting_StartTime, 
-        Meeting_EndTime, Meeting_Location, Meeting_Discussion) VALUES (?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("ssssss", $report_id, $date, $start_time, $end_time, $location, $discussion);
-        $stmt->execute();
-    }
-
     foreach ($_POST['indiv_duties'] as $com_id => $duty) {
         $attendance = htmlspecialchars(trim($_POST['indiv_attendance'][$com_id]));
         $experience = htmlspecialchars(trim($_POST['indiv_experience'][$com_id]));
