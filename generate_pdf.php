@@ -39,32 +39,32 @@ $meeting_result = $conn->query($meeting_query);
 
 class MYPDF extends TCPDF
 {
-    // Custom Header
+
     public function Header()
     {
         $this->SetFont('dejavusans', 'B', 12);
         $this->Cell(0, 10, 'PROPOSAL FOR PROJECT/ACTIVITY', 0, 1, 'C');
 
-        // Add Logo (Change path if needed)
-        $this->Image('NU logo2.jpeg', 5, 5, 20); // (file, X, Y, width)
+        //  Logo 
+        $this->Image('NU logo2.jpeg', 5, 5, 20);
 
-        // Add "Co-Cu Project" Box
-        $this->SetXY(60, 15); // Position the box
+        //  "Co-Cu Project" Box
+        $this->SetXY(60, 15);
         $this->SetFont('dejavusans', '', 10);
-        $this->Cell(40, 8, 'Co-Cu Project', 1, 0, 'C'); // (width, height, text, border, next line, align)
+        $this->Cell(40, 8, 'Co-Cu Project', 1, 0, 'C');
 
-        // Add Reference Number (Aligned to Right)
+        //  Reference Number 
         $this->SetFont('dejavusans', 'B', 10);
         $this->SetXY(160, 15); // Adjust position
         $this->Cell(40, 8, 'NU/SOP/SHSS/001/F01 (rev. 1)', 0, 0, 'R');
 
-        // Add Line Below Header
+        //  Line Below Header
         $this->Ln(15);
         $this->Cell(0, 0, '', 'T', 1, 'C');
     }
 }
 
-$pdf = new MYPDF(); // Use custom class
+$pdf = new MYPDF();
 $pdf->SetMargins(10, 30, 10);
 $pdf->AddPage();
 $pdf->SetFont('dejavusans', '', 10);
@@ -116,9 +116,9 @@ while ($meeting = $meeting_result->fetch_assoc()) {
 }
 $html .= '</table><br>';
 $pdf->writeHTML($html);
-$html = ''; // Clear the $html variable
+$html = '';
 
-// Committee Members and Budget Section
+
 $pdf->AddPage();
 $html = '<h3>Committee Members</h3>';
 $html .= '<table border="1" cellpadding="4">';
@@ -163,7 +163,7 @@ while ($budget = $budget_result->fetch_assoc()) {
 }
 $html .= '</table><br>';
 $pdf->writeHTML($html);
-$html = ''; // Clear the $html variable
+$html = '';
 
 
 $pdf->writeHTML($html, true, false, true, false, '');

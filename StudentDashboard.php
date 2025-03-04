@@ -265,7 +265,7 @@ $start_time = microtime(true);
                 <div class="col-md-4  mb-3">
                     <div class="card bg-warning text-dark overview-card">
                         <div class="card-body">
-                            <h5>Total Proposals Pending</h5>
+                            <h5>Total Proposals Submit Pending</h5>
                             <h3><?php echo $proposals_pending; ?></h3>
                         </div>
                     </div>

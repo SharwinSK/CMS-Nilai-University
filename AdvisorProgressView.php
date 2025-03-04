@@ -20,13 +20,12 @@ $advisor_name = $result->fetch_assoc()['Adv_Name'];
 $query = "
     SELECT 
         e.Ev_ID, e.Ev_Name, s.Stu_Name, e.Ev_Status, p.Rep_PostStatus, e.Ev_Objectives, 
-        e.Ev_Intro, e.Ev_Details, e.Ev_Pax, e.Ev_Date, v.Venue_Name AS Ev_Venue, 
+        e.Ev_Intro, e.Ev_Details, e.Ev_Pax, e.Ev_Date, e.Ev_Venue, 
         e.Ev_StartTime, e.Ev_EndTime, pic.PIC_Name
     FROM events e
     LEFT JOIN student s ON e.Stu_ID = s.Stu_ID
     LEFT JOIN eventpostmortem p ON e.Ev_ID = p.Ev_ID
     LEFT JOIN personincharge pic ON e.Ev_ID = pic.Ev_ID
-    LEFT JOIN venue v ON e.Ev_Venue = v.Venue_ID
     WHERE e.Club_ID = ? 
       AND (
           (e.Ev_Status IN ('Approved by Advisor', 'Pending Coordinator Review', 'Approved by Coordinator') 

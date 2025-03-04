@@ -63,13 +63,12 @@ if ($type === 'proposal') {
         ep.Rep_ID, ep.Rep_ChallengesDifficulties, ep.Rep_Photo, ep.Rep_Receipt, 
         ep.Rep_Conclusion, ep.created_at AS PostmortemDate,
         e.Ev_ID, e.Ev_Name, e.Ev_Poster, e.Ev_ProjectNature, e.Ev_Objectives, 
-        e.Ev_Intro, e.Ev_Details, e.Ev_Date, e.Ev_StartTime, e.Ev_EndTime, v.Venue_Name, e.Ev_Pax,
+        e.Ev_Intro, e.Ev_Details, e.Ev_Date, e.Ev_StartTime, e.Ev_EndTime, e.Ev_Venue, e.Ev_Pax,
         s.Stu_Name, c.Club_Name
     FROM eventpostmortem ep
     JOIN events e ON ep.Ev_ID = e.Ev_ID
     LEFT JOIN student s ON e.Stu_ID = s.Stu_ID
     LEFT JOIN club c ON e.Club_ID = c.Club_ID
-    LEFT JOIN venue v ON e.Ev_Venue = v.Venue_ID
     WHERE ep.Rep_ID = ?
     ";
 
