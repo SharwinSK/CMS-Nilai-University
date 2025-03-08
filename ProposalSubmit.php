@@ -114,24 +114,21 @@ foreach ($_POST['student_name'] as $index => $name) {
 $stmt->close();
 
 
-foreach ($_POST['meeting_date'] as $index => $date) {
-    $start_time = htmlspecialchars(trim($_POST['meeting_start_time'][$index]));
-    $end_time = htmlspecialchars(trim($_POST['meeting_end_time'][$index]));
-    $location = htmlspecialchars(trim($_POST['meeting_location'][$index]));
-    $discussion = htmlspecialchars(trim($_POST['meeting_discussion'][$index]));
+foreach ($_POST['event_date'] as $index => $date) {
+    // Sanitize and retrieve input values
+    $start_time = htmlspecialchars(trim($_POST['start_time'][$index]));
+    $end_time = htmlspecialchars(trim($_POST['end_time'][$index]));
+    $hours = htmlspecialchars(trim($_POST['hours'][$index]));
+    $activity = htmlspecialchars(trim($_POST['activity'][$index]));
+    $remarks = htmlspecialchars(trim($_POST['remarks'][$index]));
 
-    $stmt = $conn->prepare("INSERT INTO Meeting (Ev_ID, Meeting_Date, Meeting_StartTime, 
-    Meeting_EndTime, Meeting_Location, Meeting_Discussion) VALUES (?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("ssssss", $event_id, $date, $start_time, $end_time, $location, $discussion);
+    // Prepare and execute the SQL statement
+    $stmt = $conn->prepare("INSERT INTO Eventflow (Ev_ID, Date, Start_Time, End_Time, Hours, Activity, Remarks) 
+                            VALUES (?, ?, ?, ?, ?, ?, ?)");
+    $stmt->bind_param("sssssss", $event_id, $date, $start_time, $end_time, $hours, $activity, $remarks);
     $stmt->execute();
 }
 
-foreach ($_POST['event_time'] as $index => $time) {
-    $description = htmlspecialchars(trim($_POST['event_flow'][$index]));
-    $stmt = $conn->prepare("INSERT INTO EventFlow (Ev_ID, Flow_Time, Flow_Description) VALUES (?, ?, ?)");
-    $stmt->bind_param("sss", $event_id, $time, $description);
-    $stmt->execute();
-}
 $stmt = $conn->prepare("INSERT INTO Budget (Ev_ID, Bud_Desc, Bud_Amount, Bud_Type, 
                                 Bud_Remarks) VALUES (?, ?, ?, ?, ?)");
 if (!$stmt) {

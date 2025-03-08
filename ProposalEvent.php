@@ -255,23 +255,8 @@ $start_time = microtime(true);
                         <input type="text" class="form-control" id="inputPICPhone" name="pic_phone"
                             placeholder="Enter phone number">
                     </div>
-                    <!-- Event Flow Section -->
-                    <h5>Event Flow</h5>
-                    <div class="table-responsive">
-                        <table class="table table-bordered">
-                            <thead>
-                                <tr>
-                                    <th>Time</th>
-                                    <th>Flow</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody id="Eventflow-table-body"></tbody>
-                        </table>
-                    </div>
-                    <button type="button" class="btn btn-success mb-3" onclick="addEventRow()">Add Row</button>
-                    <!-- Minutes of Meeting -->
-                    <h5>Minutes of Meeting</h5>
+                    <!-- Event Flow/Minutes Meeting Section -->
+                    <h5>Event Flow/Minutes Meeting</h5>
                     <div class="table-responsive">
                         <table class="table table-bordered">
                             <thead>
@@ -279,15 +264,18 @@ $start_time = microtime(true);
                                     <th>Date</th>
                                     <th>Start Time</th>
                                     <th>End Time</th>
-                                    <th>Location</th>
-                                    <th>Discussion</th>
+                                    <th>Hours</th>
+                                    <th>Activity</th>
+                                    <th>Remarks/Meeting Minutes</th>
                                     <th>Action</th>
                                 </tr>
                             </thead>
-                            <tbody id="meeting-table-body"></tbody>
+                            <tbody id="Eventflow-table-body"></tbody>
                         </table>
                     </div>
-                    <button type="button" class="btn btn-success mb-3" onclick="addMeetingRow()">Add Row</button>
+                    <button type="button" class="btn btn-success mb-3" onclick="addEventflowRow()">Add Row</button>
+
+
                     <!-- Committee Section -->
                     <h5 class="card-title mb-3">Committee Members</h5>
                     <div class="table-responsive">
@@ -336,30 +324,26 @@ $start_time = microtime(true);
     </div>
 
     <script>
-        function addEventRow() {
+        function addEventflowRow() {
             const tableBody = document.getElementById("Eventflow-table-body");
             const newRow = `
-            <tr>
-                <td><input type="time" class="form-control" name="event_time[]" required></td>
-                <td><input type="text" class="form-control" name="event_flow[]" placeholder="Describe flow" required></td>
-                <td><button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">Remove</button></td>
-            </tr>`;
+    <tr>
+        <td><input type="date" class="form-control" name="event_date[]" required></td>
+        <td><input type="time" class="form-control" name="start_time[]" required></td>
+        <td><input type="time" class="form-control" name="end_time[]" required></td>
+        <td><input type="number" class="form-control" name="hours[]" placeholder="Hours" required></td>
+        <td><textarea class="form-control" name="activity[]" rows="2" placeholder="Detailed activity description" required></textarea></td>
+        <td><textarea class="form-control" name="remarks[]" rows="2" placeholder="Detailed remarks or meeting minutes"></textarea></td>
+        <td><button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">Remove</button></td>
+    </tr>`;
             tableBody.insertAdjacentHTML('beforeend', newRow);
         }
 
-        function addMeetingRow() {
-            const tableBody = document.getElementById("meeting-table-body");
-            const newRow = `
-            <tr>
-                <td><input type="date" class="form-control" name="meeting_date[]" required></td>
-                <td><input type="time" class="form-control" name="meeting_start_time[]" required></td>
-                <td><input type="time" class="form-control" name="meeting_end_time[]" required></td>
-                <td><input type="text" class="form-control" name="meeting_location[]" placeholder="Location" required></td>
-                <td><textarea class="form-control" name="meeting_discussion[]" placeholder="Discussion" required></textarea></td>
-                <td><button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">Remove</button></td>
-            </tr>`;
-            tableBody.insertAdjacentHTML('beforeend', newRow);
+        function removeRow(button) {
+            const row = button.closest("tr");
+            row.remove();
         }
+
 
         function removeRow(button) {
             const row = button.parentElement.parentElement;
