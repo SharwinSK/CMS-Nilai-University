@@ -46,17 +46,13 @@ if ($type === 'proposal') {
     $budget_stmt->execute();
     $budget_details = $budget_stmt->get_result();
 
+    // Query to fetch all data from the unified eventflow table
     $event_flow_query = "SELECT * FROM eventflow WHERE Ev_ID = ?";
     $event_flow_stmt = $conn->prepare($event_flow_query);
     $event_flow_stmt->bind_param("i", $id);
     $event_flow_stmt->execute();
     $event_flows = $event_flow_stmt->get_result();
 
-    $mom_query = "SELECT * FROM meeting WHERE Ev_ID = ?";
-    $mom_stmt = $conn->prepare($mom_query);
-    $mom_stmt->bind_param("i", $id);
-    $mom_stmt->execute();
-    $mom_details = $mom_stmt->get_result();
 } elseif ($type === 'postmortem') {
     $query = "
     SELECT 
@@ -365,49 +361,33 @@ $start_time = microtime(true);
                             value="<?php echo $person_in_charge['PIC_PhnNum']; ?>" required readonly>
                     </div>
 
-                    <!-- Event Flow -->
-                    <div class="postmortem-header">Event Flow</div>
-                    <table class="table table-bordered">
-                        <thead>
-                            <tr>
-                                <th>Time</th>
-                                <th>Description</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php while ($flow = $event_flows->fetch_assoc()): ?>
-                                <tr>
-                                    <td><?php echo date("H:i A", strtotime($flow['Flow_Time'])); ?></td>
-                                    <td><?php echo $flow['Flow_Description']; ?></td>
-                                </tr>
-                            <?php endwhile; ?>
-                        </tbody>
-                    </table>
-
-                    <!-- Meeting of Minutes Flow -->
-                    <div class="postmortem-header">Event Minutes of Meeting</div>
+                    <!-- Event Flow / Minutes of Meeting -->
+                    <div class="postmortem-header">Event Flow / Minutes of Meeting</div>
                     <table class="table table-bordered">
                         <thead>
                             <tr>
                                 <th>Date</th>
                                 <th>Start Time</th>
                                 <th>End Time</th>
-                                <th>Location</th>
-                                <th>Discussion</th>
+                                <th>Hours</th>
+                                <th>Activity</th>
+                                <th>Remarks / Meeting Minutes</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php while ($mom = $mom_details->fetch_assoc()): ?>
+                            <?php while ($flow = $event_flows->fetch_assoc()): ?>
                                 <tr>
-                                    <td><?php echo date("d-m-Y", strtotime($mom['Meeting_Date'])); ?></td>
-                                    <td><?php echo date("H:i A", strtotime($mom['Meeting_StartTime'])); ?></td>
-                                    <td><?php echo date("H:i A", strtotime($mom['Meeting_EndTime'])); ?></td>
-                                    <td><?php echo $mom['Meeting_Location']; ?></td>
-                                    <td><?php echo $mom['Meeting_Discussion']; ?></td>
+                                    <td><?php echo date("d-m-Y", strtotime($flow['Date'])); ?></td>
+                                    <td><?php echo date("H:i A", strtotime($flow['Start_Time'])); ?></td>
+                                    <td><?php echo date("H:i A", strtotime($flow['End_Time'])); ?></td>
+                                    <td><?php echo htmlspecialchars($flow['Hours']); ?></td>
+                                    <td><?php echo nl2br(htmlspecialchars($flow['Activity'])); ?></td>
+                                    <td><?php echo nl2br(htmlspecialchars($flow['Remarks'])); ?></td>
                                 </tr>
                             <?php endwhile; ?>
                         </tbody>
                     </table>
+
 
                     <!-- Budget -->
                     <div class="section-header">Budget</div>
