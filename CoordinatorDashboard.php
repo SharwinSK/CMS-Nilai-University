@@ -48,7 +48,7 @@ $start_time = microtime(true);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CMS GA Dashboard</title>
+    <title>COORDINATOR CMS</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
@@ -154,7 +154,7 @@ $start_time = microtime(true);
             </button>
             <a class="navbar-brand" href="CoordinatorDashboard.php">
                 <img src="NU logo.png" alt="Logo">
-                Dashboard
+                COORDINATOR CMS
             </a>
             <div class="dropdown ms-auto">
                 <button class="btn btn-outline-light dropdown-toggle" type="button" id="dropdownMenuButton1"

@@ -78,26 +78,17 @@ $individual_result = $conn->query($individual_query);
 
 class MYPDF extends TCPDF
 {
-
     public function Header()
     {
         $this->SetFont('dejavusans', 'B', 12);
         $this->Cell(0, 10, 'PROPOSAL FOR PROJECT/ACTIVITY', 0, 1, 'C');
-
-        //  Logo 
         $this->Image('NU logo2.jpeg', 5, 5, 20);
-
-        //  "Co-Cu Project" Box
         $this->SetXY(60, 15);
         $this->SetFont('dejavusans', '', 10);
         $this->Cell(40, 8, 'Co-Cu Project', 1, 0, 'C');
-
-        //  Reference Number 
         $this->SetFont('dejavusans', 'B', 10);
-        $this->SetXY(160, 15); // Adjust position
+        $this->SetXY(160, 15);
         $this->Cell(40, 8, 'NU/SOP/SHSS/001/F01 (rev. 1)', 0, 0, 'R');
-
-        //  Line Below Header
         $this->Ln(15);
         $this->Cell(0, 0, '', 'T', 1, 'C');
     }
@@ -108,49 +99,51 @@ $pdf->SetMargins(10, 30, 10);
 $pdf->AddPage();
 $pdf->SetFont('dejavusans', '', 10);
 
+// Event Details Section
+$html = '<h2 style="text-align:center;">Postmortem Report</h2>';
+$html .= '<h3>Event Details</h3>';
+$html .= '<table cellspacing="3" cellpadding="4">';
+$html .= '<tr><td><strong>Event ID:</strong></td><td>' . $event['Ev_ID'] . '</td></tr>';
+$html .= '<tr><td><strong>Date Submission:</strong></td><td>' . date('d-m-Y') . '</td></tr>';
+$html .= '<tr><td><strong>Student Name:</strong></td><td>' . $event['Stu_Name'] . '</td></tr>';
+$html .= '<tr><td><strong>Club Name:</strong></td><td>' . $event['Club_Name'] . '</td></tr>';
+$html .= '<tr><td><strong>Event Name:</strong></td><td>' . $event['Ev_Name'] . '</td></tr>';
+$html .= '<tr><td><strong>Event Nature:</strong></td><td>' . $event['Ev_ProjectNature'] . '</td></tr>';
+$html .= '<tr><td><strong>Event Introduction:</strong></td><td>' . $event['Ev_Intro'] . '</td></tr>';
+$html .= '<tr><td><strong>Event Details:</strong></td><td>' . $event['Ev_Details'] . '</td></tr>';
+$html .= '<tr><td><strong>Event Objectives:</strong></td><td>' . $event['Ev_Objectives'] . '</td></tr>';
+$html .= '<tr><td><strong>Event Date:</strong></td><td>' . $event['Ev_Date'] . '</td></tr>';
+$html .= '<tr><td><strong>Start Time:</strong></td><td>' . $event['Ev_StartTime'] . '</td></tr>';
+$html .= '<tr><td><strong>End Time:</strong></td><td>' . $event['Ev_EndTime'] . '</td></tr>';
+$html .= '<tr><td><strong>Participants:</strong></td><td>' . $event['Ev_Pax'] . '</td></tr>';
+$html .= '<tr><td><strong>Venue:</strong></td><td>' . $event['Ev_Venue'] . '</td></tr>';
+$html .= '<tr><td><strong>Challenges:</strong></td><td>' . $event['Rep_ChallengesDifficulties'] . '</td></tr>';
+$html .= '<tr><td><strong>Conclusion:</strong></td><td>' . $event['Rep_Conclusion'] . '</td></tr>';
 
-$html = '
-<h3>Event Details</h3>
-<p><b>Event ID:</b> ' . $event['Ev_ID'] . '</p>
-<p><b>Event Name:</b> ' . $event['Ev_Name'] . '</p>
-<p><b>Reference Number:</b> ' . $event['Rep_RefNum'] . '</p>
-<p><b>Club Name:</b> ' . $event['Club_Name'] . '</p>
-<p><b>Student Name:</b> ' . $event['Stu_Name'] . '</p>
-<p><b>Project Nature:</b> ' . $event['Ev_ProjectNature'] . '</p>
-<p><b>Objectives:</b> ' . $event['Ev_Objectives'] . '</p>
-<p><b>Introduction:</b> ' . $event['Ev_Intro'] . '</p>
-<p><b>Details:</b> ' . $event['Ev_Details'] . '</p>
-<p><b>Estimated Participants:</b> ' . $event['Ev_Pax'] . '</p>
-<p><b>Venue:</b> ' . $event['Ev_Venue'] . '</p>
-<p><b>Date:</b> ' . $event['Ev_Date'] . '</p>
-<p><b>Start Time:</b> ' . $event['Ev_StartTime'] . '</p>
-<p><b>End Time:</b> ' . $event['Ev_EndTime'] . '</p>
-';
-$pdf->writeHTML($html);
+$html .= '<h3>Challenges and Conclusion</h3>';
+$html .= '<table><tr><td><b>Challenges:</b> ' . $event['Rep_ChallengesDifficulties'] . '</td></tr>';
+$html .= '<tr><td><b>Conclusion:</b> ' . $event['Rep_Conclusion'] . '</td></tr></table><br>';
 
-$pdf->SetFont('helvetica', 'B', 14);
-$pdf->Ln(10);
-$pdf->Cell(0, 10, 'Budget Details', 0, 1, 'L');
-$html = '<table border="1" cellpadding="5">
-    <thead>
-        <tr style="background-color:#f2f2f2;">
+//Budget
+$html .= '<h3>Budget</h3>';
+$html .= '<table border="1" cellpadding="4">';
+$html .= '<tr>
             <th>Description</th>
-            <th>Amount (RM)</th>
+            <th>Amount</th>
             <th>Type</th>
             <th>Remarks</th>
-        </tr>
-    </thead>
-    <tbody>';
+          </tr>';
 while ($budget = $budget_result->fetch_assoc()) {
     $html .= '<tr>
-        <td>' . $budget['Bud_Desc'] . '</td>
-        <td>' . number_format($budget['Bud_Amount'], 2) . '</td>
-        <td>' . $budget['Bud_Type'] . '</td>
-        <td>' . $budget['Bud_Remarks'] . '</td>
-    </tr>';
+                <td>' . $budget['Bud_Desc'] . '</td>
+                <td>' . $budget['Bud_Amount'] . '</td>
+                <td>' . $budget['Bud_Type'] . '</td>
+                <td>' . $budget['Bud_Remarks'] . '</td>
+              </tr>';
 }
-$html .= '</tbody></table>';
+$html .= '</table><br>';
 $pdf->writeHTML($html);
+$html = '';
 
 $pdf->Ln(10);
 $pdf->SetFont('helvetica', 'B', 14);
@@ -191,6 +184,8 @@ while ($meeting = $meeting_result->fetch_assoc()) {
         <td>' . $meeting['Meeting_Discussion'] . '</td>
     </tr>';
 }
+
+
 $html .= '</tbody></table>';
 $pdf->writeHTML($html);
 $pdf->Ln(10);
@@ -231,6 +226,8 @@ if ($individual_result->num_rows > 0) {
     for this event.', 0, 1, 'L');
 }
 
+
+
 $pdf->Ln(10);
 $pdf->SetFont('helvetica', 'B', 14);
 $pdf->Cell(0, 10, 'Challenges and Conclusion', 0, 1, 'L');
@@ -245,6 +242,8 @@ if (!empty($event['Ev_Poster']) && file_exists($event['Ev_Poster'])) {
     $pdf->Ln(10);
     $pdf->Image($event['Ev_Poster'], '', '', 100, 75, '', '', '', true, 300);
 }
+
+
 
 //Event Photo
 $pdf->writeHTML($html, true, false, true, false, '');
