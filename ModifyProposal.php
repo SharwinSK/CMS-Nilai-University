@@ -25,11 +25,9 @@ $budget_result = $conn->query($budget_query);
 $pic_query = "SELECT * FROM personincharge WHERE Ev_ID = '$event_id'";
 $pic_result = $conn->query($pic_query);
 $person_in_charge = $pic_result->fetch_assoc();
-$eventflow_query = "SELECT * FROM eventflow WHERE Ev_ID = '$event_id'";
-$eventflow_result = $conn->query($eventflow_query);
-$meeting_query = "SELECT * FROM meeting WHERE Ev_ID = '$event_id'";
-$meeting_result = $conn->query($meeting_query);
-
+$event_flow_query = "SELECT * FROM eventflow WHERE Ev_ID = '$event_id'";
+$event_flow_result = $conn->query($event_flow_query);
+$event_flows = $event_flow_result;
 
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -386,69 +384,31 @@ if (isset($_GET['success']) && $_GET['success'] == '1') {
                     value="<?php echo $person_in_charge['PIC_PhnNum']; ?>" required>
             </div>
             <h5>Event Flow</h5>
-            <table class="table table-bordered" id="eventFlowTable">
-                <thead>
-                    <tr>
-                        <th>Description</th>
-                        <th>Time</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php while ($eventflow = $eventflow_result->fetch_assoc()): ?>
-                        <tr>
-                            <input type="hidden" name="eventflow_id[]" value="<?php echo $eventflow['Flow_ID']; ?>">
-                            <td><input type="text" name="eventflow_description[]"
-                                    value="<?php echo $eventflow['Flow_Description']; ?>" class="form-control"></td>
-                            <td><input type="time" name="eventflow_time[]" value="<?php echo $eventflow['Flow_Time']; ?>"
-                                    class="form-control"></td>
-                            <td>
-                                <input type="hidden" name="eventflow_delete[]" value="0">
-                                <button type="button" class="btn btn-danger btn-sm"
-                                    onclick="deleteRow(this)">Delete</button>
-                            </td>
-                        </tr>
-                    <?php endwhile; ?>
-                </tbody>
-            </table>
-            <button type="button" class="btn btn-success btn-sm" onclick="addRow('eventFlowTable')">Add Row</button>
-
-            <h5>Meeting Minutes</h5>
-            <table class="table table-bordered" id="meetingTable">
+            <table class="table table-bordered">
                 <thead>
                     <tr>
                         <th>Date</th>
                         <th>Start Time</th>
                         <th>End Time</th>
-                        <th>Location</th>
-                        <th>Discussion</th>
-                        <th>Actions</th>
+                        <th>Hours</th>
+                        <th>Activity</th>
+                        <th>Remarks / Meeting Minutes</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php while ($meeting = $meeting_result->fetch_assoc()): ?>
+                    <?php while ($flow = $event_flows->fetch_assoc()): ?>
                         <tr>
-                            <input type="hidden" name="meeting_id[]" value="<?php echo $meeting['Meeting_ID']; ?>">
-                            <td><input type="date" name="meeting_date[]" value="<?php echo $meeting['Meeting_Date']; ?>"
-                                    class="form-control"></td>
-                            <td><input type="time" name="meeting_starttime[]"
-                                    value="<?php echo $meeting['Meeting_StartTime']; ?>" class="form-control"></td>
-                            <td><input type="time" name="meeting_endtime[]"
-                                    value="<?php echo $meeting['Meeting_EndTime']; ?>" class="form-control"></td>
-                            <td><input type="text" name="meeting_location[]"
-                                    value="<?php echo $meeting['Meeting_Location']; ?>" class="form-control"></td>
-                            <td><input type="text" name="meeting_discussion[]"
-                                    value="<?php echo $meeting['Meeting_Discussion']; ?>" class="form-control"></td>
-                            <td>
-                                <input type="hidden" name="meeting_delete[]" value="0">
-                                <button type="button" class="btn btn-danger btn-sm"
-                                    onclick="deleteRow(this)">Delete</button>
-                            </td>
+                            <td><?php echo date("d/m/Y", strtotime($flow['Date'])); ?></td>
+                            <td><?php echo date("h:i A", strtotime($flow['Start_Time'])); ?></td>
+                            <td><?php echo date("h:i A", strtotime($flow['End_Time'])); ?></td>
+                            <td><?php echo htmlspecialchars($flow['Hours']); ?></td>
+                            <td><?php echo nl2br(htmlspecialchars($flow['Activity'])); ?></td>
+                            <td><?php echo nl2br(htmlspecialchars($flow['Remarks'])); ?></td>
                         </tr>
                     <?php endwhile; ?>
                 </tbody>
             </table>
-            <button type="button" class="btn btn-success btn-sm" onclick="addRow('meetingTable')">Add Row</button>
+
 
             <!-- Committee Members -->
             <h5>Committee Members</h5>

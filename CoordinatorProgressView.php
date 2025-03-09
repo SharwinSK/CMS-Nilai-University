@@ -173,7 +173,9 @@ $start_time = microtime(true);
                                     <a href="generate_pdf.php?id=<?php echo $proposal['Ev_ID']; ?>"
                                         class="btn btn-warning btn-sm">Export</a>
                                 </td>
+
                             </tr>
+
                         <?php endforeach; ?>
                     <?php else: ?>
                         <tr>

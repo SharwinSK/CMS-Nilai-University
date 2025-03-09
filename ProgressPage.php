@@ -165,6 +165,7 @@ $start_time = microtime(true);
                         <th>Advisor Feedback</th>
                         <th>Coordinator Feedback</th>
                         <th>Action</th>
+                        <th>Export</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -209,6 +210,10 @@ $start_time = microtime(true);
                                     <span class="text-muted">N/A</span>
                                 <?php endif; ?>
                             </td>
+                            <td>
+                                <a href="generate_pdf.php?id=<?php echo $proposal['Ev_ID']; ?>"
+                                    class="btn btn-warning btn-sm">Export</a>
+                            </td>
                         </tr>
                     <?php endwhile; ?>
                 </tbody>
@@ -227,6 +232,7 @@ $start_time = microtime(true);
                         <th>Event ID</th>
                         <th>Event Name</th>
                         <th>Status</th>
+                        <th>Export</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -238,6 +244,10 @@ $start_time = microtime(true);
                             <td>
                                 <span class="badge bg-warning">Pending</span>
                             </td>
+                            <td>
+                                <a href="reportgeneratepdf.php?id=<?php echo $report['Rep_ID']; ?>"
+                                    class="btn btn-warning btn-sm">Export</a>
+                            </td>
                         </tr>
                     <?php endwhile; ?>
                 </tbody>
@@ -245,6 +255,7 @@ $start_time = microtime(true);
         <?php else: ?>
             <p class="text-muted text-center">No postmortem reports found.</p>
         <?php endif; ?>
+
     </div>
 
     <!-- Feedback Modal -->

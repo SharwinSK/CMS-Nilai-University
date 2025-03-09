@@ -2,6 +2,23 @@
 require_once('TCPDF-main/tcpdf.php');
 include('dbconfig.php');
 
+session_start();
+// Check user role
+$user_type = $_SESSION['user_type'];
+$where_clause = '';
+
+// Apply role-based filtering
+switch ($user_type) {
+    case 'student':
+        $student_id = $_SESSION['Stu_ID'];
+        $where_clause = "AND e.Stu_ID = '$student_id'";
+        break;
+    case 'coordinator':
+        $where_clause = ''; // Full access, no restriction
+        break;
+    default:
+        die("Unauthorized access");
+}
 $report_id = $_GET['id'];
 
 $report_query = "
@@ -24,11 +41,8 @@ if (!$report) {
     die("Invalid Report ID.");
 }
 
-$eventflow_query = "SELECT Flow_Time, Flow_Description FROM eventflow WHERE Ev_ID = '$report_id'";
+$eventflow_query = "SELECT * FROM eventflow WHERE Ev_ID = '$report_id'";
 $eventflow_result = $conn->query($eventflow_query);
-
-$meeting_query = "SELECT * FROM meeting WHERE Ev_ID = '$report_id'";
-$meeting_result = $conn->query($meeting_query);
 
 $committee_query = "SELECT * FROM committee WHERE Ev_ID = '$report_id'";
 $committee_result = $conn->query($committee_query);
@@ -107,26 +121,30 @@ $html .= '</table><br>';
 
 //Event Flow 
 $pdf->AddPage();
-$html = '<h3>Event Flow</h3>';
-$html .= '<table border="1" cellpadding="4"><tr><th>Time</th><th>Description</th></tr>';
-while ($row = $eventflow_result->fetch_assoc()) {
-    $html .= '<tr><td>' . $row['Flow_Time'] . '</td><td>' . $row['Flow_Description'] . '</td></tr>';
-}
-$html .= '</table>';
+$html .= '<h3>Event Flow / Minutes of Meeting</h3>';
 
-// Minutes of Meeting
-$html .= '<h3>Minutes of Meeting</h3>';
 $html .= '<table border="1" cellpadding="4">';
-$html .= '<tr><th>Date</th><th>Start Time</th><th>End Time</th><th>Location</th><th>Discussion</th></tr>';
-while ($meeting = $meeting_result->fetch_assoc()) {
+$html .= '<tr>
+            <th>Date</th>
+            <th>Start Time</th>
+            <th>End Time</th>
+            <th>Activity</th>
+            <th>Remarks / Meeting Minutes</th>
+            <th>Hours</th>
+          </tr>';
+
+
+while ($row = $eventflow_result->fetch_assoc()) {
     $html .= '<tr>
-                <td>' . $meeting['Meeting_Date'] . '</td>
-                <td>' . $meeting['Meeting_StartTime'] . '</td>
-                <td>' . $meeting['Meeting_EndTime'] . '</td>
-                <td>' . $meeting['Meeting_Location'] . '</td>
-                <td>' . $meeting['Meeting_Discussion'] . '</td>
+                <td>' . htmlspecialchars($row['Date']) . '</td>
+                <td>' . htmlspecialchars($row['Start_Time']) . '</td>
+                <td>' . htmlspecialchars($row['End_Time']) . '</td>
+                <td>' . nl2br(htmlspecialchars($row['Activity'])) . '</td>
+                <td>' . nl2br(htmlspecialchars($row['Remarks'])) . '</td>
+                <td>' . htmlspecialchars($row['Hours']) . '</td>
               </tr>';
 }
+
 $html .= '</table><br>';
 $pdf->writeHTML($html);
 $html = '';
@@ -223,4 +241,7 @@ if (!empty($receipts)) {
 }
 
 $pdf->Output('Postmortem_Report_' . $report_id . '.pdf', 'D');
+var_dump($report);
+exit();
+
 ?>

@@ -31,11 +31,7 @@ $committee_stmt->bind_param("i", $event_id);
 $committee_stmt->execute();
 $committee_result = $committee_stmt->get_result();
 
-$mom_query = "SELECT * FROM meeting WHERE Ev_ID = ?";
-$mom_stmt = $conn->prepare($mom_query);
-$mom_stmt->bind_param("i", $event_id);
-$mom_stmt->execute();
-$mom_details = $mom_stmt->get_result();
+
 
 $event_flow_query = "SELECT * FROM eventflow WHERE Ev_ID = ?";
 $event_flow_stmt = $conn->prepare($event_flow_query);
@@ -142,46 +138,28 @@ $budget_details = $budget_stmt->get_result();
                                 readonly><?php echo $event['Ev_Objectives']; ?></textarea>
                         </div>
                     </div>
-                    <!-- Event Flow -->
-                    <div class="section-header">Event Flow</div>
-                    <table class="table table-bordered">
-                        <thead>
-                            <tr>
-                                <th>Time</th>
-                                <th>Description</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php while ($flow = $event_flows->fetch_assoc()): ?>
-                                <tr>
-                                    <td><?php echo date("H:i A", strtotime($flow['Flow_Time'])); ?></td>
-                                    <td><?php echo $flow['Flow_Description']; ?></td>
-                                </tr>
-                            <?php endwhile; ?>
-                        </tbody>
-                    </table>
-
-
-                    <!-- Meeting of Minutes Flow -->
-                    <div class="section-header">Event Minutes of Meeting</div>
+                    <!-- Event Flow / Minutes of Meeting -->
+                    <div class="section-header">Event Flow / Minutes of Meeting</div>
                     <table class="table table-bordered">
                         <thead>
                             <tr>
                                 <th>Date</th>
                                 <th>Start Time</th>
                                 <th>End Time</th>
-                                <th>Location</th>
-                                <th>Discussion</th>
+                                <th>Hours</th>
+                                <th>Activity</th>
+                                <th>Remarks / Meeting Minutes</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php while ($mom = $mom_details->fetch_assoc()): ?>
+                            <?php while ($flow = $event_flows->fetch_assoc()): ?>
                                 <tr>
-                                    <td><?php echo date("d/m/Y", strtotime($mom['Meeting_Date'])); ?></td>
-                                    <td><?php echo date("h:i A", strtotime($mom['Meeting_StartTime'])); ?></td>
-                                    <td><?php echo date("h:i A", strtotime($mom['Meeting_EndTime'])); ?></td>
-                                    <td><?php echo $mom['Meeting_Location']; ?></td>
-                                    <td><?php echo $mom['Meeting_Discussion']; ?></td>
+                                    <td><?php echo date("d/m/Y", strtotime($flow['Date'])); ?></td>
+                                    <td><?php echo date("h:i A", strtotime($flow['Start_Time'])); ?></td>
+                                    <td><?php echo date("h:i A", strtotime($flow['End_Time'])); ?></td>
+                                    <td><?php echo htmlspecialchars($flow['Hours']); ?></td>
+                                    <td><?php echo nl2br(htmlspecialchars($flow['Activity'])); ?></td>
+                                    <td><?php echo nl2br(htmlspecialchars($flow['Remarks'])); ?></td>
                                 </tr>
                             <?php endwhile; ?>
                         </tbody>

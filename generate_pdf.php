@@ -118,7 +118,7 @@ $html .= '</table>';
 $pdf->writeHTML($html);
 
 
-
+//Event Flow 
 $pdf->AddPage();
 $html = '<h3>Event Flow / Minutes of Meeting</h3>';
 $html .= '<table border="1" cellpadding="4">';
@@ -131,7 +131,7 @@ $html .= '<tr>
             <th>Hours</th>
           </tr>';
 
-// Fetch data from the unified `Eventflow` table
+
 while ($row = $eventflow_result->fetch_assoc()) {
     $html .= '<tr>
                 <td>' . htmlspecialchars($row['Date']) . '</td>
@@ -208,5 +208,7 @@ if (!empty($event['Ev_Poster'])) {
 }
 
 
-$pdf->Output('Event_Proposal_' . $event_id . '.pdf', 'D');
+$event_id_safe = str_replace("/", "_", $event_id);
+$pdf->Output("Event_$event_id_safe.pdf", "D");
+
 ?>

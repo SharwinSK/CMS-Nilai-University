@@ -137,6 +137,7 @@ $start_time = microtime(true);
                         <th>Club Name</th>
                         <th>Submission Date</th>
                         <th>Action</th>
+                        <th>Export</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -150,6 +151,10 @@ $start_time = microtime(true);
                                 <td>
                                     <a href="CoordinatorDecision.php?type=proposal&id=<?php echo $proposal['Ev_ID']; ?>"
                                         class="btn btn-primary btn-sm">Review</a>
+                                </td>
+                                <td>
+                                    <a href="generate_pdf.php?id=<?php echo $proposal['Ev_ID']; ?>"
+                                        class="btn btn-warning btn-sm">Export</a>
                                 </td>
                             </tr>
                         <?php endwhile; ?>
@@ -173,6 +178,7 @@ $start_time = microtime(true);
                         <th>Club Name</th>
                         <th>Submission Date</th>
                         <th>Action</th>
+                        <th>Export</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -186,6 +192,12 @@ $start_time = microtime(true);
                                 <td>
                                     <a href="CoordinatorDecision.php?type=postmortem&id=<?php echo $postmortem['Rep_ID']; ?>"
                                         class="btn btn-primary btn-sm">Review</a>
+                                </td>
+                                <td>
+                                    <a href="reportgeneratepdf.php?id=<?php echo $postmortem['Rep_ID']; ?>"
+                                        class="btn btn-primary">Export
+                                        to
+                                        PDF</a>
                                 </td>
                             </tr>
                         <?php endwhile; ?>

@@ -7,12 +7,30 @@ $query = "SELECT MAX(Ev_ID) AS last_id FROM events";
 $result = $conn->query($query);
 $row = $result->fetch_assoc();
 
+// Get the last two digits of the current year
+$year_suffix = date('y'); // e.g., '25' for 2025
+
+// Fetch the last event ID from the database
+$query = "SELECT MAX(Ev_ID) AS last_id FROM events";
+$result = $conn->query($query);
+$row = $result->fetch_assoc();
+
 if ($row['last_id']) {
-    $last_id = (int) $row['last_id'];
-    $event_id = str_pad($last_id + 1, 4, '0', STR_PAD_LEFT);
+    // Extract the numeric part before "/"
+    preg_match('/^(\d+)/', $row['last_id'], $matches);
+    $last_num = isset($matches[1]) ? (int) $matches[1] : 0;
+
+    // Increment the event number
+    $new_num = str_pad($last_num + 1, 2, '0', STR_PAD_LEFT);
 } else {
-    $event_id = '0001';
+    // Start with 01 if no previous events exist
+    $new_num = '01';
 }
+
+// Construct the new event ID in the format "XX/YY"
+$event_id = $new_num . '/' . $year_suffix;
+
+// Now insert `$event_id` into your database when creating a new event
 
 $poster = null;
 

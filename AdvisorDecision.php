@@ -228,6 +228,16 @@ $start_time = microtime(true);
         .modal-footer .btn-secondary:hover {
             background-color: rgb(255, 2, 2);
         }
+
+        .modal-lg {
+            max-width: 80%;
+            /* Increase modal width */
+        }
+
+        .modal-body textarea {
+            height: 200px;
+            /* Adjust textarea height */
+        }
     </style>
 </head>
 
@@ -427,7 +437,7 @@ $start_time = microtime(true);
                     <!-- Feedback Modal -->
                     <div class="modal fade" id="feedbackModal" tabindex="-1" aria-labelledby="feedbackModalLabel"
                         aria-hidden="true">
-                        <div class="modal-dialog">
+                        <div class="modal-dialog modal-lg"> <!-- Added modal-lg for larger modal -->
                             <div class="modal-content">
                                 <div class="modal-header">
                                     <h5 class="modal-title" id="feedbackModalLabel">Provide Feedback</h5>
@@ -436,7 +446,7 @@ $start_time = microtime(true);
                                 </div>
                                 <div class="modal-body">
                                     <textarea class="form-control" id="Ev_AdvisorComments" name="Ev_AdvisorComments"
-                                        rows="4" placeholder="Enter your feedback"></textarea>
+                                        rows="6" placeholder="Enter your feedback"></textarea>
                                 </div>
                                 <div class="modal-footer">
                                     <button type="button" class="btn btn-secondary"
@@ -447,6 +457,7 @@ $start_time = microtime(true);
                             </div>
                         </div>
                     </div>
+
                 </form>
                 <script>
                     function setDecision(decision) {

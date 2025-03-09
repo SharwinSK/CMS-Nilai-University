@@ -268,6 +268,14 @@ $start_time = microtime(true);
     .modal-footer .btn-secondary:hover {
         background-color: rgb(255, 2, 2);
     }
+
+    .modal-lg {
+        max-width: 80%;
+    }
+
+    .modal-body textarea {
+        height: 200px;
+    }
 </style>
 
 <body>
@@ -531,7 +539,7 @@ $start_time = microtime(true);
                     <!-- Feedback Modal -->
                     <div class="modal fade" id="feedbackModal" tabindex="-1" aria-labelledby="feedbackModalLabel"
                         aria-hidden="true">
-                        <div class="modal-dialog">
+                        <div class="modal-dialog modal-lg"> <!-- Added modal-lg for larger modal -->
                             <div class="modal-content">
                                 <div class="modal-header">
                                     <h5 class="modal-title" id="feedbackModalLabel">Provide Feedback</h5>
@@ -539,7 +547,7 @@ $start_time = microtime(true);
                                         aria-label="Close"></button>
                                 </div>
                                 <div class="modal-body">
-                                    <textarea class="form-control" id="Coor_Comments" name="comments" rows="4"
+                                    <textarea class="form-control" id="Coor_Comments" name="comments" rows="6"
                                         placeholder="Enter your feedback"></textarea>
                                 </div>
                                 <div class="modal-footer">
@@ -551,6 +559,7 @@ $start_time = microtime(true);
                             </div>
                         </div>
                     </div>
+
                     <?php if ($type === 'proposal'): ?>
                         <div class="text-center">
                             <button type="submit" name="decision" value="approve" class="btn btn-success">Approve</button>
@@ -565,7 +574,8 @@ $start_time = microtime(true);
                     <?php elseif ($type === 'postmortem'): ?>
                         <div class="text-center">
                             <button type="submit" name="decision" value="approve" class="btn btn-success">Approve</button>
-                            <a href="generate_pdf.php?id=<?php echo $event_id; ?>" class="btn btn-primary">Export to PDF</a>
+                            <a href="reportgeneratepdf.php?id=<?php echo $id; ?>" class="btn btn-primary">Export to
+                                PDF</a>
                             <a href="CoordinatorDashboard.php" class="btn btn-secondary">Return to Dashboard</a>
                         </div>
                     <?php endif; ?>
