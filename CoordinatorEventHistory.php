@@ -17,13 +17,14 @@ $result_name = $stmt_name->get_result();
 $coordinator_name = ($result_name->num_rows > 0) ? $result_name->fetch_assoc()['Coor_Name'] : "Coordinator";
 
 $query = "
-    SELECT e.Ev_ID, e.Ev_Name, c.Club_Name, ep.Rep_RefNum 
+    SELECT e.Ev_ID, e.Ev_Name, c.Club_Name, ep.Rep_RefNum, e.Ev_Type 
     FROM events e
     JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID
     JOIN club c ON e.Club_ID = c.Club_ID
     WHERE ep.Rep_PostStatus = 'Accepted'
     ORDER BY ep.Updated_At DESC
 ";
+
 
 $result = $conn->query($query);
 $start_time = microtime(true);
@@ -129,35 +130,34 @@ $start_time = microtime(true);
         <table class="table table-bordered mt-4">
             <thead>
                 <tr>
+                    <th>Event ID</th>
                     <th>Event Name</th>
                     <th>Club Name</th>
                     <th>Reference Number</th>
+                    <th>Event Type</th> <!-- Ensure this column exists -->
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
-                <?php if ($result->num_rows > 0): ?>
-                    <?php while ($row = $result->fetch_assoc()): ?>
-                        <tr>
-                            <td><?php echo $row['Ev_Name']; ?></td>
-                            <td><?php echo $row['Club_Name']; ?></td>
-                            <td><?php echo $row['Rep_RefNum']; ?></td>
-                            <td>
-                                <a href="ExportPDF.php?event_id=<?php echo urlencode($row['Ev_ID']); ?>"
-                                    class="btn btn-primary btn-sm"><i class="fas fa-file-pdf"></i>
-                                    Export PDF
-                                </a>
-
-                            </td>
-                        </tr>
-                    <?php endwhile; ?>
-                <?php else: ?>
+                <?php while ($row = $result->fetch_assoc()): ?>
                     <tr>
-                        <td colspan="4" class="text-center">No completed events found.</td>
+                        <td><?php echo $row['Ev_ID']; ?></td>
+                        <td><?php echo $row['Ev_Name']; ?></td>
+                        <td><?php echo $row['Club_Name']; ?></td>
+                        <td><?php echo $row['Rep_RefNum']; ?></td>
+                        <td><?php echo $row['Ev_Type']; ?></td> <!-- Ensure it's displayed -->
+                        <td>
+                            <a href="ExportPDF.php?event_id=<?php echo urlencode($row['Ev_ID']); ?>"
+                                class="btn btn-primary btn-sm"><i class="fas fa-file-pdf"></i>
+                                Export PDF
+                            </a>
+                        </td>
                     </tr>
-                <?php endif; ?>
+                <?php endwhile; ?>
             </tbody>
+
         </table>
+
     </div>
 
     <!-- Bootstrap JS -->

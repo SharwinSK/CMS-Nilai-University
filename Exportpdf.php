@@ -32,7 +32,7 @@ switch ($user_type) {
 $event_query = "
     SELECT 
         e.Ev_ID, e.Ev_Name, e.Ev_ProjectNature, e.Ev_Objectives, e.Ev_Intro, e.Ev_Details, e.Ev_Pax, 
-        e.Ev_Venue, e.Ev_Date, e.Ev_StartTime, e.Ev_EndTime, e.Ev_Poster,
+        e.Ev_Venue, e.Ev_Date, e.Ev_StartTime, e.Ev_EndTime, e.Ev_Poster, e.Ev_Type, e.Ev_TypeNum, 
         ep.Rep_ChallengesDifficulties, ep.Rep_Photo, ep.Rep_Receipt, ep.Rep_Conclusion, ep.Rep_RefNum,
         c.Club_Name, s.Stu_Name
     FROM events e
@@ -56,16 +56,12 @@ $budget_query = "
 $budget_result = $conn->query($budget_query);
 
 $flow_query = "
-    SELECT Flow_Time, Flow_Description
+    SELECT Date, Start_Time, End_Time, Activity, Remarks
     FROM eventflow
     WHERE Ev_ID = '$event_id'";
 $flow_result = $conn->query($flow_query);
 
-$meeting_query = "
-    SELECT Meeting_Date, Meeting_StartTime, Meeting_EndTime, Meeting_Location, Meeting_Discussion
-    FROM meeting
-    WHERE Ev_ID = '$event_id'";
-$meeting_result = $conn->query($meeting_query);
+
 
 $individual_query = "
     SELECT c.Com_Name, c.Com_ID, c.Com_Position, ir.IRS_Duties, ir.IRS_Attendance, 
@@ -109,6 +105,8 @@ $html .= '<tr><td><strong>Student Name:</strong></td><td>' . $event['Stu_Name'] 
 $html .= '<tr><td><strong>Club Name:</strong></td><td>' . $event['Club_Name'] . '</td></tr>';
 $html .= '<tr><td><strong>Event Name:</strong></td><td>' . $event['Ev_Name'] . '</td></tr>';
 $html .= '<tr><td><strong>Event Nature:</strong></td><td>' . $event['Ev_ProjectNature'] . '</td></tr>';
+$html .= '<tr><td><strong>Event Type:</strong></td><td>' . $event['Ev_Type'] . '</td></tr>';
+$html .= '<tr><td><strong>Event Type Number:</strong></td><td>' . $event['Ev_TypeNum'] . '</td></tr>';
 $html .= '<tr><td><strong>Event Introduction:</strong></td><td>' . $event['Ev_Intro'] . '</td></tr>';
 $html .= '<tr><td><strong>Event Details:</strong></td><td>' . $event['Ev_Details'] . '</td></tr>';
 $html .= '<tr><td><strong>Event Objectives:</strong></td><td>' . $event['Ev_Objectives'] . '</td></tr>';
@@ -148,46 +146,27 @@ $html = '';
 $pdf->Ln(10);
 $pdf->SetFont('helvetica', 'B', 14);
 $pdf->Cell(0, 10, 'Event Flow', 0, 1, 'L');
+
 $html = '<table border="1" cellpadding="5">
     <thead>
         <tr style="background-color:#f2f2f2;">
-            <th>Time</th><th>Description</th>
+            <th>Date</th><th>Start Time</th><th>End Time</th><th>Activity</th><th>Remarks</th>
         </tr>
     </thead>
     <tbody>';
 while ($flow = $flow_result->fetch_assoc()) {
     $html .= '<tr>
-        <td>' . $flow['Flow_Time'] . '</td>
-        <td>' . $flow['Flow_Description'] . '</td>
+        <td>' . $flow['Date'] . '</td>
+        <td>' . $flow['Start_Time'] . '</td>
+        <td>' . $flow['End_Time'] . '</td>
+        <td>' . $flow['Activity'] . '</td>
+        <td>' . $flow['Remarks'] . '</td>
     </tr>';
 }
 $html .= '</tbody></table>';
 $pdf->writeHTML($html);
 
-$pdf->Ln(10);
-$pdf->SetFont('helvetica', 'B', 14);
-$pdf->Cell(0, 10, 'Meeting Details', 0, 1, 'L');
-$html = '<table border="1" cellpadding="5">
-    <thead>
-        <tr style="background-color:#f2f2f2;">
-            <th>Date</th><th>Start Time</th><th>End Time
-            </th><th>Location</th><th>Discussion</th>
-        </tr>
-    </thead>
-    <tbody>';
-while ($meeting = $meeting_result->fetch_assoc()) {
-    $html .= '<tr>
-        <td>' . $meeting['Meeting_Date'] . '</td>
-        <td>' . $meeting['Meeting_StartTime'] . '</td>
-        <td>' . $meeting['Meeting_EndTime'] . '</td>
-        <td>' . $meeting['Meeting_Location'] . '</td>
-        <td>' . $meeting['Meeting_Discussion'] . '</td>
-    </tr>';
-}
 
-
-$html .= '</tbody></table>';
-$pdf->writeHTML($html);
 $pdf->Ln(10);
 $pdf->SetFont('helvetica', 'B', 14);
 $pdf->Cell(0, 10, 'Individual Reports', 0, 1, 'L');
@@ -269,5 +248,7 @@ if (!empty($receipts)) {
     }
 }
 
-$pdf->Output('event_report_' . $event['Ev_ID'] . '.pdf', 'D');
+$event_id_safe = str_replace("/", "_", $event_id);
+$pdf->Output("Event_$event_id_safe.pdf", "D");
+
 ?>
