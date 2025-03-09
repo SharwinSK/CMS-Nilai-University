@@ -101,23 +101,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $comments = $_POST['comments'] ?? '';
 
     if ($type === 'proposal') {
-
         if ($decision === 'approve') {
             $status = 'Approved by Coordinator';
-            $query = "UPDATE events SET Ev_Status = ?, Coor_Comments = NULL WHERE Ev_ID = ?";
-            $stmt = $conn->prepare($query);
-            $stmt->bind_param("si", $status, $id);
-        } elseif ($decision === 'reject') {
-            if (empty(trim($comments))) {
-                die("Feedback is required when rejecting a proposal.");
+            $event_type = $_POST['ev_type'] ?? '';
+
+            if (empty($event_type)) {
+                die("Please select an event type.");
             }
-            $status = 'Rejected by Coordinator';
-            $query = "UPDATE events SET Ev_Status = ?, Coor_Comments = ? WHERE Ev_ID = ?";
+
+            // Get the latest Type Number for this event type
+            $query = "SELECT MAX(Ev_TypeNum) AS last_num FROM events WHERE Ev_Type = ?";
             $stmt = $conn->prepare($query);
-            $stmt->bind_param("ssi", $status, $comments, $id);
+            $stmt->bind_param("s", $event_type);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $row = $result->fetch_assoc();
+
+            // If no previous event of this type exists, start from 1
+            $next_number = ($row['last_num'] ?? 0) + 1;
+
+            // Update event with type and type number
+            $query = "UPDATE events SET Ev_Status = ?, Coor_Comments = NULL, Ev_Type = ?, Ev_TypeNum = ? WHERE Ev_ID = ?";
+            $stmt = $conn->prepare($query);
+            $stmt->bind_param("ssii", $status, $event_type, $next_number, $id);
         }
+    } elseif ($decision === 'reject') {
+        if (empty(trim($comments))) {
+            die("Feedback is required when rejecting a proposal.");
+        }
+        $status = 'Rejected by Coordinator';
+        $query = "UPDATE events SET Ev_Status = ?, Coor_Comments = ? WHERE Ev_ID = ?";
+        $stmt = $conn->prepare($query);
+        $stmt->bind_param("ssi", $status, $comments, $id);
     } elseif ($type === 'postmortem') {
-        // Handle postmortem logic
         if ($decision === 'approve') {
             $status = 'Accepted';
             $reference_number = "REF-" . str_pad($id, 4, "0", STR_PAD_LEFT);
@@ -125,6 +141,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt = $conn->prepare($query);
             $stmt->bind_param("ssi", $status, $reference_number, $id);
         }
+    } else {
+        die("Invalid type.");
     }
 
     // Execute the query and check for errors
@@ -536,6 +554,8 @@ $start_time = microtime(true);
 
 
 
+
+
                 <form method="POST" action="">
                     <input type="hidden" name="decision" id="decision" value="approve">
                     <!-- Feedback Modal -->
@@ -562,26 +582,39 @@ $start_time = microtime(true);
                         </div>
                     </div>
 
-                    <?php if ($type === 'proposal'): ?>
-                        <div class="text-center">
-                            <button type="submit" name="decision" value="approve" class="btn btn-success">Approve</button>
-                            <button type="button" data-bs-toggle="modal" data-bs-target="#feedbackModal"
-                                class="btn btn-danger">Reject</button>
-                            <a href="generate_pdf.php?id=<?php echo $id; ?>" class="btn btn-primary">Export to PDF</a>
+                    <form method="POST" action="">
+                        <?php if ($type === 'proposal'): ?>
+                            <div class="mb-3">
+                                <label for="ev_type" class="form-label">Select Event Type</label>
+                                <select class="form-control" id="ev_type" name="ev_type" required>
+                                    <option value="">-- Select Type --</option>
+                                    <option value="USR">USR</option>
+                                    <option value="SDG">SDG</option>
+                                    <option value="PDG">PDG</option>
+                                </select>
+                            </div>
 
-                        </div>
-                        <div class="text-center mt-4">
-                            <a href="CoordinatorDashboard.php" class="btn btn-secondary">Return to Dashboard</a>
-                        </div>
-                    <?php elseif ($type === 'postmortem'): ?>
-                        <div class="text-center">
-                            <button type="submit" name="decision" value="approve" class="btn btn-success">Approve</button>
-                            <a href="reportgeneratepdf.php?id=<?php echo $id; ?>" class="btn btn-primary">Export to
-                                PDF</a>
-                            <a href="CoordinatorDashboard.php" class="btn btn-secondary">Return to Dashboard</a>
-                        </div>
-                    <?php endif; ?>
-                </form>
+                            <div class="text-center">
+                                <button type="submit" name="decision" value="approve"
+                                    class="btn btn-success">Approve</button>
+                                <button type="button" data-bs-toggle="modal" data-bs-target="#feedbackModal"
+                                    class="btn btn-danger">Reject</button>
+                                <a href="generate_pdf.php?id=<?php echo $id; ?>" class="btn btn-primary">Export to PDF</a>
+                            </div>
+                            <div class="text-center mt-4">
+                                <a href="CoordinatorDashboard.php" class="btn btn-secondary">Return to Dashboard</a>
+                            </div>
+                        <?php elseif ($type === 'postmortem'): ?>
+                            <div class="text-center">
+                                <button type="submit" name="decision" value="approve"
+                                    class="btn btn-success">Approve</button>
+                                <a href="reportgeneratepdf.php?id=<?php echo $id; ?>" class="btn btn-primary">Export to
+                                    PDF</a>
+                                <a href="CoordinatorDashboard.php" class="btn btn-secondary">Return to Dashboard</a>
+                            </div>
+                        <?php endif; ?>
+                    </form>
+
             </div>
         </div>
     </div>
