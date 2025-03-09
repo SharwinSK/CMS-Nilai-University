@@ -77,18 +77,20 @@ if ($type === 'proposal') {
         die("Postmortem report not found.");
     }
     $individual_query = "
-    SELECT 
-        ir.Rep_ID, ir.Com_ID, ir.IRS_Duties, ir.IRS_Attendance, 
-        ir.IRS_Experience, ir.IRS_Challenges, ir.IRS_Benefits, 
-        c.Com_Name, c.Com_Position 
+    SELECT ir.Rep_ID, ir.Com_ID, ir.IRS_Duties, ir.IRS_Attendance, 
+           ir.IRS_Experience, ir.IRS_Challenges, ir.IRS_Benefits, 
+           c.Com_Name, c.Com_Position
     FROM individualreport ir
     JOIN committee c ON ir.Com_ID = c.Com_ID
-    WHERE ir.Rep_ID = ?
-    ";
+    WHERE ir.Rep_ID = ? 
+    AND c.Ev_ID = (SELECT Ev_ID FROM eventpostmortem WHERE Rep_ID = ?)
+";
+
     $individual_stmt = $conn->prepare($individual_query);
-    $individual_stmt->bind_param("i", $id);
+    $individual_stmt->bind_param("ii", $id, $id);
     $individual_stmt->execute();
     $individual_reports = $individual_stmt->get_result();
+
 
 
 }
