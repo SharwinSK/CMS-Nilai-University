@@ -140,6 +140,7 @@ $start_time = microtime(true);
                         <th>Student Name</th>
                         <th>Club Name</th>
                         <th>Actions</th>
+                        <th>Export</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -167,6 +168,10 @@ $start_time = microtime(true);
                                         data-pic-name="<?php echo $proposal['PIC_Name']; ?>">
                                         View
                                     </button>
+                                </td>
+                                <td>
+                                    <a href="generate_pdf.php?id=<?php echo $proposal['Ev_ID']; ?>"
+                                        class="btn btn-warning btn-sm">Export</a>
                                 </td>
                             </tr>
                         <?php endforeach; ?>

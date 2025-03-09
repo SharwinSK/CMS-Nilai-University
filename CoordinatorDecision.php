@@ -556,6 +556,8 @@ $start_time = microtime(true);
                             <button type="submit" name="decision" value="approve" class="btn btn-success">Approve</button>
                             <button type="button" data-bs-toggle="modal" data-bs-target="#feedbackModal"
                                 class="btn btn-danger">Reject</button>
+                            <a href="generate_pdf.php?id=<?php echo $id; ?>" class="btn btn-primary">Export to PDF</a>
+
                         </div>
                         <div class="text-center mt-4">
                             <a href="CoordinatorDashboard.php" class="btn btn-secondary">Return to Dashboard</a>
@@ -563,6 +565,7 @@ $start_time = microtime(true);
                     <?php elseif ($type === 'postmortem'): ?>
                         <div class="text-center">
                             <button type="submit" name="decision" value="approve" class="btn btn-success">Approve</button>
+                            <a href="generate_pdf.php?id=<?php echo $event_id; ?>" class="btn btn-primary">Export to PDF</a>
                             <a href="CoordinatorDashboard.php" class="btn btn-secondary">Return to Dashboard</a>
                         </div>
                     <?php endif; ?>

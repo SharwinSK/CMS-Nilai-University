@@ -418,6 +418,7 @@ $start_time = microtime(true);
                         <button type="button" onclick="setDecision('approve')" class="btn btn-success">Approve</button>
                         <button type="button" data-bs-toggle="modal" data-bs-target="#feedbackModal"
                             class="btn btn-warning">Send Back</button>
+                        <a href="generate_pdf.php?id=<?php echo $event_id; ?>" class="btn btn-primary">Export to PDF</a>
                         <div class="text-center mt-4">
                             <a href="AdvisorDashboard.php" class="btn btn-secondary">Return to Dashboard</a>
                         </div>

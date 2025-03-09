@@ -1,8 +1,30 @@
 <?php
 require_once('TCPDF-main/tcpdf.php');
 include('dbconfig.php');
+session_start();
+// Check user role
+$user_type = $_SESSION['user_type'];
+$where_clause = '';
 
+// Apply role-based filtering
+switch ($user_type) {
+    case 'student':
+        $student_id = $_SESSION['Stu_ID'];
+        $where_clause = "AND e.Stu_ID = '$student_id'";
+        break;
+    case 'advisor':
+        $club_id = $_SESSION['Club_ID'];
+        $where_clause = "AND e.Club_ID = '$club_id'";
+        break;
+    case 'coordinator':
+
+        $where_clause = ''; // Full access, no restriction
+        break;
+    default:
+        die("Unauthorized access");
+}
 $event_id = $_GET['id'];
+
 
 $event_query = "
     SELECT 
@@ -13,10 +35,14 @@ $event_query = "
         events e 
     LEFT JOIN student s ON e.Stu_ID = s.Stu_ID 
     LEFT JOIN club c ON e.Club_ID = c.Club_ID 
-   
-    WHERE e.Ev_ID = '$event_id'";
+    WHERE e.Ev_ID = '$event_id' $where_clause";
 
 $event_result = $conn->query($event_query);
+
+if ($event_result->num_rows == 0) {
+    die("You do not have permission to access this event.");
+}
+
 $event = $event_result->fetch_assoc();
 
 $pic_query = "SELECT * FROM personincharge WHERE Ev_ID = '$event_id'";

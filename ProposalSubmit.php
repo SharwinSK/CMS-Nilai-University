@@ -2,6 +2,7 @@
 include('dbconfig.php');
 session_start();
 
+$stu_id = $_SESSION['Stu_ID'];
 $query = "SELECT MAX(Ev_ID) AS last_id FROM events";
 $result = $conn->query($query);
 $row = $result->fetch_assoc();
