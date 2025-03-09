@@ -487,6 +487,14 @@ $start_time = microtime(true);
                 alert(errorMessages.join('\n'));
             }
         });
+        document.addEventListener("DOMContentLoaded", function () {
+            let dateInput = document.getElementById("dateInput");
+            let today = new Date();
+            today.setDate(today.getDate() + 10); // Add 10 days to today's date
+
+            let minDate = today.toISOString().split("T")[0]; // Format YYYY-MM-DD
+            dateInput.setAttribute("min", minDate); // Set the min selectable date
+        });
 
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
