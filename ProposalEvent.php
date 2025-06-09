@@ -235,6 +235,9 @@ $start_time = microtime(true);
                     <div class="mb-3">
                         <label for="inputPoster" class="form-label">Upload Poster</label>
                         <input type="file" class="form-control" id="inputPoster" name="poster">
+                        <small class="text-danger" style="display: block; margin-bottom: 10px;">
+                            Maximum file size : 20 MB.
+                        </small>
                     </div>
                     <!-- Person in Charge Section -->
                     <h5 class="card-title mb-3">Person in Charge</h5>

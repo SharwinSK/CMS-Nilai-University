@@ -32,6 +32,32 @@ if (!empty($_FILES['event_photos']['name'][0])) {
         }
     }
 }
+
+$statement_path = null;
+if (!empty($_FILES["statement_pdf"]["name"])) {
+    $target_dir = "uploads/statements/";
+    if (!is_dir($target_dir)) {
+        mkdir($target_dir, 0777, true);
+    }
+
+    $target_file = $target_dir . basename($_FILES["statement_pdf"]["name"]);
+    $file_type = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
+
+    if ($file_type !== "pdf") {
+        die("Only PDF files are allowed for the statement.");
+    }
+
+    if ($_FILES["statement_pdf"]["size"] > 5 * 1024 * 1024) {
+        die("The statement file must be under 5MB.");
+    }
+
+    if (move_uploaded_file($_FILES["statement_pdf"]["tmp_name"], $target_file)) {
+        $statement_path = $target_file;
+    } else {
+        die("Failed to upload the statement.");
+    }
+}
+
 $photos = json_encode($photo_paths);
 
 $receipt_paths = [];

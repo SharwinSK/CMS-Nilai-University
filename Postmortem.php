@@ -187,74 +187,92 @@ $budget_details = $budget_stmt->get_result();
                             <?php endwhile; ?>
                         </tbody>
                     </table>
+                    <!--uploads Statement-->
+                    <div class="mb-3">
+                        <label for="statementPdf" class="form-label">Upload Statement</label>
+                        <input type="file" class="form-control" id="statementPdf" name="statement_pdf" accept=".pdf"
+                            required>
+                        <small class="text-danger" style="display: block; margin-bottom: 10px;">
+                            * Students shall upload PDF files only. Maximum file size: 5mb.
+                        </small>
+                    </div>
 
                     <!-- Uploads -->
                     <div class="mb-3">
-                        <label for="inputPhoto" class="form-label">Upload Event Photos</label>
-                        <input type="file" class="form-control" id="inputPhoto" name="event_photos[]" multiple>
-                    </div>
-                    <div class="mb-3">
-                        <label for="inputReceipt" class="form-label">Upload Expense Receipts</label>
-                        <input type="file" class="form-control" id="inputReceipt" name="expense_receipts[]" multiple>
-                    </div>
+                        <label for="repPhoto" class="form-label">Upload Event Photo</label>
+                        <input type="file" class="form-control" id="inputPhoto" name="event_photos[]" accept="image/*"
+                            multiple>
+                        <small class="text-danger" style="display: block; margin-bottom: 10px;">
+                            Maximum 10 Photos.
+                        </small>
 
-                    <!-- Challenges and Conclusion -->
-                    <div class="mb-3">
-                        <label for="inputChallenges" class="form-label">Challenges and Difficulties</label>
-                        <textarea class="form-control" id="inputChallenges" name="challenges" rows="4"></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label for="inputConclusion" class="form-label mt-3">Conclusion</label>
-                        <textarea class="form-control" id="inputConclusion" name="conclusion" rows="4"></textarea>
-                    </div>
-                    <!-- Individual Reports -->
-                    <h5>Individual Reports</h5>
-                    <div class="table-responsive">
-                        <table class="table table-bordered">
-                            <thead>
-                                <tr>
-                                    <th>Committee Name</th>
-                                    <th>Committee ID</th>
-                                    <th>Position</th>
-                                    <th>Duties</th>
-                                    <th>Attendance</th>
-                                    <th>Experience</th>
-                                    <th>Challenges</th>
-                                    <th>Benefits</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php while ($committee = $committee_result->fetch_assoc()): ?>
+                        <div class="mb-3">
+                            <label for="repReceipt" class="form-label">Upload Receipts</label>
+                            <input type="file" class="form-control" id="repReceipt" name="rep_receipt" accept=".pdf.">
+                            <small class="text-danger" style="display: block; margin-bottom: 10px;">
+                                * Students shall upload PDF files only. Maximum file size: 5mb.
+                            </small>
+                        </div>
+
+                        <!-- Challenges and Conclusion -->
+                        <div class="mb-3">
+                            <label for="inputChallenges" class="form-label">Challenges and Difficulties</label>
+                            <textarea class="form-control" id="inputChallenges" name="challenges" rows="4"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="inputConclusion" class="form-label mt-3">Conclusion</label>
+                            <textarea class="form-control" id="inputConclusion" name="conclusion" rows="4"></textarea>
+                        </div>
+                        <!-- Individual Reports -->
+                        <h5>Individual Reports</h5>
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead>
                                     <tr>
-                                        <td><?php echo htmlspecialchars($committee['Com_Name']); ?></td>
-                                        <td>
-                                            <input type="text" class="form-control" name="committee_id[]"
-                                                value="<?php echo $committee['Com_ID']; ?>" readonly>
-                                        </td>
-                                        <td><?php echo htmlspecialchars($committee['Com_Position']); ?></td>
-                                        <td><textarea class="form-control"
-                                                name="indiv_duties[<?php echo $committee['Com_ID']; ?>]"></textarea></td>
-                                        <td><textarea class="form-control"
-                                                name="indiv_attendance[<?php echo $committee['Com_ID']; ?>]"></textarea>
-                                        </td>
-                                        <td><textarea class="form-control"
-                                                name="indiv_experience[<?php echo $committee['Com_ID']; ?>]"></textarea>
-                                        </td>
-                                        <td><textarea class="form-control"
-                                                name="indiv_challenges[<?php echo $committee['Com_ID']; ?>]"></textarea>
-                                        </td>
-                                        <td><textarea class="form-control"
-                                                name="indiv_benefits[<?php echo $committee['Com_ID']; ?>]"></textarea></td>
+                                        <th>Committee Name</th>
+                                        <th>Committee ID</th>
+                                        <th>Position</th>
+                                        <th>Duties</th>
+                                        <th>Attendance</th>
+                                        <th>Experience</th>
+                                        <th>Challenges</th>
+                                        <th>Benefits</th>
                                     </tr>
-                                <?php endwhile; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                    <!-- Submit Button -->
-                    <div class="text-center">
-                        <a href="StudentDashboard.php" class="btn btn-secondary mt-4">Back</a>
-                        <button type="submit" class="btn btn-primary mt-4">Submit Report</button>
-                    </div>
+                                </thead>
+                                <tbody>
+                                    <?php while ($committee = $committee_result->fetch_assoc()): ?>
+                                        <tr>
+                                            <td><?php echo htmlspecialchars($committee['Com_Name']); ?></td>
+                                            <td>
+                                                <input type="text" class="form-control" name="committee_id[]"
+                                                    value="<?php echo $committee['Com_ID']; ?>" readonly>
+                                            </td>
+                                            <td><?php echo htmlspecialchars($committee['Com_Position']); ?></td>
+                                            <td><textarea class="form-control"
+                                                    name="indiv_duties[<?php echo $committee['Com_ID']; ?>]"></textarea>
+                                            </td>
+                                            <td><textarea class="form-control"
+                                                    name="indiv_attendance[<?php echo $committee['Com_ID']; ?>]"></textarea>
+                                            </td>
+                                            <td><textarea class="form-control"
+                                                    name="indiv_experience[<?php echo $committee['Com_ID']; ?>]"></textarea>
+                                            </td>
+                                            <td><textarea class="form-control"
+                                                    name="indiv_challenges[<?php echo $committee['Com_ID']; ?>]"></textarea>
+                                            </td>
+                                            <td><textarea class="form-control"
+                                                    name="indiv_benefits[<?php echo $committee['Com_ID']; ?>]"></textarea>
+                                            </td>
+                                        </tr>
+                                    <?php endwhile; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                        <!-- Submit Button -->
+                        <div class="text-center">
+                            <a href="StudentDashboard.php" class="btn btn-secondary mt-4">Back</a>
+                            <button type="submit" class="btn btn-primary mt-4">Submit Report</button>
+                        </div>
                 </form>
             </div>
         </div>
