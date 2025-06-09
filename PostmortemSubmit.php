@@ -19,19 +19,70 @@ if (!isset($_POST['event_id'])) {
 
 $event_id = $_POST['event_id'];
 
+
 $photo_paths = [];
+$allowed_types = ['image/jpeg', 'image/png', 'image/gif'];
+
 if (!empty($_FILES['event_photos']['name'][0])) {
+    if (count($_FILES['event_photos']['name']) > 10) {
+        die("You can upload a maximum of 10 photos.");
+    }
+
     if (!is_dir('uploads/photos')) {
         mkdir('uploads/photos', 0777, true);
     }
+
     foreach ($_FILES['event_photos']['tmp_name'] as $key => $tmp_name) {
-        $file_name = basename($_FILES['event_photos']['name'][$key]);
-        $target_file = "uploads/photos/" . $file_name;
-        if (move_uploaded_file($tmp_name, $target_file)) {
-            $photo_paths[] = $target_file;
+        $mime_type = mime_content_type($tmp_name);
+        $file_size = $_FILES['event_photos']['size'][$key]; // in bytes
+
+        if (!in_array($mime_type, $allowed_types)) {
+            die("Only JPG, PNG, and GIF images are allowed.");
         }
+
+        $original_name = basename($_FILES['event_photos']['name'][$key]);
+        $new_file_name = time() . "_" . $original_name;
+        $target_file = "uploads/photos/" . $new_file_name;
+
+        // Resize if image is larger than 3MB (3 * 1024 * 1024 bytes)
+        if ($file_size > 3 * 1024 * 1024) {
+            // Load the image
+            switch ($mime_type) {
+                case 'image/jpeg':
+                    $image = imagecreatefromjpeg($tmp_name);
+                    break;
+                case 'image/png':
+                    $image = imagecreatefrompng($tmp_name);
+                    break;
+                case 'image/gif':
+                    $image = imagecreatefromgif($tmp_name);
+                    break;
+                default:
+                    die("Unsupported image type.");
+            }
+
+            // Re-save image with compression
+            // For JPEG: quality 75 (0-100), lower = smaller size
+            if ($mime_type == 'image/jpeg') {
+                imagejpeg($image, $target_file, 75);
+            } elseif ($mime_type == 'image/png') {
+                imagepng($image, $target_file, 6); // 0-9 (compression level)
+            } elseif ($mime_type == 'image/gif') {
+                imagegif($image, $target_file);
+            }
+
+            imagedestroy($image); // free memory
+        } else {
+            // Just move the original if under 3MB
+            if (!move_uploaded_file($tmp_name, $target_file)) {
+                die("Failed to upload: $original_name");
+            }
+        }
+
+        $photo_paths[] = $target_file;
     }
 }
+
 
 $statement_path = null;
 if (!empty($_FILES["statement_pdf"]["name"])) {
