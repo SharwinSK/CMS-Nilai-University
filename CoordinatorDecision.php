@@ -14,10 +14,11 @@ $type = $_GET['type'];
 $id = $_GET['id'];
 
 if ($type === 'proposal') {
-    $query = "SELECT e.*, s.Stu_Name, c.Club_Name
+    $query = "SELECT e.*, s.Stu_Name, c.Club_Name, bs.Total_Income, bs.Total_Expense, bs.Surplus_Deficit, bs.Prepared_By 
               FROM events e
               LEFT JOIN student s ON e.Stu_ID = s.Stu_ID
               LEFT JOIN club c ON e.Club_ID = c.Club_ID
+              LEFT JOIN budgetsummary bs ON e.Ev_ID = bs.Ev_ID
               WHERE e.Ev_ID = ?";
     $stmt = $conn->prepare($query);
     $stmt->bind_param("i", $id);
@@ -46,7 +47,6 @@ if ($type === 'proposal') {
     $budget_stmt->execute();
     $budget_details = $budget_stmt->get_result();
 
-    // Query to fetch all data from the unified eventflow table
     $event_flow_query = "SELECT * FROM eventflow WHERE Ev_ID = ?";
     $event_flow_stmt = $conn->prepare($event_flow_query);
     $event_flow_stmt->bind_param("i", $id);
@@ -109,7 +109,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 die("Please select an event type.");
             }
 
-            // Get the latest Type Number for this event type
             $query = "SELECT MAX(Ev_TypeNum) AS last_num FROM events WHERE Ev_Type = ?";
             $stmt = $conn->prepare($query);
             $stmt->bind_param("s", $event_type);
@@ -117,10 +116,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $result = $stmt->get_result();
             $row = $result->fetch_assoc();
 
-            // If no previous event of this type exists, start from 1
             $next_number = ($row['last_num'] ?? 0) + 1;
 
-            // Update event with type and type number
             $query = "UPDATE events SET Ev_Status = ?, Coor_Comments = NULL, Ev_Type = ?, Ev_TypeNum = ? WHERE Ev_ID = ?";
             $stmt = $conn->prepare($query);
             $stmt->bind_param("ssii", $status, $event_type, $next_number, $id);
@@ -145,12 +142,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         die("Invalid type.");
     }
 
-    // Execute the query and check for errors
     if (isset($stmt) && !$stmt->execute()) {
         die("Database Error: " . $stmt->error);
     }
 
-    // Redirect to the dashboard after processing
     header("Location: CoordinatorDashboard.php");
     exit();
 }
@@ -438,9 +433,28 @@ $start_time = microtime(true);
                                 </tr>
                             <?php endwhile; ?>
                         </tbody>
+                        <tbody>
+                            <tr>
+                                <td colspan="3" class="text-end"><strong>Total Income</strong></td>
+                                <td><?php echo $details['Total_Income']; ?></td>
+                            </tr>
+                            <tr>
+                                <td colspan="3" class="text-end"><strong>Total Expense</strong></td>
+                                <td><?php echo $details['Total_Expense']; ?></td>
+                            </tr>
+                            <tr>
+                                <td colspan="3" class="text-end"><strong>Surplus/Deficit</strong></td>
+                                <td><?php echo $details['Surplus_Deficit']; ?></td>
+                            </tr>
+                            <tr>
+                                <td colspan="3" class="text-end"><strong>Prepared By</strong></td>
+                                <td><?php echo $details['Prepared_By']; ?></td>
+                        </tbody>
                     </table>
 
                     <!-- Commitee Member -->
+
+
                     <div class="section-header">Committee Members</div>
                     <table class="table table-bordered">
                         <thead>
@@ -451,6 +465,7 @@ $start_time = microtime(true);
                                 <th>Phone</th>
                                 <th>Job Scope</th>
                                 <th>Cocu Claimers</th>
+                                <th>COCU Statement</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -462,6 +477,15 @@ $start_time = microtime(true);
                                     <td><?php echo $member['Com_PhnNum']; ?></td>
                                     <td><?php echo $member['Com_JobScope']; ?></td>
                                     <td><?php echo ($member['Com_COCUClaimers'] == '1') ? 'Yes' : 'No'; ?></td>
+                                    <td>
+                                        <?php if (!empty($member['student_statement'])): ?>
+                                            <a href="viewpdf.php?file=<?php echo urlencode($member['student_statement']); ?>"
+                                                target="_blank" class="btn btn-sm btn-primary">View</a>
+                                        <?php else: ?>
+                                            <span class="text-muted">No file</span>
+                                        <?php endif; ?>
+
+                                    </td>
                                 </tr>
                             <?php endwhile; ?>
                         </tbody>
@@ -561,7 +585,7 @@ $start_time = microtime(true);
                     <!-- Feedback Modal -->
                     <div class="modal fade" id="feedbackModal" tabindex="-1" aria-labelledby="feedbackModalLabel"
                         aria-hidden="true">
-                        <div class="modal-dialog modal-lg"> <!-- Added modal-lg for larger modal -->
+                        <div class="modal-dialog modal-lg">
                             <div class="modal-content">
                                 <div class="modal-header">
                                     <h5 class="modal-title" id="feedbackModalLabel">Provide Feedback</h5>
@@ -590,7 +614,7 @@ $start_time = microtime(true);
                                     <option value="">-- Select Type --</option>
                                     <option value="USR">USR</option>
                                     <option value="SDG">SDG</option>
-                                    <option value="PDG">PDG</option>
+                                    <option value="CSR">CSR</option>
                                 </select>
                             </div>
 
@@ -629,20 +653,17 @@ $start_time = microtime(true);
                 return;
             }
 
-            // Set decision to "reject" and include the feedback in the form
             const decisionField = document.getElementById('decision');
             decisionField.value = 'reject';
 
-            // Submit the form
             document.forms[0].submit();
         }
 
     </script>
     <?php
-    // End time after processing the page
     $end_time = microtime(true);
-    $page_load_time = round(($end_time - $start_time) * 1000, 2); // Convert to milliseconds
-    
+    $page_load_time = round(($end_time - $start_time) * 1000, 2);
+
     echo "<p style='color: green; font-weight: bold; text-align: center;'>
       Page Load Time: " . $page_load_time . " ms
       </p>";

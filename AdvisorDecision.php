@@ -15,12 +15,13 @@ if (!isset($_GET['event_id'])) {
 }
 $event_id = $_GET['event_id'];
 
-$query = "SELECT e.*, s.Stu_Name, c.Club_Name
+$query = "SELECT e.*, s.Stu_Name, c.Club_Name, bs.Total_Income, bs.Total_Expense, bs.Surplus_Deficit, bs.Prepared_By
           FROM events e
           LEFT JOIN student s ON e.Stu_ID = s.Stu_ID
           LEFT JOIN club c ON e.Club_ID = c.Club_ID
-         
+          LEFT JOIN budgetsummary bs ON e.Ev_ID = bs.Ev_ID
           WHERE e.Ev_ID = ?";
+
 
 $stmt = $conn->prepare($query);
 $stmt->bind_param("i", $event_id);
@@ -383,6 +384,7 @@ $start_time = microtime(true);
                             <th>Phone</th>
                             <th>Job Scope</th>
                             <th>COCU Claimers</th>
+                            <th>COCU Statement</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -394,6 +396,15 @@ $start_time = microtime(true);
                                 <td><?php echo $member['Com_PhnNum']; ?></td>
                                 <td><?php echo $member['Com_JobScope']; ?></td>
                                 <td><?php echo ($member['Com_COCUClaimers'] == '1') ? 'Yes' : 'No'; ?></td>
+                                <td>
+                                    <?php if (!empty($member['student_statement'])): ?>
+                                        <a href="viewpdf.php?file=<?php echo urlencode($member['student_statement']); ?>"
+                                            target="_blank" class="btn btn-sm btn-primary">View</a>
+                                    <?php else: ?>
+                                        <span class="text-muted">No file</span>
+                                    <?php endif; ?>
+
+                                </td>
                             </tr>
                         <?php endwhile; ?>
                     </tbody>
@@ -420,6 +431,23 @@ $start_time = microtime(true);
                             </tr>
                         <?php endwhile; ?>
                     </tbody>
+                    <tbody>
+                        <tr>
+                            <td colspan="3" class="text-end"><strong>Total Income</strong></td>
+                            <td><?php echo $proposal['Total_Income']; ?></td>
+                        </tr>
+                        <tr>
+                            <td colspan="3" class="text-end"><strong>Total Expense</strong></td>
+                            <td><?php echo $proposal['Total_Expense']; ?></td>
+                        </tr>
+                        <tr>
+                            <td colspan="3" class="text-end"><strong>Surplus/Deficit</strong></td>
+                            <td><?php echo $proposal['Surplus_Deficit']; ?></td>
+                        </tr>
+                        <tr>
+                            <td colspan="3" class="text-end"><strong>Prepared By</strong></td>
+                            <td><?php echo $proposal['Prepared_By']; ?></td>
+                    </tbody>
                 </table>
 
                 <form method="POST">
@@ -428,7 +456,8 @@ $start_time = microtime(true);
                         <button type="button" onclick="setDecision('approve')" class="btn btn-success">Approve</button>
                         <button type="button" data-bs-toggle="modal" data-bs-target="#feedbackModal"
                             class="btn btn-warning">Send Back</button>
-                        <a href="generate_pdf.php?id=<?php echo $event_id; ?>" class="btn btn-primary">Export to PDF</a>
+                        <a href="generate_pdf.php?id=<?php echo $event_id; ?>" class="btn btn-primary">Export to
+                            PDF</a>
                         <div class="text-center mt-4">
                             <a href="AdvisorDashboard.php" class="btn btn-secondary">Return to Dashboard</a>
                         </div>
@@ -473,7 +502,6 @@ $start_time = microtime(true);
                     }
                 </script>
                 <?php
-                // End time after processing the page
                 $end_time = microtime(true);
                 $page_load_time = round(($end_time - $start_time) * 1000, 2); // Convert to milliseconds
                 

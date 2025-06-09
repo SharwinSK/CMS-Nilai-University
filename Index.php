@@ -9,7 +9,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CMS GA</title>
+    <title>CMS NU</title>
     <link rel="stylesheet" href="style.css">
 
     <style>
@@ -69,7 +69,7 @@
     <div class="container">
         <a href="index.php"><img src="NU logo.png" alt="University Logo" class="logo"></a>
 
-        <h1>Welcome to CMS GA</h1>
+        <h1>Welcome to CMS NU</h1>
         <div class="user-type">
             <a href="StudentLogin.php">STUDENT</a>
             <a href="AdvisorLogin.php">ADVISOR</a>
@@ -78,7 +78,7 @@
         </div>
 
         <div class="footer">
-            <p>&copy; 2024 Cocurricular Management System</p>
+            <p>&copy; 2025 Cocurricular Management System</p>
         </div>
     </div>
 </body>

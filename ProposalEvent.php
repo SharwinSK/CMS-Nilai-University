@@ -277,6 +277,7 @@ $start_time = microtime(true);
 
 
                     <!-- Committee Section -->
+
                     <h5 class="card-title mb-3">Committee Members</h5>
                     <div class="table-responsive">
                         <table class="table table-bordered">
@@ -289,11 +290,15 @@ $start_time = microtime(true);
                                     <th>Phone</th>
                                     <th>Job Scope</th>
                                     <th>COCU Claimers</th>
+                                    <th>Cocu Statement</th>
                                     <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody id="committee-table-body"></tbody>
                         </table>
+                        <small class="text-danger" style="display: block; margin-bottom: 10px;">
+                            * Students shall upload PDF files only. Maximum file size: 5 MB.
+                        </small>
                     </div>
                     <button type="button" class="btn btn-success mb-3" onclick="addCommitteeRow()">Add Member</button>
                     <!-- Budget Section -->
@@ -311,8 +316,32 @@ $start_time = microtime(true);
                             </thead>
                             <tbody id="budget-table-body"></tbody>
                         </table>
+
                     </div>
                     <button type="button" class="btn btn-success mb-3" onclick="addBudgetRow()">Add Budget Item</button>
+                    <div class="row mt-3">
+                        <div class="col-md-4">
+                            <label><strong>Total Income:</strong></label>
+                            <input type="text" id="total-income" class="form-control" readonly>
+                        </div>
+                        <div class="col-md-4">
+                            <label><strong>Total Expenses:</strong></label>
+                            <input type="text" id="total-expense" class="form-control" readonly>
+                        </div>
+                        <div class="col-md-4">
+                            <label><strong>Surplus / Deficit:</strong></label>
+                            <input type="text" id="surplus-deficit" class="form-control" readonly>
+                        </div>
+                    </div>
+                    <div class="row mt-4">
+                        <div class="mb-3">
+                            <label for="prepared_by" class="form-label">Prepared By</label>
+                            <input type="text" name="prepared_by" id="prepared_by" class="form-control" required
+                                placeholder="Enter your name">
+                        </div>
+                    </div>
+
+
                     <!-- Submit Section -->
                     <div class="text-center">
                         <a href="StudentDashboard.php" class="btn btn-secondary mt-4">Back</a>
@@ -351,85 +380,138 @@ $start_time = microtime(true);
         }
         function addCommitteeRow() {
             const tableBody = document.getElementById("committee-table-body");
-            const newRow = `
-                <tr>
-                    <td><input type="text" class="form-control" name="student_id[]" placeholder="ID"></td>
-                    <td><input type="text" class="form-control" name="student_name[]" placeholder="Name"></td>
-                    <td><input type="text" class="form-control" name="student_position[]" placeholder="Position"></td>
-                    <td>
-                        <select class="form-select" name="student_department[]">
-                            <option value="">Department</option>
-                            <option value="Foundation in Business">Foundation in Business</option>
-                            <option value="Foundation in Science">Foundation in Science</option>
-                            <option value="DCS">Diploma in Computer Science</option>
-                            <option value="DIA">Diploma in Accounting</option>
-                            <option value="DAME">Diploma in Aircraft Maintenance Engineering</option>
-                            <option value="DIT">Diploma in Information Technology</option>
-                            <option value="DHM">Diploma in Hotel Management</option>
-                            <option value="DCA">Diploma in Culinary Arts</option>
-                            <option value="DBA">Diploma in Business Adminstration</option>
-                            <option value="DIN">Diploma in Nursing</option>
-                            <option value="BOF">Bachelor of Finance</option>
-                            <option value="BAAF">Bachelor of Arts in Accounting & Finance</option>
-                            <option value="BBAF">Bachelor of Business Adminstration in Finance</option>
-                            <option value="BSB">Bachelor of Science Biotechonology</option>
-                            <option value="BCSAI">Bachelor of Computer Science Artificial intelligence</option>
-                            <option value="BITC">Bachelor of Information Technology Cybersecurity</option>
-                            <option value="BSE">Bachelor of Software Engineering</option>
-                            <option value="BCSDS">Bachelor of Computer Science Data Science</option>
-                            <option value="BIT">Bachelor of Information Technology</option>
-                            <option value="BITIECC">Bachelor of Information Technology Internet Engineering and Cloud Computing</option>
-                            <option value="BEM">Bachelor of Event Management</option>
-                            <option value="BHMBM">Bachelor of Hospitality Management with Business management</option>
-                            <option value="BBAGL">Bachelor of Business Adminstration in Global Logistic</option>
-                            <option value="BBADM">Bachelor of Business Adminstration in Digital Marketing</option>
-                            <option value="BBAM">Bachelor of Business Adminstration in Marketing</option>
-                            <option value="BBAMT">Bachelor of Business Adminstration in Management</option>
-                            <option value="BBAIB">Bachelor of Business Adminstration in International Business</option>
-                            <option value="BBAHRM">Bachelor of Business Adminstration in Human Resource Management</option>
-                            <option value="BBA">Bachelor of Business Adminstration</option>
-                            <option value="BSN">Bachelor of Science in Nursing</option>
-                        </select>
-                    </td>
-                    <td><input type="text" class="form-control" name="student_phone[]" placeholder="Phone"></td>
-                    <td><input type="text" class="form-control" name="student_job[]" placeholder="Job Scope"></td>
-                    <td>
-                        <select class="form-select" name="cocu_claimers[]">
-                            <option value="">Claimers</option>
-                            <option value="1">Yes</option>
-                            <option value="0">No</option>
-                        </select>
-                    </td>
-                    <td>
-                        <button type="button" class="btn btn-danger btn-sm" onclick="deleteRow(this)">Delete</button>
-                    </td>
-                </tr>`;
-            tableBody.insertAdjacentHTML('beforeend', newRow);
-        }
+            const newRow = document.createElement("tr");
 
+            newRow.innerHTML = `
+        <td><input type="text" class="form-control" name="student_id[]" placeholder="ID"></td>
+        <td><input type="text" class="form-control" name="student_name[]" placeholder="Name"></td>
+        <td><input type="text" class="form-control" name="student_position[]" placeholder="Position"></td>
+        <td>
+            <select class="form-select" name="student_department[]">
+                <option value="">Department</option>
+                <option value="Foundation in Business">Foundation in Business</option>
+                <option value="Foundation in Science">Foundation in Science</option>
+                <option value="DCS">Diploma in Computer Science</option>
+                <option value="DIA">Diploma in Accounting</option>
+                <option value="DAME">Diploma in Aircraft Maintenance Engineering</option>
+                <option value="DIT">Diploma in Information Technology</option>
+                <option value="DHM">Diploma in Hotel Management</option>
+                <option value="DCA">Diploma in Culinary Arts</option>
+                <option value="DBA">Diploma in Business Adminstration</option>
+                <option value="DIN">Diploma in Nursing</option>
+                <option value="BOF">Bachelor of Finance</option>
+                <option value="BAAF">Bachelor of Arts in Accounting & Finance</option>
+                <option value="BBAF">Bachelor of Business Adminstration in Finance</option>
+                <option value="BSB">Bachelor of Science Biotechonology</option>
+                <option value="BCSAI">Bachelor of Computer Science Artificial intelligence</option>
+                <option value="BITC">Bachelor of Information Technology Cybersecurity</option>
+                <option value="BSE">Bachelor of Software Engineering</option>
+                <option value="BCSDS">Bachelor of Computer Science Data Science</option>
+                <option value="BIT">Bachelor of Information Technology</option>
+                <option value="BITIECC">Bachelor of Information Technology Internet Engineering and Cloud Computing</option>
+                <option value="BEM">Bachelor of Event Management</option>
+                <option value="BHMBM">Bachelor of Hospitality Management with Business management</option>
+                <option value="BBAGL">Bachelor of Business Adminstration in Global Logistic</option>
+                <option value="BBADM">Bachelor of Business Adminstration in Digital Marketing</option>
+                <option value="BBAM">Bachelor of Business Adminstration in Marketing</option>
+                <option value="BBAMT">Bachelor of Business Adminstration in Management</option>
+                <option value="BBAIB">Bachelor of Business Adminstration in International Business</option>
+                <option value="BBAHRM">Bachelor of Business Adminstration in Human Resource Management</option>
+                <option value="BBA">Bachelor of Business Adminstration</option>
+                <option value="BSN">Bachelor of Science in Nursing</option>
+            </select>
+        </td>
+        <td><input type="text" class="form-control" name="student_phone[]" placeholder="Phone"></td>
+        <td><input type="text" class="form-control" name="student_job[]" placeholder="Job Scope"></td>
+        <td>
+            <select class="form-select cocu-select" name="cocu_claimers[]">
+                <option value="">Claimers</option>
+                <option value="1">Yes</option>
+                <option value="0">No</option>
+            </select>
+        </td>
+        <td>
+            <input type="file" class="form-control cocu-file" name="cocu_statement[]" disabled>
+        </td>
+        <td>
+            <button type="button" class="btn btn-danger btn-sm" onclick="deleteRow(this)">Delete</button>
+        </td>
+    `;
+
+            tableBody.appendChild(newRow);
+
+
+            const cocuSelect = newRow.querySelector('.cocu-select');
+            const cocuFile = newRow.querySelector('.cocu-file');
+
+            cocuSelect.addEventListener('change', function () {
+                if (this.value === "1") {
+                    cocuFile.disabled = false;
+                } else {
+                    cocuFile.disabled = true;
+                    cocuFile.value = "";
+                }
+            });
+        }
         function addBudgetRow() {
             const tableBody = document.getElementById("budget-table-body");
-            const newRow = `
-                <tr>
-                    <td><input type="text" class="form-control" name="description[]" placeholder="Enter Description"></td>
-                    <td><input type="number" class="form-control" name="amount[]" placeholder="Enter Amount"></td>
-                    <td>
-                        <select class="form-select" name="income_expense[]">
-                            <option value="">Select Option</option>
-                            <option value="Income">Income</option>
-                            <option value="Expense">Expense</option>
-                        </select>
-                    </td>
-                    <td><input type="text" class="form-control" name="remarks[]" placeholder="Enter Remarks"></td>
-                    <td>
-                        <button type="button" class="btn btn-danger btn-sm" onclick="deleteRow(this)">Delete</button>
-                    </td>
-                </tr>`;
-            tableBody.insertAdjacentHTML('beforeend', newRow);
+            const newRow = document.createElement("tr");
+
+            newRow.innerHTML = `
+        <td><input type="text" class="form-control" name="description[]" placeholder="Enter Description"></td>
+        <td><input type="number" class="form-control" name="amount[]" placeholder="Enter Amount"></td>
+        <td>
+            <select class="form-select" name="income_expense[]">
+                <option value="">Select Option</option>
+                <option value="Income">Income</option>
+                <option value="Expense">Expense</option>
+            </select>
+        </td>
+        <td><input type="text" class="form-control" name="remarks[]" placeholder="Enter Remarks"></td>
+        <td>
+            <button type="button" class="btn btn-danger btn-sm" onclick="deleteRow(this)">Delete</button>
+        </td>
+    `;
+
+            tableBody.appendChild(newRow);
+
+            // Attach event listeners to new inputs
+            const amountInput = newRow.querySelector('input[name="amount[]"]');
+            const typeSelect = newRow.querySelector('select[name="income_expense[]"]');
+
+            amountInput.addEventListener('input', calculateBudgetTotals);
+            typeSelect.addEventListener('change', calculateBudgetTotals);
         }
+
+        function calculateBudgetTotals() {
+            let totalIncome = 0;
+            let totalExpense = 0;
+
+            const rows = document.querySelectorAll('#budget-table-body tr');
+            rows.forEach(row => {
+                const amountInput = row.querySelector('input[name="amount[]"]');
+                const typeSelect = row.querySelector('select[name="income_expense[]"]');
+
+                const amount = parseFloat(amountInput.value) || 0;
+                const type = typeSelect.value;
+
+                if (type === 'Income') {
+                    totalIncome += amount;
+                } else if (type === 'Expense') {
+                    totalExpense += amount;
+                }
+            });
+
+            const surplus = totalIncome - totalExpense;
+
+            document.getElementById('total-income').value = `RM ${totalIncome.toFixed(2)}`;
+            document.getElementById('total-expense').value = `RM ${totalExpense.toFixed(2)}`;
+            document.getElementById('surplus-deficit').value = `RM ${surplus.toFixed(2)}`;
+        }
+
         function deleteRow(button) {
-            const row = button.closest('tr');
-            row.remove();
+            button.closest("tr").remove();
+            calculateBudgetTotals();
         }
 
 
@@ -490,20 +572,37 @@ $start_time = microtime(true);
         document.addEventListener("DOMContentLoaded", function () {
             let dateInput = document.getElementById("dateInput");
             let today = new Date();
-            today.setDate(today.getDate() + 10); // Add 10 days to today's date
+            today.setDate(today.getDate() + 10);
 
-            let minDate = today.toISOString().split("T")[0]; // Format YYYY-MM-DD
-            dateInput.setAttribute("min", minDate); // Set the min selectable date
+            let minDate = today.toISOString().split("T")[0];
+            dateInput.setAttribute("min", minDate);
         });
+        document.addEventListener('change', function (e) {
+            if (e.target && e.target.name === 'cocu_statement[]') {
+                const file = e.target.files[0];
+                if (file) {
 
+                    if (file.type !== 'application/pdf') {
+                        alert('Please upload PDF files only.');
+                        e.target.value = '';
+                        return;
+                    }
+
+
+                    if (file.size > 5 * 1024 * 1024) {
+                        alert('File too large. Please upload files below 5 MB.');
+                        e.target.value = '';
+                    }
+                }
+            }
+        });
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <?php
-    // End time after processing the page
     $end_time = microtime(true);
-    $page_load_time = round(($end_time - $start_time) * 1000, 2); // Convert to milliseconds
-    
+    $page_load_time = round(($end_time - $start_time) * 1000, 2);
+
     echo "<p style='color: green; font-weight: bold; text-align: center;'>
       Page Load Time: " . $page_load_time . " ms
       </p>";

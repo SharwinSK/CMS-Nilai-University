@@ -96,7 +96,7 @@ $pdf->AddPage();
 $pdf->SetFont('dejavusans', '', 10);
 
 // Event Details Section
-$html = '<h2 style="text-align:center;">Postmortem Report</h2>';
+$html = '<h2 style="text-align:center;">Post Event Report</h2>';
 $html .= '<h3>Event Details</h3>';
 $html .= '<table cellspacing="3" cellpadding="4">';
 $html .= '<tr><td><strong>Event ID:</strong></td><td>' . $event['Ev_ID'] . '</td></tr>';
@@ -142,6 +142,7 @@ while ($budget = $budget_result->fetch_assoc()) {
 $html .= '</table><br>';
 $pdf->writeHTML($html);
 $html = '';
+
 
 $pdf->Ln(10);
 $pdf->SetFont('helvetica', 'B', 14);

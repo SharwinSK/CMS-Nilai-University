@@ -1,5 +1,8 @@
 <?php
 require_once('TCPDF-main/tcpdf.php');
+require_once('fpdi/src/autoload.php'); // adjust path if needed
+
+use setasign\Fpdi\Tcpdf\Fpdi;
 include('dbconfig.php');
 session_start();
 // Check user role
@@ -31,6 +34,7 @@ $event_query = "
         e.*, 
         s.Stu_Name, 
         c.Club_Name
+       
     FROM 
         events e 
     LEFT JOIN student s ON e.Stu_ID = s.Stu_ID 
@@ -55,7 +59,8 @@ $committee_result = $conn->query($committee_query);
 $budget_query = "SELECT * FROM budget WHERE Ev_ID = '$event_id'";
 $budget_result = $conn->query($budget_query);
 
-
+$budget_summary_query = "SELECT * FROM budgetsummary WHERE Ev_ID = '$event_id'";
+$budget_summary_result = $conn->query($budget_summary_query);
 
 $eventflow_query = "SELECT * FROM eventflow WHERE Ev_ID = '$event_id'";
 $eventflow_result = $conn->query($eventflow_query);
@@ -183,6 +188,7 @@ $html .= '<tr>
             <th>Type</th>
             <th>Remarks</th>
           </tr>';
+
 while ($budget = $budget_result->fetch_assoc()) {
     $html .= '<tr>
                 <td>' . $budget['Bud_Desc'] . '</td>
@@ -194,6 +200,7 @@ while ($budget = $budget_result->fetch_assoc()) {
 $html .= '</table><br>';
 $pdf->writeHTML($html);
 $html = '';
+
 
 
 $pdf->writeHTML($html, true, false, true, false, '');

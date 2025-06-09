@@ -7,30 +7,23 @@ $query = "SELECT MAX(Ev_ID) AS last_id FROM events";
 $result = $conn->query($query);
 $row = $result->fetch_assoc();
 
-// Get the last two digits of the current year
-$year_suffix = date('y'); // e.g., '25' for 2025
+$year_suffix = date('y');
 
-// Fetch the last event ID from the database
 $query = "SELECT MAX(Ev_ID) AS last_id FROM events";
 $result = $conn->query($query);
 $row = $result->fetch_assoc();
 
 if ($row['last_id']) {
-    // Extract the numeric part before "/"
     preg_match('/^(\d+)/', $row['last_id'], $matches);
     $last_num = isset($matches[1]) ? (int) $matches[1] : 0;
 
-    // Increment the event number
     $new_num = str_pad($last_num + 1, 2, '0', STR_PAD_LEFT);
 } else {
-    // Start with 01 if no previous events exist
+
     $new_num = '01';
 }
 
-// Construct the new event ID in the format "XX/YY"
 $event_id = $new_num . '/' . $year_suffix;
-
-// Now insert `$event_id` into your database when creating a new event
 
 $poster = null;
 
@@ -100,9 +93,10 @@ if (!$stmt->execute()) {
 $stmt->close();
 
 
-$stmt = $conn->prepare("INSERT INTO Committee (Com_ID, Ev_ID, Com_Position, Com_Name, 
-                    Com_Department, Com_PhnNum, Com_JobScope, Com_COCUClaimers) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+$stmt = $conn->prepare("INSERT INTO Committee 
+    (Com_ID, Ev_ID, Com_Position, Com_Name, Com_Department, Com_PhnNum, Com_JobScope, Com_COCUClaimers, Student_statement) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+
 if (!$stmt) {
     die("Prepare failed: " . $conn->error);
 }
@@ -114,9 +108,25 @@ foreach ($_POST['student_name'] as $index => $name) {
     $phone = trim($_POST['student_phone'][$index]);
     $job = trim($_POST['student_job'][$index]);
     $cocu = trim($_POST['cocu_claimers'][$index]);
+    $cocuupload = isset($_FILES['cocu_statement']['name'][$index]) ? $_FILES['cocu_statement']['name'][$index] : '';
+    $tmpPath = isset($_FILES['cocu_statement']['tmp_name'][$index]) ? $_FILES['cocu_statement']['tmp_name'][$index] : '';
+
+    $cocu_status = trim($_POST['cocu_claimers'][$index]);
+    $cocu_statement_path = null;
+
+    if (!empty($cocuupload) && !empty($tmpPath)) {
+        $target_dir = "uploads/cocustatement/";
+        $target_file = $target_dir . basename($cocuupload);
+
+        if (move_uploaded_file($tmpPath, $target_file)) {
+            $cocu_statement_path = $target_file;
+        } else {
+            die("File upload failed for COCU statement.");
+        }
+    }
 
     $stmt->bind_param(
-        "ssssssss",
+        "sssssssss",
         $id,
         $event_id,
         $position,
@@ -124,8 +134,10 @@ foreach ($_POST['student_name'] as $index => $name) {
         $department,
         $phone,
         $job,
-        $cocu
+        $cocu_status,
+        $cocu_statement_path
     );
+
     if (!$stmt->execute()) {
         die("Error inserting committee data: " . $stmt->error);
     }
@@ -134,14 +146,12 @@ $stmt->close();
 
 
 foreach ($_POST['event_date'] as $index => $date) {
-    // Sanitize and retrieve input values
     $start_time = htmlspecialchars(trim($_POST['start_time'][$index]));
     $end_time = htmlspecialchars(trim($_POST['end_time'][$index]));
     $hours = htmlspecialchars(trim($_POST['hours'][$index]));
     $activity = htmlspecialchars(trim($_POST['activity'][$index]));
     $remarks = htmlspecialchars(trim($_POST['remarks'][$index]));
 
-    // Prepare and execute the SQL statement
     $stmt = $conn->prepare("INSERT INTO Eventflow (Ev_ID, Date, Start_Time, End_Time, Hours, Activity, Remarks) 
                             VALUES (?, ?, ?, ?, ?, ?, ?)");
     $stmt->bind_param("sssssss", $event_id, $date, $start_time, $end_time, $hours, $activity, $remarks);
@@ -164,6 +174,33 @@ foreach ($_POST['description'] as $index => $desc) {
     if (!$stmt->execute()) {
         die("Error inserting budget data: " . $stmt->error);
     }
+}
+$stmt->close();
+
+// Calculate total income and expense
+$total_income = 0;
+$total_expense = 0;
+
+foreach ($_POST['description'] as $index => $desc) {
+    $amount = (float) trim($_POST['amount'][$index]);
+    $type = trim($_POST['income_expense'][$index]);
+
+    if ($type === 'Income') {
+        $total_income += $amount;
+    } elseif ($type === 'Expense') {
+        $total_expense += $amount;
+    }
+}
+
+$surplus = $total_income - $total_expense;
+$prepared_by = $_POST['prepared_by'];
+
+$stmt = $conn->prepare("INSERT INTO BudgetSummary (Ev_ID, Total_Income, Total_Expense, Surplus_Deficit, Prepared_By)
+                        VALUES (?, ?, ?, ?, ?)");
+$stmt->bind_param("sddds", $event_id, $total_income, $total_expense, $surplus, $prepared_by);
+
+if (!$stmt->execute()) {
+    die("Error inserting into BudgetSummary: " . $stmt->error);
 }
 $stmt->close();
 

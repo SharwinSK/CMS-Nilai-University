@@ -160,8 +160,23 @@ $start_time = microtime(true);
             </ul>
 
         </div>
-    </div>
-
+    </div>  
+    <AdvisorProfile.php>
+        ,<!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=
+            F, initial-scale=1.0">
+            <title>CMS GA Profile`hh hooi shtg jjowm,muj</title>
+            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+            <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">`
+            <meterialize.css" href="styleMain.css">`
+        </head>
+        <body>
+            
+        </body>
+        </html>
     <!-- Main Content Area -->
     <div class="container mt-4">
         <div class="card shadow-sm">
@@ -206,6 +221,8 @@ $start_time = microtime(true);
         </div>
     </div>
     <!-- Bootstrap JS -->
+
+    
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <?php
     // End time after processing the page

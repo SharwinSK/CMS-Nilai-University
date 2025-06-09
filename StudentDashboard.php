@@ -186,7 +186,7 @@ $start_time = microtime(true);
             </button>
             <a class="navbar-brand" href="StudentDashboard.php">
                 <img src="NU logo.png" alt="Logo">
-                STUDENT CMS
+                CMS For Cocuricullam
             </a>
             <div class="dropdown ms-auto">
                 <button class="btn btn-outline-light dropdown-toggle" type="button" id="dropdownMenuButton1"
