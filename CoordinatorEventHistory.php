@@ -18,17 +18,56 @@ $stmt_name->execute();
 $result_name = $stmt_name->get_result();
 $coordinator_name = ($result_name->num_rows > 0) ? $result_name->fetch_assoc()['Coor_Name'] : "Coordinator";
 
+// Get filters from GET
+$filter_year = $_GET['year'] ?? '';
+$filter_month = $_GET['month'] ?? '';
+$filter_club = $_GET['club'] ?? '';
+$filter_type = $_GET['type'] ?? '';
+
 $query = "
     SELECT e.Ev_ID, e.Ev_Name, c.Club_Name, ep.Rep_RefNum, e.Ev_Type 
     FROM events e
     JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID
     JOIN club c ON e.Club_ID = c.Club_ID
     WHERE ep.Rep_PostStatus = 'Accepted'
-    ORDER BY ep.Updated_At DESC
 ";
 
+$params = [];
+$types = "";
 
-$result = $conn->query($query);
+if (!empty($filter_year)) {
+    $query .= " AND YEAR(e.Ev_Date) = ?";
+    $params[] = $filter_year;
+    $types .= "s";
+}
+
+if (!empty($filter_month)) {
+    $query .= " AND MONTH(e.Ev_Date) = ?";
+    $params[] = $filter_month;
+    $types .= "s";
+}
+
+if (!empty($filter_club)) {
+    $query .= " AND c.Club_Name = ?";
+    $params[] = $filter_club;
+    $types .= "s";
+}
+
+if (!empty($filter_type)) {
+    $query .= " AND e.Ev_Type = ?";
+    $params[] = $filter_type;
+    $types .= "s";
+}
+
+$query .= " ORDER BY ep.Updated_At DESC";
+
+$stmt = $conn->prepare($query);
+if (!empty($params)) {
+    $stmt->bind_param($types, ...$params);
+}
+$stmt->execute();
+$result = $stmt->get_result();
+
 $start_time = microtime(true);
 ?>
 

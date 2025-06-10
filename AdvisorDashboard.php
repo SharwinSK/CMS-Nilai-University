@@ -31,7 +31,6 @@ $result = $stmt->get_result();
 
 $club_name = $result->fetch_assoc()['Club_Name'] ?? 'Unknown Club';
 
-
 $pending_proposals_query = "
     SELECT e.Ev_ID, e.Ev_Name, e.created_at, s.Stu_Name
     FROM events e

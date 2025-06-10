@@ -1,11 +1,9 @@
-<!-- filter_modal.php -->
 <?php
 $year = $_GET['year'] ?? '';
 $month = $_GET['month'] ?? '';
 $club = $_GET['club'] ?? '';
 $type = $_GET['type'] ?? '';
 
-// Determine role
 $role = '';
 if (isset($_SESSION['Stu_ID'])) {
     $role = 'student';
@@ -13,6 +11,7 @@ if (isset($_SESSION['Stu_ID'])) {
 } elseif (isset($_SESSION['Adv_ID'])) {
     $role = 'advisor';
     $user_id = $_SESSION['Adv_ID'];
+    $club_id = $_SESSION['Club_ID']; // Used for filtering logic if needed
 } elseif (isset($_SESSION['Coor_ID'])) {
     $role = 'coordinator';
     $user_id = $_SESSION['Coor_ID'];
@@ -60,28 +59,23 @@ if (isset($_SESSION['Stu_ID'])) {
                         </select>
                     </div>
 
-                    <!-- Club -->
-                    <div class="mb-3">
-                        <label for="club" class="form-label">Club</label>
-                        <select name="club" id="club" class="form-select">
-                            <option value="">All</option>
-                            <?php
-                            if ($role == 'advisor') {
-                                $club_query = $conn->query("SELECT c.Club_Name FROM club c 
-                                    JOIN advisor_club ac ON c.Club_ID = ac.Club_ID 
-                                    WHERE ac.Adv_ID = '$user_id'
-                                    ORDER BY c.Club_Name");
-                            } else {
+                    <!-- Club (Only for Student & Coordinator) -->
+                    <?php if ($role !== 'advisor'): ?>
+                        <div class="mb-3">
+                            <label for="club" class="form-label">Club</label>
+                            <select name="club" id="club" class="form-select">
+                                <option value="">All</option>
+                                <?php
                                 $club_query = $conn->query("SELECT Club_Name FROM club ORDER BY Club_Name");
-                            }
-                            while ($club_row = $club_query->fetch_assoc()):
-                                ?>
-                                <option value="<?= $club_row['Club_Name'] ?>" <?= $club == $club_row['Club_Name'] ? 'selected' : '' ?>>
-                                    <?= $club_row['Club_Name'] ?>
-                                </option>
-                            <?php endwhile; ?>
-                        </select>
-                    </div>
+                                while ($club_data = $club_query->fetch_assoc()):
+                                    ?>
+                                    <option value="<?= $club_data['Club_Name'] ?>" <?= $club == $club_data['Club_Name'] ? 'selected' : '' ?>>
+                                        <?= $club_data['Club_Name'] ?>
+                                    </option>
+                                <?php endwhile; ?>
+                            </select>
+                        </div>
+                    <?php endif; ?>
 
                     <!-- Event Type -->
                     <div class="mb-3">

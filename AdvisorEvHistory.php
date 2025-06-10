@@ -7,28 +7,52 @@ if (!isset($_SESSION['Adv_ID'])) {
     header("Location: AdvisorLogin.php");
     exit();
 }
+
 $adv_id = $_SESSION['Adv_ID'];
-$query = "SELECT Adv_Name FROM advisor WHERE Adv_ID = '$adv_id'";
-$result = $conn->query($query);
-
-if ($result && $result->num_rows > 0) {
-    $Advisor_name = $result->fetch_assoc();
-} else {
-    $Advisor_name['Adv_Name'] = "Unknown Advisor";
-}
-
 $club_id = $_SESSION['Club_ID'];
+$filter_year = $_GET['year'] ?? '';
+$filter_month = $_GET['month'] ?? '';
+$filter_type = $_GET['type'] ?? '';
+
+$query = "SELECT Adv_Name FROM advisor WHERE Adv_ID = ?";
+$stmt_name = $conn->prepare($query);
+$stmt_name->bind_param("s", $adv_id);
+$stmt_name->execute();
+$name_result = $stmt_name->get_result();
+$Advisor_name = ($name_result->num_rows > 0) ? $name_result->fetch_assoc() : ['Adv_Name' => "Unknown Advisor"];
 
 $completed_events_query = "
-    SELECT e.Ev_ID, e.Ev_Name, s.Stu_Name, ep.Rep_RefNum 
+    SELECT e.Ev_ID, e.Ev_Name, s.Stu_Name, ep.Rep_RefNum, e.Ev_Date, e.Ev_Type
     FROM events e
     JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID
     JOIN student s ON e.Stu_ID = s.Stu_ID
     WHERE ep.Rep_PostStatus = 'Accepted' AND e.Club_ID = ?
-    ORDER BY ep.Rep_RefNum ASC
 ";
+
+// Add dynamic filters
+$params = [$club_id];
+$types = 'i';
+
+if (!empty($filter_year)) {
+    $completed_events_query .= " AND YEAR(e.Ev_Date) = ?";
+    $params[] = $filter_year;
+    $types .= 's';
+}
+if (!empty($filter_month)) {
+    $completed_events_query .= " AND MONTH(e.Ev_Date) = ?";
+    $params[] = $filter_month;
+    $types .= 's';
+}
+if (!empty($filter_type)) {
+    $completed_events_query .= " AND e.Ev_Type = ?";
+    $params[] = $filter_type;
+    $types .= 's';
+}
+
+$completed_events_query .= " ORDER BY ep.Rep_RefNum ASC";
 $stmt = $conn->prepare($completed_events_query);
-$stmt->bind_param('i', $club_id);
+
+$stmt->bind_param($types, ...$params);
 $stmt->execute();
 $result = $stmt->get_result();
 $start_time = microtime(true);
@@ -126,7 +150,7 @@ $start_time = microtime(true);
         <h1 class="text-center">Completed Events</h1>
 
         <div class="table-responsive mt-4">
-
+            <?php include('FilteringModal.php'); ?>
             <table class="table table-striped table-bordered">
                 <thead class="table-dark">
                     <tr>

@@ -35,9 +35,12 @@ if (!empty($filter_month)) {
 if (!empty($filter_club)) {
     $completed_events_query .= " AND c.Club_Name = '$filter_club'";
 }
+if (!empty($filter_type)) {
+    $completed_events_query .= " AND e.Ev_Type = ?";
+
+}
 
 $completed_events_result = $conn->query($completed_events_query);
-
 $start_time = microtime(true);
 ?>
 
@@ -146,7 +149,7 @@ $start_time = microtime(true);
     <!-- Main Content -->
     <div class="container mt-4">
         <h1 class="text-center">Event History</h1>
-    
+
         <?php include('FilteringModal.php'); ?>
 
 
