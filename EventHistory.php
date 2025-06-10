@@ -11,13 +11,33 @@ if (!isset($_SESSION['Stu_ID'])) {
 $stu_id = $_SESSION['Stu_ID'];
 $student_name = $_SESSION['Stu_Name'];
 
+// Get filters from GET (if any)
+$filter_year = $_GET['year'] ?? '';
+$filter_month = $_GET['month'] ?? '';
+$filter_club = $_GET['club'] ?? '';
+
+
 $completed_events_query = "
-    SELECT e.Ev_ID, e.Ev_Name, ep.Rep_RefNum, ep.Rep_PostStatus 
+    SELECT e.Ev_ID, e.Ev_Name, ep.Rep_RefNum, ep.Rep_PostStatus, e.Ev_Date, c.Club_Name
     FROM events e
     JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID
+    LEFT JOIN club c ON e.Club_ID = c.Club_ID
     WHERE e.Stu_ID = '$stu_id' AND ep.Rep_PostStatus = 'Accepted'
 ";
+
+
+if (!empty($filter_year)) {
+    $completed_events_query .= " AND YEAR(e.Ev_Date) = '$filter_year'";
+}
+if (!empty($filter_month)) {
+    $completed_events_query .= " AND MONTH(e.Ev_Date) = '$filter_month'";
+}
+if (!empty($filter_club)) {
+    $completed_events_query .= " AND c.Club_Name = '$filter_club'";
+}
+
 $completed_events_result = $conn->query($completed_events_query);
+
 $start_time = microtime(true);
 ?>
 
@@ -126,36 +146,46 @@ $start_time = microtime(true);
     <!-- Main Content -->
     <div class="container mt-4">
         <h1 class="text-center">Event History</h1>
+    
+        <?php include('FilteringModal.php'); ?>
+
+
+
 
         <?php if ($completed_events_result->num_rows > 0): ?>
-            <div class="table-responsive">
-                <table class="table table-hover table-bordered">
-                    <thead class="table-dark">
+            <table class="table table-hover table-bordered">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Event ID</th>
+                        <th>Event Name</th>
+                        <th>Club Name</th>
+                        <th>Date</th>
+                        <th>Reference Number</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php while ($event = $completed_events_result->fetch_assoc()): ?>
                         <tr>
-                            <th>Event ID</th>
-                            <th>Event Name</th>
-                            <th>Reference Number</th>
-                            <th>Action</th>
+                            <td><?= $event['Ev_ID'] ?></td>
+                            <td><?= $event['Ev_Name'] ?></td>
+                            <td><?= $event['Club_Name'] ?></td>
+                            <td><?= date('d M Y', strtotime($event['Ev_Date'])) ?></td>
+                            <td><?= $event['Rep_RefNum'] ?></td>
+                            <td>
+                                <a href="Exportpdf.php?event_id=<?= $event['Ev_ID'] ?>" class="btn btn-export">
+                                    <i class="fas fa-file-pdf"></i>Export to PDF
+                                </a>
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        <?php while ($event = $completed_events_result->fetch_assoc()): ?>
-                            <tr>
-                                <td><?php echo $event['Ev_ID']; ?></td>
-                                <td><?php echo $event['Ev_Name']; ?></td>
-                                <td><?php echo $event['Rep_RefNum']; ?></td>
-                                <td>
-                                    <a href="Exportpdf.php?event_id=<?php echo $event['Ev_ID']; ?>" class="btn btn-export"><i
-                                            class="fas fa-file-pdf"></i>Export to PDF</a>
-                                </td>
-                            </tr>
-                        <?php endwhile; ?>
-                    </tbody>
-                </table>
-            </div>
-        <?php else: ?>
-            <p class="empty-message">No completed events found.</p>
-        <?php endif; ?>
+                    <?php endwhile; ?>
+                </tbody>
+
+            </table>
+        </div>
+    <?php else: ?>
+        <p class="empty-message">No completed events found.</p>
+    <?php endif; ?>
     </div>
 
     <!-- Bootstrap JS -->
@@ -169,6 +199,7 @@ $start_time = microtime(true);
       Page Load Time: " . $page_load_time . " ms
       </p>";
     ?>
+
 </body>
 
 </html>

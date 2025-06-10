@@ -2,6 +2,7 @@
 session_start();
 include('dbconfig.php');
 
+// Generate new Report ID
 $query = "SELECT MAX(Rep_ID) AS last_id FROM EventPostmortem";
 $result = $conn->query($query);
 $row = $result->fetch_assoc();
@@ -13,13 +14,14 @@ if ($row['last_id']) {
     $report_id = '0001';
 }
 
+// Validate event ID
 if (!isset($_POST['event_id'])) {
     die("Event ID is required to submit the postmortem report.");
 }
 
 $event_id = $_POST['event_id'];
 
-
+// Upload Photos
 $photo_paths = [];
 $allowed_types = ['image/jpeg', 'image/png', 'image/gif'];
 
@@ -34,7 +36,7 @@ if (!empty($_FILES['event_photos']['name'][0])) {
 
     foreach ($_FILES['event_photos']['tmp_name'] as $key => $tmp_name) {
         $mime_type = mime_content_type($tmp_name);
-        $file_size = $_FILES['event_photos']['size'][$key]; // in bytes
+        $file_size = $_FILES['event_photos']['size'][$key];
 
         if (!in_array($mime_type, $allowed_types)) {
             die("Only JPG, PNG, and GIF images are allowed.");
@@ -44,36 +46,25 @@ if (!empty($_FILES['event_photos']['name'][0])) {
         $new_file_name = time() . "_" . $original_name;
         $target_file = "uploads/photos/" . $new_file_name;
 
-        // Resize if image is larger than 3MB (3 * 1024 * 1024 bytes)
         if ($file_size > 3 * 1024 * 1024) {
-            // Load the image
             switch ($mime_type) {
                 case 'image/jpeg':
                     $image = imagecreatefromjpeg($tmp_name);
+                    imagejpeg($image, $target_file, 75);
                     break;
                 case 'image/png':
                     $image = imagecreatefrompng($tmp_name);
+                    imagepng($image, $target_file, 6);
                     break;
                 case 'image/gif':
                     $image = imagecreatefromgif($tmp_name);
+                    imagegif($image, $target_file);
                     break;
                 default:
                     die("Unsupported image type.");
             }
-
-            // Re-save image with compression
-            // For JPEG: quality 75 (0-100), lower = smaller size
-            if ($mime_type == 'image/jpeg') {
-                imagejpeg($image, $target_file, 75);
-            } elseif ($mime_type == 'image/png') {
-                imagepng($image, $target_file, 6); // 0-9 (compression level)
-            } elseif ($mime_type == 'image/gif') {
-                imagegif($image, $target_file);
-            }
-
-            imagedestroy($image); // free memory
+            imagedestroy($image);
         } else {
-            // Just move the original if under 3MB
             if (!move_uploaded_file($tmp_name, $target_file)) {
                 die("Failed to upload: $original_name");
             }
@@ -83,61 +74,36 @@ if (!empty($_FILES['event_photos']['name'][0])) {
     }
 }
 
-
-$statement_path = null;
-if (!empty($_FILES["statement_pdf"]["name"])) {
-    $target_dir = "uploads/statements/";
-    if (!is_dir($target_dir)) {
-        mkdir($target_dir, 0777, true);
+$statementFilePath = null;
+if (isset($_FILES['statement_pdf']) && $_FILES['statement_pdf']['error'] == 0) {
+    $targetDir = "uploads/statements/";
+    if (!is_dir($targetDir)) {
+        mkdir($targetDir, 0777, true);
     }
+    $fileName = basename($_FILES['statement_pdf']['name']);
+    $targetFilePath = $targetDir . time() . "_" . $fileName;
 
-    $target_file = $target_dir . basename($_FILES["statement_pdf"]["name"]);
-    $file_type = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
-
-    if ($file_type !== "pdf") {
-        die("Only PDF files are allowed for the statement.");
-    }
-
-    if ($_FILES["statement_pdf"]["size"] > 5 * 1024 * 1024) {
-        die("The statement file must be under 5MB.");
-    }
-
-    if (move_uploaded_file($_FILES["statement_pdf"]["tmp_name"], $target_file)) {
-        $statement_path = $target_file;
+    if (move_uploaded_file($_FILES['statement_pdf']['tmp_name'], $targetFilePath)) {
+        $statementFilePath = $targetFilePath;
     } else {
-        die("Failed to upload the statement.");
+        die("Failed to upload statement file.");
     }
 }
 
 $photos = json_encode($photo_paths);
-
-$receipt_paths = [];
-if (!empty($_FILES['expense_receipts']['name'][0])) {
-    if (!is_dir('uploads/receipts')) {
-        mkdir('uploads/receipts', 0777, true);
-    }
-    foreach ($_FILES['expense_receipts']['tmp_name'] as $key => $tmp_name) {
-        $file_name = basename($_FILES['expense_receipts']['name'][$key]);
-        $target_file = "uploads/receipts/" . $file_name;
-        if (move_uploaded_file($tmp_name, $target_file)) {
-            $receipt_paths[] = $target_file;
-        }
-    }
-}
-$receipts = json_encode($receipt_paths);
-
 $challenges = htmlspecialchars(trim($_POST['challenges']));
 $conclusion = htmlspecialchars(trim($_POST['conclusion']));
 
-
-
 $conn->begin_transaction();
+
 try {
+    // Insert into EventPostmortem (without receipt)
     $stmt = $conn->prepare("INSERT INTO EventPostmortem (Rep_ID, Ev_ID, 
-    Rep_ChallengesDifficulties, Rep_Conclusion, Rep_Photo, Rep_Receipt) VALUES (?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("ssssss", $report_id, $event_id, $challenges, $conclusion, $photos, $receipts);
+        Rep_ChallengesDifficulties, Rep_Conclusion, Rep_Photo) VALUES (?, ?, ?, ?, ?)");
+    $stmt->bind_param("sssss", $report_id, $event_id, $challenges, $conclusion, $photos);
     $stmt->execute();
 
+    // Insert Individual Reports
     foreach ($_POST['indiv_duties'] as $com_id => $duty) {
         $attendance = htmlspecialchars(trim($_POST['indiv_attendance'][$com_id]));
         $experience = htmlspecialchars(trim($_POST['indiv_experience'][$com_id]));
@@ -145,8 +111,15 @@ try {
         $benefits = htmlspecialchars(trim($_POST['indiv_benefits'][$com_id]));
 
         $stmt = $conn->prepare("INSERT INTO IndividualReport (Rep_ID, Com_ID, IRS_Duties, 
-        IRS_Attendance, IRS_Experience, IRS_Challenges, IRS_Benefits) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            IRS_Attendance, IRS_Experience, IRS_Challenges, IRS_Benefits) VALUES (?, ?, ?, ?, ?, ?, ?)");
         $stmt->bind_param("sssssss", $report_id, $com_id, $duty, $attendance, $experience, $indiv_challenges, $benefits);
+        $stmt->execute();
+    }
+
+    // Update BudgetSummary with statement file
+    if ($statementFilePath) {
+        $stmt = $conn->prepare("UPDATE BudgetSummary SET statement = ? WHERE Ev_ID = ?");
+        $stmt->bind_param("ss", $statementFilePath, $event_id);
         $stmt->execute();
     }
 
@@ -155,8 +128,10 @@ try {
     $conn->rollback();
     die("Error: " . $e->getMessage());
 }
+
 $conn->close();
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 

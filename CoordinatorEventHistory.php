@@ -3,6 +3,8 @@ session_start();
 include('dbconfig.php');
 include('LogoutDesign.php');
 
+
+
 if (!isset($_SESSION['Coor_ID'])) {
     header("Location: CoordinatorLogin.php");
     exit();
@@ -127,6 +129,7 @@ $start_time = microtime(true);
     <!-- Main Content -->
     <div class="container mt-4">
         <h2 class="text-center">Event History</h2>
+        <?php include('FilteringModal.php'); ?>
         <table class="table table-bordered mt-4">
             <thead>
                 <tr>

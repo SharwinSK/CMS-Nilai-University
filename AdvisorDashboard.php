@@ -118,7 +118,7 @@ $start_time = microtime(true);
             <button class="btn btn-outline-light me-2" data-bs-toggle="offcanvas" data-bs-target="#sidebar">
                 ☰
             </button>
-            <a class="navbar-brand" href="StudentDashboard.php">
+            <a class="navbar-brand" href="AdvisorDashboard.php">
                 <img src="NU logo.png" alt="Logo">
                 ADVISOR CMS
             </a>

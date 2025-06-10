@@ -20,7 +20,7 @@ if ($result && $result->num_rows > 0) {
 $club_id = $_SESSION['Club_ID'];
 
 $completed_events_query = "
-    SELECT e.Ev_ID, e.Ev_Name, e.Ev_Objectives, s.Stu_Name, ep.Rep_RefNum 
+    SELECT e.Ev_ID, e.Ev_Name, s.Stu_Name, ep.Rep_RefNum 
     FROM events e
     JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID
     JOIN student s ON e.Stu_ID = s.Stu_ID
@@ -117,24 +117,22 @@ $start_time = microtime(true);
                 <li class="nav-item"><a class="nav-link" href="AdvisorProfile.php">Profile</a></li>
                 <li class="nav-item"><a class="nav-link" href="AdvisorProgressView.php">Event Progress</a></li>
                 <li class="nav-item"><a class="nav-link" href="AdvisorEvHistory.php">Event History</a></li>
-
             </ul>
-
         </div>
     </div>
-
 
     <!-- Main Content -->
     <div class="container">
         <h1 class="text-center">Completed Events</h1>
+
         <div class="table-responsive mt-4">
+
             <table class="table table-striped table-bordered">
                 <thead class="table-dark">
                     <tr>
                         <th>Event ID</th>
                         <th>Event Name</th>
                         <th>Student Name</th>
-                        <th>Objectives</th>
                         <th>Reference Number</th>
                         <th>Export</th>
                     </tr>
@@ -146,7 +144,6 @@ $start_time = microtime(true);
                                 <td><?php echo htmlspecialchars($row['Ev_ID']); ?></td>
                                 <td><?php echo htmlspecialchars($row['Ev_Name']); ?></td>
                                 <td><?php echo htmlspecialchars($row['Stu_Name']); ?></td>
-                                <td><?php echo htmlspecialchars($row['Ev_Objectives']); ?></td>
                                 <td><?php echo htmlspecialchars($row['Rep_RefNum']); ?></td>
                                 <td>
                                     <a href="Exportpdf.php?event_id=<?php echo urlencode($row['Ev_ID']); ?>"

@@ -189,7 +189,7 @@ $budget_details = $budget_stmt->get_result();
                     </table>
                     <!--uploads Statement-->
                     <div class="mb-3">
-                        <label for="statementPdf" class="form-label">Upload Statement</label>
+                        <label for="statementPdf" class="form-label">Upload Statement and Receipt </label>
                         <input type="file" class="form-control" id="statementPdf" name="statement_pdf" accept=".pdf"
                             required>
                         <small class="text-danger" style="display: block; margin-bottom: 10px;">
@@ -205,14 +205,6 @@ $budget_details = $budget_stmt->get_result();
                         <small class="text-danger" style="display: block; margin-bottom: 10px;">
                             Maximum 10 Photos.
                         </small>
-
-                        <div class="mb-3">
-                            <label for="repReceipt" class="form-label">Upload Receipts</label>
-                            <input type="file" class="form-control" id="repReceipt" name="rep_receipt" accept=".pdf.">
-                            <small class="text-danger" style="display: block; margin-bottom: 10px;">
-                                * Students shall upload PDF files only. Maximum file size: 5mb.
-                            </small>
-                        </div>
 
                         <!-- Challenges and Conclusion -->
                         <div class="mb-3">

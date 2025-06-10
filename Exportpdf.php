@@ -33,7 +33,7 @@ $event_query = "
     SELECT 
         e.Ev_ID, e.Ev_Name, e.Ev_ProjectNature, e.Ev_Objectives, e.Ev_Intro, e.Ev_Details, e.Ev_Pax, 
         e.Ev_Venue, e.Ev_Date, e.Ev_StartTime, e.Ev_EndTime, e.Ev_Poster, e.Ev_Type, e.Ev_TypeNum, 
-        ep.Rep_ChallengesDifficulties, ep.Rep_Photo, ep.Rep_Receipt, ep.Rep_Conclusion, ep.Rep_RefNum,
+        ep.Rep_ChallengesDifficulties, ep.Rep_Photo, ep.Rep_Conclusion, ep.Rep_RefNum,
         c.Club_Name, s.Stu_Name
     FROM events e
     LEFT JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID
@@ -238,16 +238,6 @@ if (!empty($photos)) {
     }
 }
 
-//Event expenses Receipt
-if (!empty($receipts)) {
-    $pdf->AddPage();
-    $pdf->SetFont('dejavusans', 'B', 12);
-    $pdf->Cell(0, 10, 'Expense Receipts', 0, 1, 'C');
-    foreach ($receipts as $receipt) {
-        $pdf->Image($receipt, 50, '', 100, 80, '', '', '', true);
-        $pdf->Ln(90);
-    }
-}
 
 $event_id_safe = str_replace("/", "_", $event_id);
 $pdf->Output("Event_$event_id_safe.pdf", "D");

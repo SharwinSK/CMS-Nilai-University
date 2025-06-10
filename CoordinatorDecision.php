@@ -56,7 +56,7 @@ if ($type === 'proposal') {
 } elseif ($type === 'postmortem') {
     $query = "
     SELECT 
-        ep.Rep_ID, ep.Rep_ChallengesDifficulties, ep.Rep_Photo, ep.Rep_Receipt, 
+        ep.Rep_ID, ep.Rep_ChallengesDifficulties, ep.Rep_Photo, 
         ep.Rep_Conclusion, ep.created_at AS PostmortemDate,
         e.Ev_ID, e.Ev_Name, e.Ev_Poster, e.Ev_ProjectNature, e.Ev_Objectives, 
         e.Ev_Intro, e.Ev_Details, e.Ev_Date, e.Ev_StartTime, e.Ev_EndTime, e.Ev_Venue, e.Ev_Pax,
@@ -454,7 +454,6 @@ $start_time = microtime(true);
 
                     <!-- Commitee Member -->
 
-
                     <div class="section-header">Committee Members</div>
                     <table class="table table-bordered">
                         <thead>
@@ -524,28 +523,6 @@ $start_time = microtime(true);
                         <p class="text-muted">No event photos uploaded for this event.</p>
                     <?php endif; ?>
 
-
-                    <?php if (!empty($details['Rep_Receipt'])): ?>
-                        <div class="postmortem-header">Receipt</div>
-                        <div class="poster-container text-center mb-4 d-flex flex-wrap gap-3 justify-content-center">
-                            <?php
-                            $receipts = json_decode($details['Rep_Receipt'], true);
-                            if (!empty($receipts)) {
-                                foreach ($receipts as $receipt) {
-                                    echo '<img src="' . htmlspecialchars($receipt) .
-                                        '" alt="Receipt" class="img-fluid" style="max-width: 200px; 
-                                    max-height: 150px; margin: 10px; border-radius: 5px;">';
-                                }
-                            } else {
-                                echo '<p class="text-muted">No valid receipts uploaded.</p>';
-                            }
-                            ?>
-                        </div>
-                    <?php else: ?>
-                        <p class="text-muted">No receipt uploaded for this event.</p>
-                    <?php endif; ?>
-
-
                     <!-- Individual report -->
                     <div class="section-header">Individual Reports</div>
                     <table class="table table-bordered">
@@ -575,10 +552,6 @@ $start_time = microtime(true);
                         </tbody>
                     </table>
                 <?php endif; ?>
-
-
-
-
 
                 <form method="POST" action="">
                     <input type="hidden" name="decision" id="decision" value="approve">

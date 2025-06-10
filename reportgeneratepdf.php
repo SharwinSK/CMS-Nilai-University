@@ -60,8 +60,8 @@ $individual_query = "
 $individual_result = $conn->query($individual_query);
 
 
-$photos = json_decode($report['Rep_Photo'], true);
-$receipts = json_decode($report['Rep_Receipt'], true);
+$photos = json_decode($report['rep_photo'], true);
+$receipts = json_decode($report['rep_receipt'], true);
 
 
 class MYPDF extends TCPDF
