@@ -11,21 +11,21 @@ if (!isset($_SESSION['Stu_ID'])) {
 $stu_id = $_SESSION['Stu_ID'];
 $student_name = $_SESSION['Stu_Name'];
 
-// Get filters from GET (if any)
+// Get filters
 $filter_year = $_GET['year'] ?? '';
 $filter_month = $_GET['month'] ?? '';
 $filter_club = $_GET['club'] ?? '';
-
+$filter_type = $_GET['type'] ?? ''; // 💡 You forgot this line earlier!
 
 $completed_events_query = "
-    SELECT e.Ev_ID, e.Ev_Name, ep.Rep_RefNum, ep.Rep_PostStatus, e.Ev_Date, c.Club_Name
+    SELECT e.Ev_ID, e.Ev_Name, ep.Rep_RefNum, ep.Rep_PostStatus, e.Ev_Date, c.Club_Name, e.Ev_Type
     FROM events e
     JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID
     LEFT JOIN club c ON e.Club_ID = c.Club_ID
     WHERE e.Stu_ID = '$stu_id' AND ep.Rep_PostStatus = 'Accepted'
 ";
 
-
+// Apply filters
 if (!empty($filter_year)) {
     $completed_events_query .= " AND YEAR(e.Ev_Date) = '$filter_year'";
 }
@@ -36,12 +36,12 @@ if (!empty($filter_club)) {
     $completed_events_query .= " AND c.Club_Name = '$filter_club'";
 }
 if (!empty($filter_type)) {
-    $completed_events_query .= " AND e.Ev_Type = ?";
-
+    $completed_events_query .= " AND e.Ev_Type = '$filter_type'";
 }
 
 $completed_events_result = $conn->query($completed_events_query);
 $start_time = microtime(true);
+
 ?>
 
 <!DOCTYPE html>
