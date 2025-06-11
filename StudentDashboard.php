@@ -15,8 +15,11 @@ $carousel_query = "
     SELECT e.Ev_ID, e.Ev_Name, e.Ev_Details, e.Ev_Poster 
     FROM events e
     LEFT JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID AND ep.Rep_PostStatus = 'Accepted'
-    WHERE e.Ev_Status = 'Approved by Coordinator' AND ep.Rep_PostStatus IS NULL
+    JOIN eventcomment ec ON e.Ev_ID = ec.Ev_ID
+    JOIN eventstatus es ON ec.Status_ID = es.Status_ID
+    WHERE es.Status_Name = 'Approved by Coordinator' AND ep.Rep_PostStatus IS NULL
 ";
+
 $carousel_result = $conn->query($carousel_query);
 
 // Total Events Completed
@@ -32,14 +35,17 @@ $events_completed = $events_completed_result->fetch_assoc()['total_completed'];
 // Proposals Pending
 $proposals_pending_query = "
     SELECT COUNT(*) AS total_pending 
-    FROM events 
-    WHERE Stu_ID = '$stu_id' AND Ev_Status IN (
+    FROM events e
+    JOIN eventcomment ec ON e.Ev_ID = ec.Ev_ID
+    JOIN eventstatus es ON ec.Status_ID = es.Status_ID
+    WHERE e.Stu_ID = '$stu_id' AND es.Status_Name IN (
         'Pending Advisor Review',
         'Sent Back by Advisor',
         'Approved by Advisor',
         'Pending Coordinator Review'
     )
 ";
+
 $proposals_pending_result = $conn->query($proposals_pending_query);
 $proposals_pending = $proposals_pending_result->fetch_assoc()['total_pending'];
 

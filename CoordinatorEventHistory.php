@@ -25,12 +25,14 @@ $filter_club = $_GET['club'] ?? '';
 $filter_type = $_GET['type'] ?? '';
 
 $query = "
-    SELECT e.Ev_ID, e.Ev_Name, c.Club_Name, ep.Rep_RefNum, e.Ev_Type 
+    SELECT e.Ev_ID, e.Ev_Name, c.Club_Name, ep.Rep_RefNum, et.Type_Code AS Ev_Type 
     FROM events e
     JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID
     JOIN club c ON e.Club_ID = c.Club_ID
+    LEFT JOIN eventtype et ON e.Type_ID = et.Type_ID
     WHERE ep.Rep_PostStatus = 'Accepted'
 ";
+
 
 $params = [];
 $types = "";

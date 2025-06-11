@@ -22,12 +22,21 @@ $name_result = $stmt_name->get_result();
 $Advisor_name = ($name_result->num_rows > 0) ? $name_result->fetch_assoc() : ['Adv_Name' => "Unknown Advisor"];
 
 $completed_events_query = "
-    SELECT e.Ev_ID, e.Ev_Name, s.Stu_Name, ep.Rep_RefNum, e.Ev_Date, e.Ev_Type
-    FROM events e
-    JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID
-    JOIN student s ON e.Stu_ID = s.Stu_ID
-    WHERE ep.Rep_PostStatus = 'Accepted' AND e.Club_ID = ?
+    SELECT 
+    e.Ev_ID, 
+    e.Ev_Name, 
+    s.Stu_Name, 
+    ep.Rep_RefNum, 
+    e.Ev_Date, 
+    et.Type_Code AS Type_ID
+FROM events e
+JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID
+JOIN student s ON e.Stu_ID = s.Stu_ID
+LEFT JOIN eventtype et ON e.Type_ID = et.Type_ID
+WHERE ep.Rep_PostStatus = 'Accepted' AND e.Club_ID = ?
+
 ";
+
 
 // Add dynamic filters
 $params = [$club_id];
@@ -44,7 +53,8 @@ if (!empty($filter_month)) {
     $types .= 's';
 }
 if (!empty($filter_type)) {
-    $completed_events_query .= " AND e.Ev_Type = ?";
+    $completed_events_query .= " AND e.Type_ID = ?";
+
     $params[] = $filter_type;
     $types .= 's';
 }
@@ -64,7 +74,7 @@ $start_time = microtime(true);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CMS GA History</title>
+    <title>CMS GA History</title>`
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="styleMain.css">

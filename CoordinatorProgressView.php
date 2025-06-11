@@ -20,15 +20,18 @@ $query = "
         e.Ev_ID, e.Ev_Name, s.Stu_Name, c.Club_Name, e.Ev_Objectives, 
         e.Ev_Intro, e.Ev_Details, e.Ev_Pax, e.Ev_Date, 
         e.Ev_Venue, e.Ev_StartTime, e.Ev_EndTime, 
-        pic.PIC_Name
+        pic.PIC_Name, es.Status_Name
     FROM events e
     LEFT JOIN student s ON e.Stu_ID = s.Stu_ID
     LEFT JOIN personincharge pic ON e.Ev_ID = pic.Ev_ID
     LEFT JOIN club c ON e.Club_ID = c.Club_ID
     LEFT JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID
-    WHERE e.Ev_Status IN ('Pending Coordinator Review', 'Approved by Coordinator')
+    JOIN eventcomment ec ON e.Ev_ID = ec.Ev_ID
+    JOIN eventstatus es ON ec.Status_ID = es.Status_ID
+    WHERE es.Status_Name IN ('Pending Coordinator Review', 'Approved by Coordinator')
       AND (ep.Rep_PostStatus IS NULL OR ep.Rep_PostStatus NOT IN ('Pending Coordinator Review', 'Accepted'))
 ";
+
 
 $stmt = $conn->prepare($query);
 $stmt->execute();

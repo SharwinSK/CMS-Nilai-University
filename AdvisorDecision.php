@@ -9,7 +9,6 @@ if (!isset($_SESSION['Adv_ID'])) {
 
 $advisor_id = $_SESSION['Adv_ID'];
 
-
 if (!isset($_GET['event_id'])) {
     die("Event ID is required.");
 }
@@ -21,7 +20,6 @@ $query = "SELECT e.*, s.Stu_Name, c.Club_Name, bs.Total_Income, bs.Total_Expense
           LEFT JOIN club c ON e.Club_ID = c.Club_ID
           LEFT JOIN budgetsummary bs ON e.Ev_ID = bs.Ev_ID
           WHERE e.Ev_ID = ?";
-
 
 $stmt = $conn->prepare($query);
 $stmt->bind_param("i", $event_id);
@@ -50,36 +48,47 @@ $budget_stmt->bind_param("i", $event_id);
 $budget_stmt->execute();
 $budget_details = $budget_stmt->get_result();
 
-
 $event_flow_query = "SELECT * FROM eventflow WHERE Ev_ID = ?";
 $event_flow_stmt = $conn->prepare($event_flow_query);
 $event_flow_stmt->bind_param("i", $event_id);
 $event_flow_stmt->execute();
 $event_flows = $event_flow_stmt->get_result();
 
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $decision = $_POST['decision'];
-    $advisor_feedback = isset($_POST['Ev_AdvisorComments']) ? $_POST['Ev_AdvisorComments'] : null;
+    $advisor_feedback = $_POST['Ev_AdvisorComments'] ?? null;
 
+    // Set the corresponding status based on decision
     if ($decision === 'send_back') {
-        $update_query = "UPDATE events SET Ev_Status = 'Sent Back by Advisor', Ev_AdvisorComments = ? WHERE Ev_ID = ?";
-        $stmt = $conn->prepare($update_query);
-        $stmt->bind_param("si", $advisor_feedback, $event_id);
-
-        if ($stmt->execute()) {
-        } else {
-            die("Error updating feedback: " . $stmt->error);
-        }
+        $status = 'Rejected by Advisor';
     } elseif ($decision === 'approve') {
-        $update_query = "UPDATE events SET Ev_Status = 'Approved by Advisor' WHERE Ev_ID = ?";
-        $stmt = $conn->prepare($update_query);
-        $stmt->bind_param("i", $event_id);
+        $status = 'Approved by Advisor (Pending Coordinator Review)';
+    } else {
+        die("Invalid decision.");
+    }
 
-        if ($stmt->execute()) {
-        } else {
-            die("Error approving event: " . $stmt->error);
-        }
+    // Get Status_ID from eventstatus table
+    $status_query = "SELECT Status_ID FROM eventstatus WHERE Status_Name = ?";
+    $status_stmt = $conn->prepare($status_query);
+    $status_stmt->bind_param("s", $status);
+    $status_stmt->execute();
+    $status_result = $status_stmt->get_result();
+
+    if ($status_result->num_rows === 0) {
+        die("Status not found in eventstatus table.");
+    }
+
+    $status_id = $status_result->fetch_assoc()['Status_ID'];
+    // Insert comment into eventcomment table
+    $insert_comment_query = "
+    INSERT INTO eventcomment (Ev_ID, Status_ID, Reviewer_Comment, Updated_By, Updated_At)
+    VALUES (?, ?, ?, 'Advisor', NOW())
+";
+    $insert_stmt = $conn->prepare($insert_comment_query);
+    $insert_stmt->bind_param("sss", $event_id, $status_id, $advisor_feedback);
+
+    if (!$insert_stmt->execute()) {
+        die("Error saving advisor decision: " . $insert_stmt->error);
     }
 
     header("Location: AdvisorDashboard.php");
@@ -87,7 +96,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 $start_time = microtime(true);
 ?>
-
 
 <!DOCTYPE html>
 <html lang="en">

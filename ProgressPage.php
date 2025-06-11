@@ -12,11 +12,20 @@ $stu_id = $_SESSION['Stu_ID'];
 $student_name = $_SESSION['Stu_Name'];
 
 $proposals_query = "
-    SELECT e.Ev_ID, e.Ev_Name, e.Ev_Status, e.Ev_AdvisorComments, e.Coor_Comments
-    FROM events e
+    SELECT ec.Ev_ID, e.Ev_Name, es.Status_Name, ec.Reviewer_Comment, ec.Updated_By
+    FROM eventcomment ec
+    JOIN (
+        SELECT Ev_ID, MAX(Updated_At) AS LatestTime
+        FROM eventcomment
+        GROUP BY Ev_ID
+    ) latest ON ec.Ev_ID = latest.Ev_ID AND ec.Updated_At = latest.LatestTime
+    JOIN events e ON ec.Ev_ID = e.Ev_ID
+    JOIN eventstatus es ON ec.Status_ID = es.Status_ID
     LEFT JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID
     WHERE e.Stu_ID = '$stu_id' AND (ep.Rep_ID IS NULL OR ep.Rep_PostStatus = 'Rejected')
 ";
+
+
 $proposals_result = $conn->query($proposals_query);
 
 $postmortem_query = "
@@ -26,6 +35,26 @@ $postmortem_query = "
     WHERE e.Stu_ID = '$stu_id' AND ep.Rep_PostStatus = 'Pending Coordinator Review'
 ";
 $postmortem_result = $conn->query($postmortem_query);
+$feedback_by_event = [];
+while ($proposal = $proposals_result->fetch_assoc()) {
+    $event_id = $proposal['Ev_ID'];
+    if (!isset($feedback_by_event[$event_id])) {
+        $feedback_by_event[$event_id] = [
+            'Ev_ID' => $proposal['Ev_ID'],
+            'Ev_Name' => $proposal['Ev_Name'],
+            'Status_Name' => $proposal['Status_Name'],
+            'Advisor' => '',
+            'Coordinator' => ''
+        ];
+    }
+
+    if ($proposal['Updated_By'] === 'Advisor') {
+        $feedback_by_event[$event_id]['Advisor'] = $proposal['Reviewer_Comment'];
+    } elseif ($proposal['Updated_By'] === 'Coordinator') {
+        $feedback_by_event[$event_id]['Coordinator'] = $proposal['Reviewer_Comment'];
+    }
+}
+
 $start_time = microtime(true);
 ?>
 
@@ -169,41 +198,44 @@ $start_time = microtime(true);
                     </tr>
                 </thead>
                 <tbody>
-                    <?php while ($proposal = $proposals_result->fetch_assoc()): ?>
+                    <?php foreach ($feedback_by_event as $proposal): ?>
+
                         <tr>
                             <td><?php echo $proposal['Ev_ID']; ?></td>
                             <td><?php echo $proposal['Ev_Name']; ?></td>
                             <td>
                                 <?php
-                                $status_class = ($proposal['Ev_Status'] === 'Approved by Coordinator') ? 'success' :
-                                    (($proposal['Ev_Status'] === 'Rejected by Coordinator' || $proposal['Ev_Status'] === 'Sent Back by Advisor') ? 'danger' : 'warning');
-                                echo "<span class='badge bg-$status_class'>{$proposal['Ev_Status']}</span>";
+                                $status_text = $proposal['Status_Name'];
+                                $status_class = ($status_text === 'Approved by Coordinator') ? 'success' :
+                                    (($status_text === 'Rejected by Coordinator' || $status_text === 'Rejected by Advisor') ? 'danger' : 'warning');
+                                echo "<span class='badge bg-$status_class'>{$status_text}</span>";
                                 ?>
                             </td>
+
                             <td>
                                 <button class="btn btn-info btn-sm btn-action" data-bs-toggle="modal"
                                     data-bs-target="#feedbackModal" onclick="showFeedback('Advisor Feedback', 
-                                    '<?php echo addslashes($proposal['Ev_AdvisorComments']); ?>')">
+                                    '<?php echo addslashes($proposal['Advisor']); ?>')">
                                     View
                                 </button>
                             </td>
                             <td>
                                 <button class="btn btn-secondary btn-sm btn-action" data-bs-toggle="modal"
                                     data-bs-target="#feedbackModal" onclick="showFeedback('Coordinator Feedback', 
-                                    '<?php echo addslashes($proposal['Coor_Comments']); ?>')">
+                                    '<?php echo addslashes($proposal['Coordinator']); ?>')">
                                     View
                                 </button>
                             </td>
                             <td>
                                 <?php if (
-                                    $proposal['Ev_Status'] === 'Sent Back by Advisor'
-                                    || $proposal['Ev_Status'] === 'Rejected by Coordinator'
+                                    $proposal['Status_Name'] === 'Rejected by Advisor'
+                                    || $proposal['Status_Name'] === 'Rejected by Coordinator'
                                 ): ?>
                                     <a href="ModifyProposal.php?event_id=<?php echo $proposal['Ev_ID']; ?>"
                                         class="btn btn-warning btn-sm btn-action">Modify</a>
                                     <button class="btn btn-danger btn-sm btn-action"
                                         onclick="confirmDelete('<?php echo $proposal['Ev_ID']; ?>')">Delete</button>
-                                <?php elseif ($proposal['Ev_Status'] === 'Approved by Coordinator'): ?>
+                                <?php elseif ($proposal['Status_Name'] === 'Approved by Coordinator'): ?>
                                     <a href="Postmortem.php?event_id=<?php echo $proposal['Ev_ID']; ?>"
                                         class="btn btn-success btn-sm btn-action">Create Postmortem</a>
                                 <?php else: ?>
@@ -215,7 +247,8 @@ $start_time = microtime(true);
                                     class="btn btn-warning btn-sm">Export</a>
                             </td>
                         </tr>
-                    <?php endwhile; ?>
+                    <?php endforeach; ?>
+
                 </tbody>
             </table>
         <?php else: ?>

@@ -18,16 +18,22 @@ $coordinator_name = ($result && $result->num_rows > 0) ? $result->fetch_assoc()[
 $carousel_query = "
     SELECT e.Ev_ID, e.Ev_Name, e.Ev_Details, e.Ev_Poster 
     FROM events e
-    LEFT JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID AND ep.Rep_PostStatus = 'Accepted'
-    WHERE e.Ev_Status = 'Approved by Coordinator' AND ep.Rep_PostStatus IS NULL
+JOIN eventcomment ec ON e.Ev_ID = ec.Ev_ID
+JOIN eventstatus es ON ec.Status_ID = es.Status_ID
+LEFT JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID AND ep.Rep_PostStatus = 'Accepted'
+WHERE es.Status_Name = 'Approved by Coordinator' AND ep.Rep_PostStatus IS NULL
+
 ";
 $carousel_result = $conn->query($carousel_query);
 
 $proposals_query = "
-    SELECT e.Ev_ID, e.Ev_Name, s.Stu_Name 
-    FROM events e
-    JOIN student s ON e.Stu_ID = s.Stu_ID
-    WHERE e.Ev_Status = 'Approved by Advisor'
+    SELECT e.Ev_ID, e.Ev_Name, s.Stu_Name
+FROM events e
+JOIN student s ON e.Stu_ID = s.Stu_ID
+JOIN eventcomment ec ON e.Ev_ID = ec.Ev_ID
+JOIN eventstatus es ON ec.Status_ID = es.Status_ID
+WHERE es.Status_Name = 'Approved by Advisor (Pending Coordinator Review)'
+
 ";
 $proposals_result = $conn->query($proposals_query);
 

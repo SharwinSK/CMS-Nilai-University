@@ -19,19 +19,23 @@ $advisor_name = $result->fetch_assoc()['Adv_Name'];
 
 $query = "
     SELECT 
-        e.Ev_ID, e.Ev_Name, s.Stu_Name, e.Ev_Status, p.Rep_PostStatus, e.Ev_Objectives, 
-        e.Ev_Intro, e.Ev_Details, e.Ev_Pax, e.Ev_Date, e.Ev_Venue, 
-        e.Ev_StartTime, e.Ev_EndTime, pic.PIC_Name
+        e.Ev_ID, e.Ev_Name, s.Stu_Name, es.Status_Name AS Ev_Status, 
+        p.Rep_PostStatus, e.Ev_Objectives, e.Ev_Intro, e.Ev_Details, 
+        e.Ev_Pax, e.Ev_Date, e.Ev_Venue, e.Ev_StartTime, e.Ev_EndTime, 
+        pic.PIC_Name
     FROM events e
     LEFT JOIN student s ON e.Stu_ID = s.Stu_ID
     LEFT JOIN eventpostmortem p ON e.Ev_ID = p.Ev_ID
     LEFT JOIN personincharge pic ON e.Ev_ID = pic.Ev_ID
+    LEFT JOIN eventcomment ec ON e.Ev_ID = ec.Ev_ID
+    LEFT JOIN eventstatus es ON ec.Status_ID = es.Status_ID
     WHERE e.Club_ID = ? 
       AND (
-          (e.Ev_Status IN ('Approved by Advisor', 'Pending Coordinator Review', 'Approved by Coordinator') 
-          AND (p.Rep_PostStatus IS NULL OR p.Rep_PostStatus != 'Accepted'))
+          es.Status_Name IN ('Approved by Advisor', 'Pending Coordinator Review', 'Approved by Coordinator') 
+          AND (p.Rep_PostStatus IS NULL OR p.Rep_PostStatus != 'Accepted')
       )
 ";
+
 
 $stmt = $conn->prepare($query);
 $stmt->bind_param('i', $club_id);
@@ -177,7 +181,7 @@ $start_time = microtime(true);
                                 <td><?php echo $proposal['Stu_Name']; ?></td>
                                 <td>
                                     <?php
-                                    if ($proposal['Ev_Status'] === 'Approved by Coordinator') {
+                                    if ($proposal['Status_Name'] === 'Approved by Coordinator') {
                                         echo '<span class="badge bg-success">Approved</span>';
                                     } else {
                                         echo '<span class="badge bg-warning">In Progress</span>';

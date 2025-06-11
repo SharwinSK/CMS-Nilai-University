@@ -17,9 +17,15 @@ $approved_events_query = "
     SELECT e.Ev_ID, e.Ev_Name, e.Ev_Date, c.Club_Name 
     FROM events e
     JOIN club c ON e.Club_ID = c.Club_ID
-    LEFT JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID AND ep.Rep_PostStatus IN ('Pending Coordinator Review', 'Accepted')
-    WHERE e.Stu_ID = '$stu_id' AND e.Ev_Status = 'Approved by Coordinator' AND ep.Ev_ID IS NULL
+    JOIN eventcomment ec ON e.Ev_ID = ec.Ev_ID
+    JOIN eventstatus es ON ec.Status_ID = es.Status_ID
+    LEFT JOIN eventpostmortem ep 
+        ON e.Ev_ID = ep.Ev_ID AND ep.Rep_PostStatus IN ('Pending Coordinator Review', 'Accepted')
+    WHERE e.Stu_ID = '$stu_id' 
+      AND es.Status_Name = 'Approved by Coordinator' 
+      AND ep.Ev_ID IS NULL
 ";
+
 $approved_events_result = $conn->query($approved_events_query);
 $start_time = microtime(true);
 ?>

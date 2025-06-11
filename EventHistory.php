@@ -18,12 +18,14 @@ $filter_club = $_GET['club'] ?? '';
 $filter_type = $_GET['type'] ?? ''; // 💡 You forgot this line earlier!
 
 $completed_events_query = "
-    SELECT e.Ev_ID, e.Ev_Name, ep.Rep_RefNum, ep.Rep_PostStatus, e.Ev_Date, c.Club_Name, e.Ev_Type
+    SELECT e.Ev_ID, e.Ev_Name, ep.Rep_RefNum, ep.Rep_PostStatus, e.Ev_Date, c.Club_Name, et.Type_Code
     FROM events e
     JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID
     LEFT JOIN club c ON e.Club_ID = c.Club_ID
+    LEFT JOIN eventtype et ON e.Type_ID = et.Type_ID
     WHERE e.Stu_ID = '$stu_id' AND ep.Rep_PostStatus = 'Accepted'
 ";
+
 
 // Apply filters
 if (!empty($filter_year)) {
@@ -36,7 +38,7 @@ if (!empty($filter_club)) {
     $completed_events_query .= " AND c.Club_Name = '$filter_club'";
 }
 if (!empty($filter_type)) {
-    $completed_events_query .= " AND e.Ev_Type = '$filter_type'";
+    $completed_events_query .= " AND et.Type_Code = '$filter_type'";
 }
 
 $completed_events_result = $conn->query($completed_events_query);
@@ -163,6 +165,7 @@ $start_time = microtime(true);
                         <th>Event Name</th>
                         <th>Club Name</th>
                         <th>Date</th>
+                        <th>Event Type</th>
                         <th>Reference Number</th>
                         <th>Action</th>
                     </tr>
@@ -174,6 +177,7 @@ $start_time = microtime(true);
                             <td><?= $event['Ev_Name'] ?></td>
                             <td><?= $event['Club_Name'] ?></td>
                             <td><?= date('d M Y', strtotime($event['Ev_Date'])) ?></td>
+                            <td><?= $event['Type_Code'] ?></td>
                             <td><?= $event['Rep_RefNum'] ?></td>
                             <td>
                                 <a href="Exportpdf.php?event_id=<?= $event['Ev_ID'] ?>" class="btn btn-export">

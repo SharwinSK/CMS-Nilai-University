@@ -58,8 +58,9 @@ $pic_phone = $_POST['pic_phone'];
 
 $stmt = $conn->prepare("INSERT INTO events (Ev_ID, Stu_ID, Club_ID, Ev_Name, 
                             Ev_ProjectNature, Ev_Objectives, Ev_Intro, Ev_Details, Ev_Date, 
-                            Ev_StartTime, Ev_EndTime, Ev_Pax, Ev_Venue, Ev_Poster, Ev_Status) 
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending Advisor Review')");
+                            Ev_StartTime, Ev_EndTime, Ev_Pax, Ev_Venue, Ev_Poster) 
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+
 $stmt->bind_param(
     "sssssssssssiss",
     $event_id,
@@ -78,8 +79,24 @@ $stmt->bind_param(
     $poster
 );
 
+
 if (!$stmt->execute()) {
     die("Error inserting event data: " . $stmt->error);
+}
+$stmt->close();
+
+
+//Insert Event Status
+$status_id = 1;
+$updated_by = 'Advisor';
+$reviewer_comment = NULL;
+
+$stmt = $conn->prepare("INSERT INTO eventcomment (Ev_ID, Status_ID, Reviewer_Comment, Updated_By) 
+                        VALUES (?, ?, ?, ?)");
+$stmt->bind_param("siss", $event_id, $status_id, $reviewer_comment, $updated_by);
+
+if (!$stmt->execute()) {
+    die("Error inserting into eventcomment: " . $stmt->error);
 }
 $stmt->close();
 

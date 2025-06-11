@@ -42,10 +42,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 Ev_ProjectNature = '$ev_nature', 
                 Ev_Objectives = '$ev_objectives', 
                 Ev_Intro = '$ev_intro', 
-                Ev_Details = '$ev_details',
-                Ev_Status = 'Pending Advisor Review' 
-              WHERE Ev_ID = '$event_id'";
+                Ev_Details = '$ev_details'
+                WHERE Ev_ID = '$event_id'";
     $conn->query($query);
+
+    // Reset status to Pending Advisor Review in eventcomment table
+    $resetStatus = "INSERT INTO eventcomment (Ev_ID, Status_ID, Reviewer_Comment, Updated_By)
+                VALUES ('$event_id', 1, '', 'Student')
+                ON DUPLICATE KEY UPDATE 
+                Status_ID = 1, Reviewer_Comment = '', Updated_By = 'Student'";
+    $conn->query($resetStatus);
+
     $pic_name = $_POST['pic_name'];
     $pic_id = $_POST['pic_id'];
     $pic_phone = $_POST['pic_phone'];
@@ -119,6 +126,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $conn->query($query);
     }
+    // Reset status and comment after student modification
+
 
 
     if (!empty($_FILES['poster']['name'])) {
