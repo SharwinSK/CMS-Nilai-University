@@ -103,17 +103,26 @@ try {
     $stmt->bind_param("sssss", $report_id, $event_id, $challenges, $conclusion, $photos);
     $stmt->execute();
 
-    // Insert Individual Reports
-    foreach ($_POST['indiv_duties'] as $com_id => $duty) {
-        $attendance = htmlspecialchars(trim($_POST['indiv_attendance'][$com_id]));
-        $experience = htmlspecialchars(trim($_POST['indiv_experience'][$com_id]));
-        $indiv_challenges = htmlspecialchars(trim($_POST['indiv_challenges'][$com_id]));
-        $benefits = htmlspecialchars(trim($_POST['indiv_benefits'][$com_id]));
+    $targetDir = "uploads/individual_reports/";
+    foreach ($_FILES as $key => $file) {
+        if (strpos($key, 'ir_file_') === 0 && $file['error'] === 0) {
+            // Extract Com_ID from the field name
+            $com_id = str_replace('ir_file_', '', $key);
 
-        $stmt = $conn->prepare("INSERT INTO IndividualReport (Rep_ID, Com_ID, IRS_Duties, 
-            IRS_Attendance, IRS_Experience, IRS_Challenges, IRS_Benefits) VALUES (?, ?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("sssssss", $report_id, $com_id, $duty, $attendance, $experience, $indiv_challenges, $benefits);
-        $stmt->execute();
+            // Prepare filename
+            $originalName = basename($file["name"]);
+            $extension = pathinfo($originalName, PATHINFO_EXTENSION);
+            $newFileName = $com_id . "_" . time() . "." . $extension;
+            $targetPath = $targetDir . $newFileName;
+
+            // Move uploaded file
+            if (move_uploaded_file($file["tmp_name"], $targetPath)) {
+                // Insert into DB
+                $stmt = $conn->prepare("INSERT INTO individualreport (Rep_ID, Com_ID, IR_File) VALUES (?, ?, ?)");
+                $stmt->bind_param("sss", $report_id, $com_id, $newFileName);
+                $stmt->execute();
+            }
+        }
     }
 
     // Update BudgetSummary with statement file

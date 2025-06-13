@@ -25,7 +25,8 @@ if (!$event) {
     die("Event not found or unauthorized access.");
 }
 
-$committee_query = "SELECT Com_ID, Com_Name, Com_Position FROM Committee WHERE Ev_ID = ? AND Com_COCUClaimers = 1";
+$committee_query = "SELECT Com_ID, Com_Name, Com_Position, Com_COCUClaimers FROM Committee WHERE Ev_ID = ?";
+
 $committee_stmt = $conn->prepare($committee_query);
 $committee_stmt->bind_param("i", $event_id);
 $committee_stmt->execute();
@@ -216,6 +217,7 @@ $budget_details = $budget_stmt->get_result();
                             <textarea class="form-control" id="inputConclusion" name="conclusion" rows="4"></textarea>
                         </div>
                         <!-- Individual Reports -->
+                        <!-- Individual Reports -->
                         <h5>Individual Reports</h5>
                         <div class="table-responsive">
                             <table class="table table-bordered">
@@ -224,42 +226,32 @@ $budget_details = $budget_stmt->get_result();
                                         <th>Committee Name</th>
                                         <th>Committee ID</th>
                                         <th>Position</th>
-                                        <th>Duties</th>
-                                        <th>Attendance</th>
-                                        <th>Experience</th>
-                                        <th>Challenges</th>
-                                        <th>Benefits</th>
+                                        <th>Upload Individual Report</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <?php while ($committee = $committee_result->fetch_assoc()): ?>
-                                        <tr>
-                                            <td><?php echo htmlspecialchars($committee['Com_Name']); ?></td>
-                                            <td>
-                                                <input type="text" class="form-control" name="committee_id[]"
-                                                    value="<?php echo $committee['Com_ID']; ?>" readonly>
-                                            </td>
-                                            <td><?php echo htmlspecialchars($committee['Com_Position']); ?></td>
-                                            <td><textarea class="form-control"
-                                                    name="indiv_duties[<?php echo $committee['Com_ID']; ?>]"></textarea>
-                                            </td>
-                                            <td><textarea class="form-control"
-                                                    name="indiv_attendance[<?php echo $committee['Com_ID']; ?>]"></textarea>
-                                            </td>
-                                            <td><textarea class="form-control"
-                                                    name="indiv_experience[<?php echo $committee['Com_ID']; ?>]"></textarea>
-                                            </td>
-                                            <td><textarea class="form-control"
-                                                    name="indiv_challenges[<?php echo $committee['Com_ID']; ?>]"></textarea>
-                                            </td>
-                                            <td><textarea class="form-control"
-                                                    name="indiv_benefits[<?php echo $committee['Com_ID']; ?>]"></textarea>
-                                            </td>
-                                        </tr>
+                                        <?php if (isset($committee['Com_COCUClaimers']) && $committee['Com_COCUClaimers'] == '1'): ?>
+
+                                            <tr>
+                                                <td><?php echo htmlspecialchars($committee['Com_Name']); ?></td>
+                                                <td>
+                                                    <input type="text" class="form-control" name="committee_id[]"
+                                                        value="<?php echo $committee['Com_ID']; ?>" readonly>
+                                                </td>
+                                                <td><?php echo htmlspecialchars($committee['Com_Position']); ?></td>
+                                                <td>
+                                                    <input type="file" class="form-control"
+                                                        name="ir_file_<?php echo $committee['Com_ID']; ?>"
+                                                        accept=".pdf,.doc,.docx" required>
+                                                </td>
+                                            </tr>
+                                        <?php endif; ?>
                                     <?php endwhile; ?>
                                 </tbody>
                             </table>
                         </div>
+
                         <!-- Submit Button -->
                         <div class="text-center">
                             <a href="StudentDashboard.php" class="btn btn-secondary mt-4">Back</a>

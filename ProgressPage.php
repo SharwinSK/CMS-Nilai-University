@@ -12,21 +12,21 @@ $stu_id = $_SESSION['Stu_ID'];
 $student_name = $_SESSION['Stu_Name'];
 
 $proposals_query = "
-    SELECT ec.Ev_ID, e.Ev_Name, es.Status_Name, ec.Reviewer_Comment, ec.Updated_By
-    FROM eventcomment ec
-    JOIN (
-        SELECT Ev_ID, MAX(Updated_At) AS LatestTime
-        FROM eventcomment
-        GROUP BY Ev_ID
-    ) latest ON ec.Ev_ID = latest.Ev_ID AND ec.Updated_At = latest.LatestTime
-    JOIN events e ON ec.Ev_ID = e.Ev_ID
-    JOIN eventstatus es ON ec.Status_ID = es.Status_ID
-    LEFT JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID
-    WHERE e.Stu_ID = '$stu_id' AND (ep.Rep_ID IS NULL OR ep.Rep_PostStatus = 'Rejected')
+    SELECT e.Ev_ID, e.Ev_Name, es.Status_Name, ec.Reviewer_Comment, ec.Updated_By
+    FROM events e
+    JOIN eventstatus es ON e.Status_ID = es.Status_ID
+    LEFT JOIN eventcomment ec ON e.Ev_ID = ec.Ev_ID
+    WHERE e.Stu_ID = ? AND (
+        NOT EXISTS (
+            SELECT 1 FROM eventpostmortem ep WHERE ep.Ev_ID = e.Ev_ID AND ep.Rep_PostStatus = 'Accepted'
+        )
+    )
 ";
+$stmt = $conn->prepare($proposals_query);
+$stmt->bind_param("s", $stu_id);
+$stmt->execute();
+$proposals_result = $stmt->get_result();
 
-
-$proposals_result = $conn->query($proposals_query);
 
 $postmortem_query = "
     SELECT ep.Rep_ID, ep.Ev_ID, e.Ev_Name, ep.Rep_PostStatus

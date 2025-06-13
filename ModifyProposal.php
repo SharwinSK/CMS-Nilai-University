@@ -46,12 +46,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 WHERE Ev_ID = '$event_id'";
     $conn->query($query);
 
-    // Reset status to Pending Advisor Review in eventcomment table
-    $resetStatus = "INSERT INTO eventcomment (Ev_ID, Status_ID, Reviewer_Comment, Updated_By)
-                VALUES ('$event_id', 1, '', 'Student')
-                ON DUPLICATE KEY UPDATE 
-                Status_ID = 1, Reviewer_Comment = '', Updated_By = 'Student'";
-    $conn->query($resetStatus);
+
+    $update_status_query = "UPDATE events SET Status_ID = 1 WHERE Ev_ID = '$event_id'";
+    $conn->query($update_status_query);
+
 
     $pic_name = $_POST['pic_name'];
     $pic_id = $_POST['pic_id'];
@@ -126,9 +124,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $conn->query($query);
     }
-    // Reset status and comment after student modification
-
-
 
     if (!empty($_FILES['poster']['name'])) {
         $target_dir = "uploads/";

@@ -32,8 +32,8 @@ switch ($user_type) {
 $event_query = "
     SELECT 
         e.Ev_ID, e.Ev_Name, e.Ev_ProjectNature, e.Ev_Objectives, e.Ev_Intro, e.Ev_Details, e.Ev_Pax, 
-        e.Ev_Venue, e.Ev_Date, e.Ev_StartTime, e.Ev_EndTime, e.Ev_Poster, e.Ev_Type, e.Ev_TypeNum, 
-        ep.Rep_ChallengesDifficulties, ep.Rep_Photo, ep.Rep_Conclusion, ep.Rep_RefNum,
+        e.Ev_Venue, e.Ev_Date, e.Ev_StartTime, e.Ev_EndTime, e.Ev_Poster,  e.Ev_TypeRef, e.Ev_RefNum, 
+        ep.Rep_ChallengesDifficulties, ep.Rep_Photo, ep.Rep_Conclusion,
         c.Club_Name, s.Stu_Name
     FROM events e
     LEFT JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID
@@ -105,8 +105,7 @@ $html .= '<tr><td><strong>Student Name:</strong></td><td>' . $event['Stu_Name'] 
 $html .= '<tr><td><strong>Club Name:</strong></td><td>' . $event['Club_Name'] . '</td></tr>';
 $html .= '<tr><td><strong>Event Name:</strong></td><td>' . $event['Ev_Name'] . '</td></tr>';
 $html .= '<tr><td><strong>Event Nature:</strong></td><td>' . $event['Ev_ProjectNature'] . '</td></tr>';
-$html .= '<tr><td><strong>Event Type:</strong></td><td>' . $event['Ev_Type'] . '</td></tr>';
-$html .= '<tr><td><strong>Event Type Number:</strong></td><td>' . $event['Ev_TypeNum'] . '</td></tr>';
+$html .= '<tr><td><strong>CSR/USR/SDG NO:</strong></td><td>' . $event['Ev_TypeRef'] . '</td></tr>';
 $html .= '<tr><td><strong>Event Introduction:</strong></td><td>' . $event['Ev_Intro'] . '</td></tr>';
 $html .= '<tr><td><strong>Event Details:</strong></td><td>' . $event['Ev_Details'] . '</td></tr>';
 $html .= '<tr><td><strong>Event Objectives:</strong></td><td>' . $event['Ev_Objectives'] . '</td></tr>';

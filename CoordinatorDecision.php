@@ -77,9 +77,8 @@ if ($type === 'proposal') {
         die("Postmortem report not found.");
     }
     $individual_query = "
-    SELECT ir.Rep_ID, ir.Com_ID, ir.IRS_Duties, ir.IRS_Attendance, 
-           ir.IRS_Experience, ir.IRS_Challenges, ir.IRS_Benefits, 
-           c.Com_Name, c.Com_Position
+    SELECT ir.Rep_ID, ir.Com_ID, ir.IR_File, 
+           c.Com_Name, c.Com_Position,c.Com_COCUClaimers
     FROM individualreport ir
     JOIN committee c ON ir.Com_ID = c.Com_ID
     WHERE ir.Rep_ID = ? 
@@ -102,57 +101,107 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($type === 'proposal') {
         if ($decision === 'approve') {
-            $status = 'Approved by Coordinator';
             $event_type = $_POST['ev_type'] ?? '';
 
             if (empty($event_type)) {
                 die("Please select an event type.");
             }
 
-            $query = "SELECT MAX(Ev_TypeNum) AS last_num FROM events WHERE Ev_Type = ?";
+            // Step 1: Get current year
+            $year = date('Y');
+            $year_suffix = substr($year, -2); // '25' for 2025
+
+            // Step 2: Get the latest type-based number from eventtyperef
+            $query = "SELECT Last_Number FROM eventtyperef WHERE Type_Code = ? AND Year = ?";
             $stmt = $conn->prepare($query);
-            $stmt->bind_param("s", $event_type);
+            $stmt->bind_param("ss", $event_type, $year);
             $stmt->execute();
             $result = $stmt->get_result();
             $row = $result->fetch_assoc();
 
-            $next_number = ($row['last_num'] ?? 0) + 1;
+            $next_type_number = ($row['Last_Number'] ?? 0) + 1;
 
-            $query = "
-    UPDATE events 
-    SET Status_ID = (SELECT Status_ID FROM eventstatus WHERE Status_Name = ?),
-        Coor_Comments = NULL, 
-        Type_ID = (SELECT Type_ID FROM eventtype WHERE Type_Name = ?), 
-        Ev_TypeNum = ? 
-    WHERE Ev_ID = ?
-";
-            $stmt = $conn->prepare($query);
-            $stmt->bind_param("ssii", $status, $event_type, $next_number, $id);
+            // Step 3: Update or insert into eventtyperef
+            if ($row) {
+                $update_ref = "UPDATE eventtyperef SET Last_Number = ? WHERE Type_Code = ? AND Year = ?";
+                $update_stmt = $conn->prepare($update_ref);
+                $update_stmt->bind_param("iss", $next_type_number, $event_type, $year);
+                $update_stmt->execute();
+            } else {
+                $insert_ref = "INSERT INTO eventtyperef (Type_Code, Year, Last_Number) VALUES (?, ?, ?)";
+                $insert_stmt = $conn->prepare($insert_ref);
+                $insert_stmt->bind_param("ssi", $event_type, $year, $next_type_number);
+                $insert_stmt->execute();
+            }
 
+            // Step 4: Generate Ev_RefNum using max-based logic (like Event ID)
+            $year_suffix = substr($year, -2); // Already declared
+
+            $query = "SELECT Ev_RefNum FROM events 
+          WHERE Ev_RefNum LIKE '%/$year_suffix' 
+          ORDER BY Ev_RefNum DESC 
+          LIMIT 1";
+            $result = $conn->query($query);
+            $row = $result->fetch_assoc();
+
+            if ($row && preg_match('/^(\d{2})\/\d{2}$/', $row['Ev_RefNum'], $matches)) {
+                $last_num = (int) $matches[1];
+                $new_num = str_pad($last_num + 1, 2, '0', STR_PAD_LEFT);
+            } else {
+                $new_num = '01';
+            }
+
+            $Ev_RefNum = $new_num . '/' . $year_suffix; // e.g., 01/25, 02/25
+            $Ev_TypeRef = $event_type . ' ' . str_pad($next_type_number, 2, '0', STR_PAD_LEFT) . '/' . $year_suffix; // e.g., SDG 01/25
+
+            // Step 5: Update events table
+            $update_event = "UPDATE events 
+            SET Ev_TypeCode = ?, Ev_TypeRef = ?, Ev_RefNum = ? 
+            WHERE Ev_ID = ?";
+            $update_stmt = $conn->prepare($update_event);
+            $update_stmt->bind_param("ssss", $event_type, $Ev_TypeRef, $Ev_RefNum, $id);
+            $update_stmt->execute();
+
+            // Step 6: Add eventcomment for approval
+            $status_id = 5; // Approved by Coordinator
+
+            $update_event = "UPDATE events 
+        SET Ev_TypeCode = ?, Ev_TypeRef = ?, Ev_RefNum = ?, Status_ID = ?
+        WHERE Ev_ID = ?";
+            $update_stmt = $conn->prepare($update_event);
+            $update_stmt->bind_param("sssis", $event_type, $Ev_TypeRef, $Ev_RefNum, $status_id, $id);
+            $update_stmt->execute();
 
         } elseif ($decision === 'reject') {
             if (empty(trim($comments))) {
                 die("Feedback is required when rejecting a proposal.");
-            }
-            $status = 'Rejected by Coordinator';
-            $query = "
-    UPDATE events 
-SET 
-  Status_ID = (SELECT Status_ID FROM eventstatus WHERE Status_Name = ?),
-  Type_ID = (SELECT Type_ID FROM eventtype WHERE Type_Code = ?)
-WHERE Ev_ID = ?
+            } elseif ($decision === 'reject') {
+                if (empty(trim($comments))) {
+                    die("Feedback is required when rejecting a proposal.");
+                }
 
-";
-            $stmt = $conn->prepare($query);
-            $stmt->bind_param("ssi", $status, $comments, $id);
+                $status_id = 4; // Rejected by Coordinator
+
+                // Insert comment into eventcomment
+                $comment_query = "INSERT INTO eventcomment (Ev_ID, Status_ID, Reviewer_Comment, Updated_By)
+                      VALUES (?, ?, ?, 'Coordinator')";
+                $comment_stmt = $conn->prepare($comment_query);
+                $comment_stmt->bind_param("sis", $id, $status_id, $comments);
+                $comment_stmt->execute();
+
+                // Also update event status
+                $update_event = "UPDATE events SET Status_ID = ? WHERE Ev_ID = ?";
+                $update_stmt = $conn->prepare($update_event);
+                $update_stmt->bind_param("is", $status_id, $id);
+                $update_stmt->execute();
+            }
 
         }
     } elseif ($type === 'postmortem' && $decision === 'approve') {
         $status = 'Accepted';
-        $reference_number = "REF-" . str_pad($id, 4, "0", STR_PAD_LEFT);
-        $query = "UPDATE eventpostmortem SET Rep_PostStatus = ?, Rep_RefNum = ? WHERE Rep_ID = ?";
+        $query = "UPDATE eventpostmortem SET Rep_PostStatus = ? WHERE Rep_ID = ?";
         $stmt = $conn->prepare($query);
-        $stmt->bind_param("ssi", $status, $reference_number, $id);
+        $stmt->bind_param("si", $status, $id);
     } else {
         die("Invalid decision or type.");
     }
@@ -540,33 +589,44 @@ $start_time = microtime(true);
                     <?php endif; ?>
 
                     <!-- Individual report -->
-                    <div class="section-header">Individual Reports</div>
+                    <div class="section-header">Individual Report For Cocu Claimers</div>
                     <table class="table table-bordered">
-                        <thead class="table-section-header">
+                        <thead>
                             <tr>
                                 <th>Committee Name</th>
+                                <th>Committee ID</th>
                                 <th>Position</th>
-                                <th>Duties</th>
-                                <th>Attendance</th>
-                                <th>Experience</th>
-                                <th>Challenges</th>
-                                <th>Benefits</th>
+                                <th>Report File</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php while ($report = $individual_reports->fetch_assoc()): ?>
-                                <tr>
-                                    <td><?php echo htmlspecialchars($report['Com_Name']); ?></td>
-                                    <td><?php echo htmlspecialchars($report['Com_Position']); ?></td>
-                                    <td><?php echo htmlspecialchars($report['IRS_Duties']); ?></td>
-                                    <td><?php echo htmlspecialchars($report['IRS_Attendance']); ?></td>
-                                    <td><?php echo htmlspecialchars($report['IRS_Experience']); ?></td>
-                                    <td><?php echo htmlspecialchars($report['IRS_Challenges']); ?></td>
-                                    <td><?php echo htmlspecialchars($report['IRS_Benefits']); ?></td>
-                                </tr>
-                            <?php endwhile; ?>
+                            <?php
+                            // Re-run result to show files
+                            $stmt = $conn->prepare($individual_query);
+                            $stmt->bind_param("ii", $id, $id);
+                            $stmt->execute();
+                            $files_result = $stmt->get_result();
+
+                            while ($row = $files_result->fetch_assoc()):
+                                if ($row['Com_COCUClaimers'] == 1):
+                                    ?>
+                                    <tr>
+                                        <td><?= htmlspecialchars($row['Com_Name']); ?></td>
+                                        <td><?= htmlspecialchars($row['Com_ID']); ?></td>
+                                        <td><?= htmlspecialchars($row['Com_Position']); ?></td>
+                                        <td>
+                                            <?php if (!empty($row['IR_File'])): ?>
+                                                <a href="viewpdf.php?file=<?= urlencode($row['IR_File']); ?>" target="_blank"
+                                                    class="btn btn-sm btn-primary">View</a>
+                                            <?php else: ?>
+                                                <span class="text-muted">No file</span>
+                                            <?php endif; ?>
+                                        </td>
+                                    </tr>
+                                <?php endif; endwhile; ?>
                         </tbody>
                     </table>
+
                 <?php endif; ?>
 
                 <form method="POST" action="">

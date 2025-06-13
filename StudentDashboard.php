@@ -12,11 +12,10 @@ $stu_id = $_SESSION['Stu_ID'];
 $student_name = $_SESSION['Stu_Name'];
 
 $carousel_query = "
-    SELECT e.Ev_ID, e.Ev_Name, e.Ev_Details, e.Ev_Poster 
+    SELECT e.Ev_ID, e.Ev_Poster 
     FROM events e
     LEFT JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID AND ep.Rep_PostStatus = 'Accepted'
-    JOIN eventcomment ec ON e.Ev_ID = ec.Ev_ID
-    JOIN eventstatus es ON ec.Status_ID = es.Status_ID
+    JOIN eventstatus es ON e.Status_ID = es.Status_ID
     WHERE es.Status_Name = 'Approved by Coordinator' AND ep.Rep_PostStatus IS NULL
 ";
 
@@ -36,8 +35,7 @@ $events_completed = $events_completed_result->fetch_assoc()['total_completed'];
 $proposals_pending_query = "
     SELECT COUNT(*) AS total_pending 
     FROM events e
-    JOIN eventcomment ec ON e.Ev_ID = ec.Ev_ID
-    JOIN eventstatus es ON ec.Status_ID = es.Status_ID
+    JOIN eventstatus es ON e.Status_ID = es.Status_ID
     WHERE e.Stu_ID = '$stu_id' AND es.Status_Name IN (
         'Pending Advisor Review',
         'Sent Back by Advisor',

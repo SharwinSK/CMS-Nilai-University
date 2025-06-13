@@ -16,13 +16,13 @@ $coordinator_name = ($result && $result->num_rows > 0) ? $result->fetch_assoc()[
 
 $proposals_query = "
     SELECT e.Ev_ID, e.Ev_Name, s.Stu_Name, c.Club_Name, e.Updated_At
-    FROM events e
-    JOIN student s ON e.Stu_ID = s.Stu_ID
-    JOIN club c ON e.Club_ID = c.Club_ID
-    JOIN eventcomment ec ON e.Ev_ID = ec.Ev_ID
-    JOIN eventstatus es ON ec.Status_ID = es.Status_ID
-    WHERE es.Status_Name = 'Approved by Advisor (Pending Coordinator Review)'
-    ORDER BY e.Updated_At DESC
+FROM events e
+JOIN student s ON e.Stu_ID = s.Stu_ID
+JOIN club c ON e.Club_ID = c.Club_ID
+JOIN eventstatus es ON e.Status_ID = es.Status_ID
+WHERE es.Status_Name = 'Approved by Advisor (Pending Coordinator Review)'
+ORDER BY e.Updated_At DESC
+
 ";
 
 $proposals_result = $conn->query($proposals_query);

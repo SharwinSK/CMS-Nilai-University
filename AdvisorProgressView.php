@@ -27,14 +27,12 @@ $query = "
     LEFT JOIN student s ON e.Stu_ID = s.Stu_ID
     LEFT JOIN eventpostmortem p ON e.Ev_ID = p.Ev_ID
     LEFT JOIN personincharge pic ON e.Ev_ID = pic.Ev_ID
-    LEFT JOIN eventcomment ec ON e.Ev_ID = ec.Ev_ID
-    LEFT JOIN eventstatus es ON ec.Status_ID = es.Status_ID
+    LEFT JOIN eventstatus es ON e.Status_ID = es.Status_ID
     WHERE e.Club_ID = ? 
-      AND (
-          es.Status_Name IN ('Approved by Advisor', 'Pending Coordinator Review', 'Approved by Coordinator') 
-          AND (p.Rep_PostStatus IS NULL OR p.Rep_PostStatus != 'Accepted')
-      )
+      AND es.Status_Name IN ('Approved by Advisor (Pending Coordinator Review)', 'Approved by Coordinator')
+      AND (p.Rep_PostStatus IS NULL OR p.Rep_PostStatus != 'Accepted')
 ";
+
 
 
 $stmt = $conn->prepare($query);
@@ -181,7 +179,7 @@ $start_time = microtime(true);
                                 <td><?php echo $proposal['Stu_Name']; ?></td>
                                 <td>
                                     <?php
-                                    if ($proposal['Status_Name'] === 'Approved by Coordinator') {
+                                    if ($proposal['Ev_Status'] === 'Approved by Coordinator') {
                                         echo '<span class="badge bg-success">Approved</span>';
                                     } else {
                                         echo '<span class="badge bg-warning">In Progress</span>';

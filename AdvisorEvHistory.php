@@ -23,18 +23,17 @@ $Advisor_name = ($name_result->num_rows > 0) ? $name_result->fetch_assoc() : ['A
 
 $completed_events_query = "
     SELECT 
-    e.Ev_ID, 
-    e.Ev_Name, 
-    s.Stu_Name, 
-    ep.Rep_RefNum, 
-    e.Ev_Date, 
-    et.Type_Code AS Type_ID
-FROM events e
-JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID
-JOIN student s ON e.Stu_ID = s.Stu_ID
-LEFT JOIN eventtype et ON e.Type_ID = et.Type_ID
-WHERE ep.Rep_PostStatus = 'Accepted' AND e.Club_ID = ?
-
+        e.Ev_ID, 
+        e.Ev_Name, 
+        s.Stu_Name, 
+        e.Ev_RefNum, 
+        e.Ev_Date, 
+        et.Type_Code
+    FROM events e
+    JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID
+    JOIN student s ON e.Stu_ID = s.Stu_ID
+    LEFT JOIN eventtyperef et ON e.Ev_TypeCode = et.Type_Code
+    WHERE ep.Rep_PostStatus = 'Accepted' AND e.Club_ID = ?
 ";
 
 
@@ -53,13 +52,12 @@ if (!empty($filter_month)) {
     $types .= 's';
 }
 if (!empty($filter_type)) {
-    $completed_events_query .= " AND e.Type_ID = ?";
-
+    $completed_events_query .= " AND e.EV_TypeCode = ?";
     $params[] = $filter_type;
     $types .= 's';
 }
 
-$completed_events_query .= " ORDER BY ep.Rep_RefNum ASC";
+$completed_events_query .= " ORDER BY e.Ev_RefNum ASC";
 $stmt = $conn->prepare($completed_events_query);
 
 $stmt->bind_param($types, ...$params);
@@ -167,6 +165,7 @@ $start_time = microtime(true);
                         <th>Event ID</th>
                         <th>Event Name</th>
                         <th>Student Name</th>
+                        <th>Event Type</th>
                         <th>Reference Number</th>
                         <th>Export</th>
                     </tr>
@@ -178,7 +177,8 @@ $start_time = microtime(true);
                                 <td><?php echo htmlspecialchars($row['Ev_ID']); ?></td>
                                 <td><?php echo htmlspecialchars($row['Ev_Name']); ?></td>
                                 <td><?php echo htmlspecialchars($row['Stu_Name']); ?></td>
-                                <td><?php echo htmlspecialchars($row['Rep_RefNum']); ?></td>
+                                <td><?php echo htmlspecialchars($row['Type_Code']); ?></td>
+                                <td><?php echo htmlspecialchars($row['Ev_RefNum']); ?></td>
                                 <td>
                                     <a href="Exportpdf.php?event_id=<?php echo urlencode($row['Ev_ID']); ?>"
                                         class="btn btn-primary btn-sm">

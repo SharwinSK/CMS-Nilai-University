@@ -25,11 +25,11 @@ $filter_club = $_GET['club'] ?? '';
 $filter_type = $_GET['type'] ?? '';
 
 $query = "
-    SELECT e.Ev_ID, e.Ev_Name, c.Club_Name, ep.Rep_RefNum, et.Type_Code AS Ev_Type 
+    SELECT e.Ev_ID, e.Ev_Name, c.Club_Name, e.Ev_RefNum, e.Ev_TypeCode AS Ev_Type
     FROM events e
     JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID
     JOIN club c ON e.Club_ID = c.Club_ID
-    LEFT JOIN eventtype et ON e.Type_ID = et.Type_ID
+
     WHERE ep.Rep_PostStatus = 'Accepted'
 ";
 
@@ -56,7 +56,7 @@ if (!empty($filter_club)) {
 }
 
 if (!empty($filter_type)) {
-    $query .= " AND e.Ev_Type = ?";
+    $query .= " AND e.EV_TypeCode = ?";
     $params[] = $filter_type;
     $types .= "s";
 }
@@ -188,7 +188,7 @@ $start_time = microtime(true);
                         <td><?php echo $row['Ev_ID']; ?></td>
                         <td><?php echo $row['Ev_Name']; ?></td>
                         <td><?php echo $row['Club_Name']; ?></td>
-                        <td><?php echo $row['Rep_RefNum']; ?></td>
+                        <td><?php echo $row['Ev_RefNum']; ?></td>
                         <td><?php echo $row['Ev_Type']; ?></td> <!-- Ensure it's displayed -->
                         <td>
                             <a href="ExportPDF.php?event_id=<?php echo urlencode($row['Ev_ID']); ?>"

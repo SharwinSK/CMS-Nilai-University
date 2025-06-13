@@ -79,21 +79,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $status_id = $status_result->fetch_assoc()['Status_ID'];
-    // Insert comment into eventcomment table
-    $insert_comment_query = "
+
+    // 1. Update status in events table
+    $update_event_status = $conn->prepare("UPDATE events SET Status_ID = ? WHERE Ev_ID = ?");
+    $update_event_status->bind_param("ii", $status_id, $event_id);
+    if (!$update_event_status->execute()) {
+        die("Error updating event status: " . $update_event_status->error);
+    }
+
+
+    // 2. Insert comment ONLY IF it's a rejection
+    if ($decision === 'send_back') {
+        $insert_comment_query = "
     INSERT INTO eventcomment (Ev_ID, Status_ID, Reviewer_Comment, Updated_By, Updated_At)
     VALUES (?, ?, ?, 'Advisor', NOW())
 ";
-    $insert_stmt = $conn->prepare($insert_comment_query);
-    $insert_stmt->bind_param("sss", $event_id, $status_id, $advisor_feedback);
+        $insert_stmt = $conn->prepare($insert_comment_query);
+        $insert_stmt->bind_param("sis", $event_id, $status_id, $advisor_feedback);
 
-    if (!$insert_stmt->execute()) {
-        die("Error saving advisor decision: " . $insert_stmt->error);
+        if (!$insert_stmt->execute()) {
+            die("Error saving advisor comment: " . $insert_stmt->error);
+        }
     }
 
+    // 3. Redirect back to dashboard
     header("Location: AdvisorDashboard.php");
     exit();
 }
+
 $start_time = microtime(true);
 ?>
 

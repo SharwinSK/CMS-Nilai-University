@@ -35,16 +35,11 @@ $pending_proposals_query = "
     SELECT e.Ev_ID, e.Ev_Name, e.created_at, s.Stu_Name
     FROM events e
     JOIN student s ON e.Stu_ID = s.Stu_ID
+    JOIN eventstatus es ON e.Status_ID = es.Status_ID
     WHERE e.Club_ID = ?
-      AND (
-        SELECT es.Status_Name
-        FROM eventcomment ec
-        JOIN eventstatus es ON ec.Status_ID = es.Status_ID
-        WHERE ec.Ev_ID = e.Ev_ID
-        ORDER BY ec.Updated_At DESC
-        LIMIT 1
-      ) = 'Pending Advisor Review'
+      AND es.Status_Name = 'Pending Advisor Review'
 ";
+
 
 
 $stmt = $conn->prepare($pending_proposals_query);
@@ -55,8 +50,7 @@ $pending_proposals = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 $carousel_query = "
     SELECT DISTINCT e.Ev_ID, e.Ev_Poster 
     FROM events e
-    JOIN eventcomment ec ON e.Ev_ID = ec.Ev_ID
-    JOIN eventstatus es ON ec.Status_ID = es.Status_ID
+    JOIN eventstatus es ON e.Status_ID = es.Status_ID
     LEFT JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID AND ep.Rep_PostStatus = 'Accepted'
     WHERE es.Status_Name = 'Approved by Coordinator' AND ep.Rep_PostStatus IS NULL
 ";

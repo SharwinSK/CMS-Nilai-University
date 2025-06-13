@@ -86,19 +86,13 @@ if (!$stmt->execute()) {
 $stmt->close();
 
 
-//Insert Event Status
-$status_id = 1;
-$updated_by = 'Advisor';
-$reviewer_comment = NULL;
-
-$stmt = $conn->prepare("INSERT INTO eventcomment (Ev_ID, Status_ID, Reviewer_Comment, Updated_By) 
-                        VALUES (?, ?, ?, ?)");
-$stmt->bind_param("siss", $event_id, $status_id, $reviewer_comment, $updated_by);
-
-if (!$stmt->execute()) {
-    die("Error inserting into eventcomment: " . $stmt->error);
-}
+// Set initial status for proposal
+$status_id = 1; // Pending Advisor Review
+$stmt = $conn->prepare("UPDATE events SET Status_ID = ? WHERE Ev_ID = ?");
+$stmt->bind_param("is", $status_id, $event_id);
+$stmt->execute();
 $stmt->close();
+
 
 
 $stmt = $conn->prepare("INSERT INTO PersonInCharge (PIC_ID, Ev_ID, PIC_Name, PIC_PhnNum) 
