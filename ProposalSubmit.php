@@ -1,5 +1,6 @@
 <?php
 include('dbconfig.php');
+include('sendMailTemplates.php');
 session_start();
 
 $stu_id = $_SESSION['Stu_ID'];
@@ -24,6 +25,7 @@ if ($row['last_id']) {
 }
 
 $event_id = $new_num . '/' . $year_suffix;
+
 
 $poster = null;
 
@@ -214,6 +216,39 @@ if (!$stmt->execute()) {
     die("Error inserting into BudgetSummary: " . $stmt->error);
 }
 $stmt->close();
+
+// --- Send email to advisor about new proposal ---
+
+
+// Fetch advisor info
+$advisorQuery = "
+    SELECT a.Adv_Name, a.Adv_Email 
+    FROM advisor a
+    JOIN club c ON a.Club_ID = c.Club_ID 
+    WHERE c.Club_ID = ?
+";
+$stmt = $conn->prepare($advisorQuery);
+$stmt->bind_param("s", $club_id);
+$stmt->execute();
+$result = $stmt->get_result();
+$advisorData = $result->fetch_assoc();
+$stmt->close();
+
+if ($advisorData) {
+    $advisorName = $advisorData['Adv_Name'];
+    $advisorEmail = $advisorData['Adv_Email'];
+
+    // Get student name
+    $studentQuery = $conn->prepare("SELECT Stu_Name FROM student WHERE Stu_ID = ?");
+    $studentQuery->bind_param("s", $stu_id);
+    $studentQuery->execute();
+    $studentResult = $studentQuery->get_result();
+    $studentName = $studentResult->fetch_assoc()['Stu_Name'];
+    $studentQuery->close();
+
+    // Send email notification to advisor
+    newProposalToAdvisor($studentName, $ev_name, $advisorName, $advisorEmail);
+}
 
 ?>
 

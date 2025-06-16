@@ -1,5 +1,7 @@
 <?php
 include('dbconfig.php');
+include('sendMailTemplates.php');
+
 session_start();
 if (!isset($_SESSION['Coor_ID'])) {
     header("Location: CoordinatorLogin.php");
@@ -99,6 +101,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $decision = $_POST['decision'] ?? '';
     $comments = $_POST['comments'] ?? '';
 
+    // Fetch Student + Advisor email info BEFORE decisions
+    $emailFetch = $conn->prepare("
+        SELECT s.Stu_Name, s.Stu_Email, a.Adv_Email AS AdvisorEmail, e.Ev_Name 
+        FROM events e
+        LEFT JOIN student s ON e.Stu_ID = s.Stu_ID
+        LEFT JOIN advisor a ON e.Club_ID = a.Club_ID
+        WHERE e.Ev_ID = ?
+    ");
+    $emailFetch->bind_param("i", $id);
+    $emailFetch->execute();
+    $emailRow = $emailFetch->get_result()->fetch_assoc();
+
+    $studentName = $emailRow['Stu_Name'];
+    $studentEmail = $emailRow['Stu_Email'];
+    $advisorEmail = $emailRow['AdvisorEmail'];
+    $eventName = $emailRow['Ev_Name'];
+
+
     if ($type === 'proposal') {
         if ($decision === 'approve') {
             $event_type = $_POST['ev_type'] ?? '';
@@ -152,7 +172,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             $Ev_RefNum = $new_num . '/' . $year_suffix; // e.g., 01/25, 02/25
-            $Ev_TypeRef = $event_type . ' ' . str_pad($next_type_number, 2, '0', STR_PAD_LEFT) . '/' . $year_suffix; // e.g., SDG 01/25
+            $Ev_TypeRef = $event_type . ' ' . str_pad($next_type_number, 2, '0', STR_PAD_LEFT) . '/' . $year_suffix;
 
             // Step 5: Update events table
             $update_event = "UPDATE events 
@@ -171,6 +191,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $update_stmt = $conn->prepare($update_event);
             $update_stmt->bind_param("sssis", $event_type, $Ev_TypeRef, $Ev_RefNum, $status_id, $id);
             $update_stmt->execute();
+
+            // ✉️ Notify both student & advisor
+            coordinatorApproved($studentName, $eventName, $studentEmail, $advisorEmail);
+
 
         } elseif ($decision === 'reject') {
             if (empty(trim($comments))) {
@@ -194,6 +218,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $update_stmt = $conn->prepare($update_event);
                 $update_stmt->bind_param("is", $status_id, $id);
                 $update_stmt->execute();
+
+                // ✉️ Notify student only
+                coordinatorRejected($studentName, $eventName, $studentEmail);
             }
 
         }

@@ -1,5 +1,7 @@
 <?php
 include('dbconfig.php');
+include_once('sendMailTemplates.php');
+
 session_start();
 
 if (!isset($_SESSION['Adv_ID'])) {
@@ -102,11 +104,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+
+
+    // EMAIL Notification (after DB updates)
+    $studentName = $proposal['Stu_Name'];
+    $eventName = $proposal['Ev_Name'];
+    $clubName = $proposal['Club_Name'];
+    $studentEmail = $conn->query("SELECT Stu_Email FROM student WHERE Stu_ID = '{$proposal['Stu_ID']}'")->fetch_assoc()['Stu_Email'];
+    $coordinatorEmail = $conn->query("SELECT Coor_Email FROM coordinator LIMIT 1")->fetch_assoc()['Coor_Email']; // adjust this if multiple coordinators
+    $advisorEmail = $_SESSION['Adv_Email']; // make sure this is stored in session during login
+    $advisorName = $_SESSION['Adv_Name'] ?? "Advisor"; // optional fallback
+
+    if ($decision === 'send_back') {
+        advisorRejected($studentName, $eventName, $studentEmail);
+    } elseif ($decision === 'approve') {
+        advisorApproved($studentName, $eventName, $studentEmail, $coordinatorEmail, $clubName);
+    }
+
     // 3. Redirect back to dashboard
     header("Location: AdvisorDashboard.php");
     exit();
 }
-
 $start_time = microtime(true);
 ?>
 
