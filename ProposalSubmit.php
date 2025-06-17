@@ -217,7 +217,7 @@ if (!$stmt->execute()) {
 }
 $stmt->close();
 
-// --- Send email to advisor about new proposal ---
+
 
 
 // Fetch advisor info

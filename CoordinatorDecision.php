@@ -92,8 +92,6 @@ if ($type === 'proposal') {
     $individual_stmt->execute();
     $individual_reports = $individual_stmt->get_result();
 
-
-
 }
 
 
@@ -240,7 +238,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header("Location: CoordinatorDashboard.php");
     exit();
 }
-
 
 $start_time = microtime(true);
 ?>

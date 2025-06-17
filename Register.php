@@ -8,6 +8,8 @@ try {
         $school = $_POST['Stu_School'];
         $studentID = $_POST['Stu_ID'];
         $passwordInput = $_POST['Stu_PSW'];
+        $email = $_POST['Stu_Email'];
+
 
         // Password validation
         if (
@@ -32,9 +34,9 @@ try {
             $hashedPassword = password_hash($passwordInput, PASSWORD_BCRYPT);
 
             // Insert the new student record
-            $stmt = $conn->prepare("INSERT INTO student (Stu_Name, Stu_Program, Stu_School, Stu_ID, Stu_PSW) 
-                                    VALUES (?, ?, ?, ?, ?)");
-            $stmt->bind_param("sssss", $name, $program, $school, $studentID, $hashedPassword);
+            $stmt = $conn->prepare("INSERT INTO student (Stu_Name, Stu_Program, Stu_School, Stu_ID, Stu_Email, Stu_PSW)
+                        VALUES (?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param("ssssss", $name, $program, $school, $studentID, $email, $hashedPassword);
 
             if ($stmt->execute()) {
                 echo "<script>alert('Registration successful! You can now login.'); window.location.href='StudentLogin.php';</script>";
@@ -142,6 +144,11 @@ try {
             <div class="mb-3">
                 <input type="text" name="Stu_ID" class="form-control" placeholder="Student ID" required>
             </div>
+
+            <div class="mb-3">
+                <input type="email" name="Stu_Email" class="form-control" placeholder="Email Address" required>
+            </div>
+
 
             <div class="mb-3 position-relative">
                 <input type="password" name="Stu_PSW" class="form-control" id="password" placeholder="Password" required
