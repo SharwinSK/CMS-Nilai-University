@@ -279,9 +279,6 @@ $budget_details = $budget_stmt->get_result();
                 errorMessages.push("Please fill in the Conclusion field.");
             }
 
-
-
-
             const eventPhotos = document.getElementById("inputPhoto").files.length;
             if (eventPhotos === 0) {
                 isValid = false;
@@ -307,8 +304,6 @@ $budget_details = $budget_stmt->get_result();
         });
     </script>
 
-
 </body>
-
 
 </html>

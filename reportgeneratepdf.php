@@ -1,247 +1,183 @@
 <?php
 require_once('TCPDF-main/tcpdf.php');
+require_once('fpdi/src/autoload.php');
 include('dbconfig.php');
-
 session_start();
-// Check user role
+
+use setasign\Fpdi\Tcpdf\Fpdi;
+
 $user_type = $_SESSION['user_type'];
 $where_clause = '';
 
-// Apply role-based filtering
 switch ($user_type) {
     case 'student':
         $student_id = $_SESSION['Stu_ID'];
         $where_clause = "AND e.Stu_ID = '$student_id'";
         break;
     case 'coordinator':
-        $where_clause = ''; // Full access, no restriction
+        $where_clause = '';
         break;
     default:
         die("Unauthorized access");
 }
+
 $report_id = $_GET['id'];
+$query = "
+    SELECT e.*, ep.*, s.Stu_Name, s.Stu_ID, c.Club_Name, bs.statement,
+           pic.PIC_Name, pic.PIC_ID, pic.PIC_PhnNum
+    FROM events e
+    LEFT JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID
+    LEFT JOIN student s ON e.Stu_ID = s.Stu_ID
+    LEFT JOIN club c ON e.Club_ID = c.Club_ID
+    LEFT JOIN budgetsummary bs ON e.Ev_ID = bs.Ev_ID
+    LEFT JOIN personincharge pic ON e.Ev_ID = pic.Ev_ID
+    WHERE ep.Rep_ID = '$report_id' $where_clause
+";
 
-$report_query = "
-    SELECT 
-        e.*, 
-        ep.*, 
-        s.Stu_Name, 
-        c.Club_Name
-    FROM 
-        events e 
-    LEFT JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID 
-    LEFT JOIN student s ON e.Stu_ID = s.Stu_ID 
-    LEFT JOIN club c ON e.Club_ID = c.Club_ID 
-    WHERE ep.Rep_ID = '$report_id'";
 
-$report_result = $conn->query($report_query);
-$report = $report_result->fetch_assoc();
+$result = $conn->query($query);
+$report = $result->fetch_assoc();
 
 if (!$report) {
     die("Invalid Report ID.");
 }
 
-$eventflow_query = "SELECT * FROM eventflow WHERE Ev_ID = '$report_id'";
-$eventflow_result = $conn->query($eventflow_query);
-
-$committee_query = "SELECT * FROM committee WHERE Ev_ID = '$report_id'";
-$committee_result = $conn->query($committee_query);
-
-$budget_query = "SELECT * FROM budget WHERE Ev_ID = '$report_id'";
-$budget_result = $conn->query($budget_query);
+$event_id = $report['Ev_ID'];
+$eventflow_result = $conn->query("SELECT * FROM eventflow WHERE Ev_ID = '$event_id'");
+$committee_result = $conn->query("SELECT * FROM committee WHERE Ev_ID = '$event_id' AND Com_COCUClaimers = 1");
 
 $individual_query = "
-    SELECT ir.Rep_ID, ir.Com_ID, ir.IRS_Duties, ir.IRS_Attendance, ir.IRS_Experience, 
-           ir.IRS_Challenges, ir.IRS_Benefits, 
-           c.Com_Name, c.Com_Position
+    SELECT ir.*, c.Com_Name, c.Com_Position 
     FROM individualreport ir
     JOIN committee c ON ir.Com_ID = c.Com_ID
-    WHERE ir.Rep_ID = '$report_id' AND c.Ev_ID = (SELECT Ev_ID FROM eventpostmortem WHERE Rep_ID = '$report_id')";
+    WHERE ir.Rep_ID = '$report_id' AND c.Ev_ID = '$event_id'
+";
 $individual_result = $conn->query($individual_query);
 
-
 $photos = json_decode($report['rep_photo'], true);
+$statement_file = $report['statement'];
 
-
-
-class MYPDF extends TCPDF
+class MYPDF extends FPDI
 {
-
     public function Header()
     {
         $this->SetFont('dejavusans', 'B', 12);
-        $this->Cell(0, 10, 'PROPOSAL FOR PROJECT/ACTIVITY', 0, 1, 'C');
-
-        //  Logo 
-        $this->Image('NU logo2.jpeg', 5, 5, 20);
-
-        //  "Co-Cu Project" Box
-        $this->SetXY(60, 15);
+        $this->Image('NU logo2.jpeg', 10, 10, 20);
+        $this->SetXY(35, 12);
+        $this->Cell(120, 8, 'POST EVENT REPORT', 0, 0, 'C');
         $this->SetFont('dejavusans', '', 10);
-        $this->Cell(40, 8, 'Co-Cu Project', 1, 0, 'C');
-
-        //  Reference Number 
-        $this->SetFont('dejavusans', 'B', 10);
-        $this->SetXY(160, 15); // Adjust position
+        $this->SetXY(160, 12);
         $this->Cell(40, 8, 'NU/SOP/SHSS/001/F01 (rev. 1)', 0, 0, 'R');
-
-        //  Line Below Header
-        $this->Ln(15);
+        $this->Ln(12);
         $this->Cell(0, 0, '', 'T', 1, 'C');
+    }
+
+    public function Footer()
+    {
+        $this->SetY(-15);
+        $this->SetFont('dejavusans', '', 9);
+        $this->Cell(0, 10, 'RP/UCC/PER/2025 | Page ' . $this->getAliasNumPage(), 0, 0, 'R');
     }
 }
 
 $pdf = new MYPDF();
 $pdf->SetMargins(10, 30, 10);
+
+// Page 1: Cover
 $pdf->AddPage();
-$pdf->SetFont('dejavusans', '', 10);
+$pdf->SetFont('dejavusans', '', 12);
+$pdf->Ln(50);
+$pdf->MultiCell(0, 10, "Event ID: " . $report['Ev_ID'], 0, 'L');
+$pdf->MultiCell(0, 10, "Student Name: " . $report['Stu_Name'], 0, 'L');
+$pdf->MultiCell(0, 10, "ID Number: " . $report['Stu_ID'], 0, 'L');
+$pdf->MultiCell(0, 10, "Event Name: " . $report['Ev_Name'], 0, 'L');
+$pdf->MultiCell(0, 10, "Date of Event: " . $report['Ev_Date'], 0, 'L');
+$pdf->MultiCell(0, 10, "Date of Submission: " . date('Y-m-d'), 0, 'L');
+$pdf->MultiCell(0, 10, "PIC Name: " . ($report['PIC_Name'] ?? 'N/A'), 0, 'L');
+$pdf->MultiCell(0, 10, "PIC ID: " . ($report['PIC_ID'] ?? 'N/A'), 0, 'L');
+$pdf->MultiCell(0, 10, "PIC Phone: " . ($report['PIC_PhnNum'] ?? 'N/A'), 0, 'L');
+$pdf->MultiCell(0, 10, "Reference Number: " . $report['Ev_RefNum'], 0, 'L');
+$pdf->MultiCell(0, 10, "Event Type: " . $report['Ev_TypeRef'], 0, 'L');
 
-
-$html = '<h2 style="text-align:center;">Postmortem Report</h2>';
-$html .= '<h3>Event Details</h3>';
-$html .= '<table cellspacing="3" cellpadding="4">';
-$html .= '<tr><td><strong>Event ID:</strong></td><td>' . $report['Ev_ID'] . '</td></tr>';
-$html .= '<tr><td><strong>Report ID:</strong></td><td>' . $report['Rep_ID'] . '</td></tr>';
-$html .= '<tr><td><strong>Date Submission:</strong></td><td>' . date('d-m-Y') . '</td></tr>';
-$html .= '<tr><td><strong>Student Name:</strong></td><td>' . $report['Stu_Name'] . '</td></tr>';
-$html .= '<tr><td><strong>Club Name:</strong></td><td>' . $report['Club_Name'] . '</td></tr>';
-$html .= '<tr><td><strong>Event Name:</strong></td><td>' . $report['Ev_Name'] . '</td></tr>';
-$html .= '<tr><td><strong>Event Nature:</strong></td><td>' . $report['Ev_ProjectNature'] . '</td></tr>';
-$html .= '<tr><td><strong>Event Introduction:</strong></td><td>' . $report['Ev_Intro'] . '</td></tr>';
-$html .= '<tr><td><strong>Event Details:</strong></td><td>' . $report['Ev_Details'] . '</td></tr>';
-$html .= '<tr><td><strong>Event Objectives:</strong></td><td>' . $report['Ev_Objectives'] . '</td></tr>';
-$html .= '<tr><td><strong>Event Date:</strong></td><td>' . $report['Ev_Date'] . '</td></tr>';
-$html .= '<tr><td><strong>Start Time:</strong></td><td>' . $report['Ev_StartTime'] . '</td></tr>';
-$html .= '<tr><td><strong>End Time:</strong></td><td>' . $report['Ev_EndTime'] . '</td></tr>';
-$html .= '<tr><td><strong>Participants:</strong></td><td>' . $report['Ev_Pax'] . '</td></tr>';
-$html .= '<tr><td><strong>Venue:</strong></td><td>' . $report['Ev_Venue'] . '</td></tr>';
-$html .= '<tr><td><strong>Challenges:</strong></td><td>' . $report['Rep_ChallengesDifficulties'] . '</td></tr>';
-$html .= '<tr><td><strong>Conclusion:</strong></td><td>' . $report['Rep_Conclusion'] . '</td></tr>';
-$html .= '</table><br>';
-
-//Event Flow 
+// Page 2: Event Summary
 $pdf->AddPage();
-$html .= '<h3>Event Flow / Minutes of Meeting</h3>';
+$pdf->SetFont('dejavusans', '', 11);
+$pdf->Write(0, "Event Summary", '', 0, 'C', true, 0, false, false, 0);
+$pdf->Ln(5);
+$pdf->MultiCell(0, 10, "Event Name: " . $report['Ev_Name'], 0, 'L');
+$pdf->MultiCell(0, 10, "Event Nature: " . $report['Ev_ProjectNature'], 0, 'L');
+$pdf->MultiCell(0, 10, "Objectives: " . $report['Ev_Objectives'], 0, 'L');
+$pdf->MultiCell(0, 10, "Details: " . $report['Ev_Details'], 0, 'L');
+$pdf->MultiCell(0, 10, "Challenges: " . $report['Rep_ChallengesDifficulties'], 0, 'L');
+$pdf->MultiCell(0, 10, "Conclusion: " . $report['Rep_Conclusion'], 0, 'L');
 
-$html .= '<table border="1" cellpadding="4">';
-$html .= '<tr>
-            <th>Date</th>
-            <th>Start Time</th>
-            <th>End Time</th>
-            <th>Activity</th>
-            <th>Remarks / Meeting Minutes</th>
-            <th>Hours</th>
-          </tr>';
-
-
+// Page 3: Event Flow
+$pdf->AddPage();
+$pdf->Write(0, "Event Flow / Minutes of Meeting", '', 0, 'C', true, 0, false, false, 0);
+$html = '<table border="1" cellpadding="4"><tr><th>Date</th><th>Start</th><th>End</th><th>Activity</th><th>Remarks</th><th>Hours</th></tr>';
 while ($row = $eventflow_result->fetch_assoc()) {
-    $html .= '<tr>
-                <td>' . htmlspecialchars($row['Date']) . '</td>
-                <td>' . htmlspecialchars($row['Start_Time']) . '</td>
-                <td>' . htmlspecialchars($row['End_Time']) . '</td>
-                <td>' . nl2br(htmlspecialchars($row['Activity'])) . '</td>
-                <td>' . nl2br(htmlspecialchars($row['Remarks'])) . '</td>
-                <td>' . htmlspecialchars($row['Hours']) . '</td>
-              </tr>';
+    $html .= '<tr><td>' . $row['Date'] . '</td><td>' . $row['Start_Time'] . '</td><td>' . $row['End_Time'] . '</td><td>' . $row['Activity'] . '</td><td>' . $row['Remarks'] . '</td><td>' . $row['Hours'] . '</td></tr>';
 }
-
-$html .= '</table><br>';
-$pdf->writeHTML($html);
-$html = '';
-
-//Commitee Members
-$pdf->AddPage();
-$html = '<h3>Committee Members</h3>';
-$html .= '<table border="1" cellpadding="4">';
-$html .= '<tr>
-            <th>ID</th>
-            <th>Name</th>
-            <th>Position</th>
-            <th>Department</th>
-            <th>Phone</th>
-            <th>Job Scope</th>
-            <th>COCU Claimers</th>
-          </tr>';
-while ($committee = $committee_result->fetch_assoc()) {
-    $cocu = $committee['Com_COCUClaimers'] == '1' ? 'Yes' : 'No';
-    $html .= '<tr>
-                <td>' . $committee['Com_ID'] . '</td>
-                <td>' . $committee['Com_Name'] . '</td>
-                <td>' . $committee['Com_Position'] . '</td>
-                <td>' . $committee['Com_Department'] . '</td>
-                <td>' . $committee['Com_PhnNum'] . '</td>
-                <td>' . $committee['Com_JobScope'] . '</td>
-                <td>' . $cocu . '</td>
-              </tr>';
-}
-$html .= '</table><br>';
-
-//Budget
-$html .= '<h3>Budget</h3>';
-$html .= '<table border="1" cellpadding="4">';
-$html .= '<tr>
-            <th>Description</th>
-            <th>Amount</th>
-            <th>Type</th>
-            <th>Remarks</th>
-          </tr>';
-while ($budget = $budget_result->fetch_assoc()) {
-    $html .= '<tr>
-                <td>' . $budget['Bud_Desc'] . '</td>
-                <td>' . $budget['Bud_Amount'] . '</td>
-                <td>' . $budget['Bud_Type'] . '</td>
-                <td>' . $budget['Bud_Remarks'] . '</td>
-              </tr>';
-}
-$html .= '</table><br>';
-$pdf->writeHTML($html);
-$html = '';
-
-//Individual Report 
-$html .= '<h3>Individual Reports</h3>';
-$html .= '<table border="1" cellpadding="4">';
-$html .= '<tr><th>Name</th><th>ID</th><th>Position</th><th>Duties</th><th>Attendance
-</th><th>Experience</th><th>Challenges</th><th>Benefits</th></tr>';
-while ($individual = $individual_result->fetch_assoc()) {
-    $html .= '<tr>
-                <td>' . $individual['Com_Name'] . '</td>
-                <td>' . $individual['Com_ID'] . '</td>
-                <td>' . $individual['Com_Position'] . '</td>
-                <td>' . $individual['IRS_Duties'] . '</td>
-                <td>' . $individual['IRS_Attendance'] . '</td>
-                <td>' . $individual['IRS_Experience'] . '</td>
-                <td>' . $individual['IRS_Challenges'] . '</td>
-                <td>' . $individual['IRS_Benefits'] . '</td>
-              </tr>';
-}
-$html .= '</table><br>';
-
-//Event Photo
+$html .= '</table>';
 $pdf->writeHTML($html, true, false, true, false, '');
 
+
+
+// Page 4: Event Photos
 if (!empty($photos)) {
     $pdf->AddPage();
-    $pdf->SetFont('dejavusans', 'B', 12);
-    $pdf->Cell(0, 10, 'Event Photos', 0, 1, 'C');
+    $pdf->Write(0, "Event Photos", '', 0, 'C', true, 0, false, false, 0);
     foreach ($photos as $photo) {
-        $pdf->Image($photo, 50, '', 100, 80, '', '', '', true);
-        $pdf->Ln(90);
+        if (file_exists($photo)) {
+            $pdf->Image($photo, '', '', 120, 80, '', '', '', true);
+            $pdf->Ln(90);
+        }
     }
 }
 
-//Event expenses Receipt
-if (!empty($receipts)) {
-    $pdf->AddPage();
-    $pdf->SetFont('dejavusans', 'B', 12);
-    $pdf->Cell(0, 10, 'Expense Receipts', 0, 1, 'C');
-    foreach ($receipts as $receipt) {
-        $pdf->Image($receipt, 50, '', 100, 80, '', '', '', true);
-        $pdf->Ln(90);
+// Page 5: Committee Members claiming COCU
+$pdf->AddPage();
+$html = '<h3>Committee Members (COCU)</h3><table border="1" cellpadding="4"><tr><th>ID</th><th>Name</th><th>Position</th><th>Department</th><th>Phone</th><th>Job Scope</th></tr>';
+$committee_result->data_seek(0);
+while ($com = $committee_result->fetch_assoc()) {
+    $html .= "<tr><td>{$com['Com_ID']}</td><td>{$com['Com_Name']}</td><td>{$com['Com_Position']}</td><td>{$com['Com_Department']}</td><td>{$com['Com_PhnNum']}</td><td>{$com['Com_JobScope']}</td></tr>";
+}
+$html .= '</table>';
+$pdf->writeHTML($html, true, false, true, false, '');
+
+
+// Page 6: Budget + Receipts (using FPDI if available)
+if (!empty($statement_file) && file_exists($statement_file)) {
+    $pageCount = $pdf->setSourceFile($statement_file);
+    for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
+        $templateId = $pdf->importPage($pageNo);
+        $pdf->AddPage();
+        $pdf->useTemplate($templateId);
     }
 }
 
-$pdf->Output('Postmortem_Report_' . $report_id . '.pdf', 'D');
-var_dump($report);
-exit();
+// Page 7: Individual Reports PDF (if exist)
+if ($individual_result->num_rows > 0) {
+    while ($ind = $individual_result->fetch_assoc()) {
+        $ind_file = $ind['IR_File'] ?? ''; // Make sure column is IR_File
 
+        // ✅ Build full file path
+        $full_path = "uploads/individual_reports/" . $ind_file;
+
+        if (!empty($ind_file) && file_exists($full_path)) {
+            $pageCount = $pdf->setSourceFile($full_path);
+            for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
+                $tpl = $pdf->importPage($pageNo);
+                $pdf->AddPage();
+                $pdf->useTemplate($tpl);
+            }
+        } else {
+            error_log("Missing or invalid file: " . $full_path);
+        }
+    }
+}
+
+
+
+$pdf->Output("PostEventReport_{$report_id}.pdf", 'D');
 ?>

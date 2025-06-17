@@ -114,28 +114,37 @@ if (!$stmt) {
     die("Prepare failed: " . $conn->error);
 }
 
+$fileIndex = 0; // to track cocu_statement file array
+
 foreach ($_POST['student_name'] as $index => $name) {
     $id = trim($_POST['student_id'][$index]);
     $position = trim($_POST['student_position'][$index]);
     $department = trim($_POST['student_department'][$index]);
     $phone = trim($_POST['student_phone'][$index]);
     $job = trim($_POST['student_job'][$index]);
-    $cocu = trim($_POST['cocu_claimers'][$index]);
-    $cocuupload = isset($_FILES['cocu_statement']['name'][$index]) ? $_FILES['cocu_statement']['name'][$index] : '';
-    $tmpPath = isset($_FILES['cocu_statement']['tmp_name'][$index]) ? $_FILES['cocu_statement']['tmp_name'][$index] : '';
-
     $cocu_status = trim($_POST['cocu_claimers'][$index]);
+
     $cocu_statement_path = null;
 
-    if (!empty($cocuupload) && !empty($tmpPath)) {
-        $target_dir = "uploads/cocustatement/";
-        $target_file = $target_dir . basename($cocuupload);
+    // Only process if cocu = 1 (Yes)
+    if ($cocu_status == '1') {
+        $cocuupload = $_FILES['cocu_statement']['name'][$fileIndex];
+        $tmpPath = $_FILES['cocu_statement']['tmp_name'][$fileIndex];
 
-        if (move_uploaded_file($tmpPath, $target_file)) {
-            $cocu_statement_path = $target_file;
-        } else {
-            die("File upload failed for COCU statement.");
+        if (!empty($cocuupload) && !empty($tmpPath)) {
+            $ext = pathinfo($cocuupload, PATHINFO_EXTENSION);
+            $uniqueName = $id . '_cocu_' . time() . '.' . $ext;
+            $target_dir = "uploads/cocustatement/";
+            $target_file = $target_dir . $uniqueName;
+
+            if (move_uploaded_file($tmpPath, $target_file)) {
+                $cocu_statement_path = $target_file;
+            } else {
+                die("File upload failed for COCU statement.");
+            }
         }
+
+        $fileIndex++; // only increase when file input was active
     }
 
     $stmt->bind_param(
@@ -156,7 +165,6 @@ foreach ($_POST['student_name'] as $index => $name) {
     }
 }
 $stmt->close();
-
 
 foreach ($_POST['event_date'] as $index => $date) {
     $start_time = htmlspecialchars(trim($_POST['start_time'][$index]));
