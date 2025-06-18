@@ -599,9 +599,7 @@ $start_time = microtime(true);
                             $photos = json_decode($details['Rep_Photo'], true);
                             if (!empty($photos)) {
                                 foreach ($photos as $photo) {
-                                    echo '<img src="' . htmlspecialchars($photo) .
-                                        '" alt="Event Photo" class="img-fluid" style="max-width: 
-                                    200px; max-height: 150px; margin: 10px; border-radius: 5px;">';
+                                    echo '<img src="' . htmlspecialchars($photo) . '" alt="Event Photo" class="img-fluid" style="max-width: 200px; max-height: 150px; margin: 10px; border-radius: 5px;">';
                                 }
                             } else {
                                 echo '<p class="text-muted">No valid event photos uploaded.</p>';

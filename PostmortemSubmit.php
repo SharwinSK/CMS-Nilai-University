@@ -42,8 +42,11 @@ if (!empty($_FILES['event_photos']['name'][0])) {
             die("Only JPG, PNG, and GIF images are allowed.");
         }
 
-        $original_name = basename($_FILES['event_photos']['name'][$key]);
-        $new_file_name = time() . "_" . $original_name;
+        $original = pathinfo($_FILES['event_photos']['name'][$key], PATHINFO_FILENAME);
+        $extension = strtolower(pathinfo($_FILES['event_photos']['name'][$key], PATHINFO_EXTENSION));
+        $slug = preg_replace('/[^A-Za-z0-9_-]/', '_', $original);
+        $new_file_name = uniqid() . "_" . $slug . "." . $extension;
+
         $target_file = "uploads/photos/" . $new_file_name;
 
         if ($file_size > 3 * 1024 * 1024) {

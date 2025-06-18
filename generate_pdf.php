@@ -108,6 +108,29 @@ $html .= '</table>';
 
 $pdf->writeHTML($html, true, false, true, false, '');
 
+// ==================== EVENT OVERVIEW PAGE ====================
+$pdf->AddPage();
+$pdf->SetFont('dejavusans', '', 11);
+
+$intro = nl2br($event['Ev_Intro'] ?? '-');
+$objectives = nl2br($event['Ev_Objectives'] ?? '-');
+$details = nl2br($event['Ev_Details'] ?? '-');
+
+$html = '<h2 style="text-align:center;">Event Overview</h2><br>';
+
+$html .= '<strong> Introduction:</strong><br>';
+$html .= "<p style='text-align:justify;'>$intro</p><br>";
+
+$html .= '<strong> Objectives:</strong><br>';
+$html .= "<p style='text-align:justify;'>$objectives</p><br>";
+
+$html .= '<strong> Details:</strong><br>';
+$html .= "<p style='text-align:justify;'>$details</p>";
+
+$pdf->writeHTML($html, true, false, true, false, '');
+
+
+// ==================== EVENT FLOW PAGE ==================== 
 $pdf->AddPage();
 $html = '<h3>Event Flow</h3><table border="1" cellpadding="4"><tr>
 <th>Date</th><th>Start Time</th><th>End Time</th><th>Activity</th><th>Remarks</th><th>Hours</th></tr>';
@@ -118,6 +141,7 @@ while ($row = $eventflow_result->fetch_assoc()) {
 $html .= '</table>';
 $pdf->writeHTML($html);
 
+// ==================== COMMITTEE MEMBERS ==================== 
 $pdf->AddPage();
 $html = '<h3>Committee Members</h3><table border="1" cellpadding="4">
 <tr><th>ID</th><th>Name</th><th>Position</th><th>Department</th><th>Phone</th><th>Job Scope</th><th>COCU</th></tr>';
