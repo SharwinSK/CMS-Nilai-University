@@ -40,11 +40,7 @@ $event_flow_stmt->bind_param("i", $event_id);
 $event_flow_stmt->execute();
 $event_flows = $event_flow_stmt->get_result();
 
-$budget_query = "SELECT * FROM budget WHERE Ev_ID = ?";
-$budget_stmt = $conn->prepare($budget_query);
-$budget_stmt->bind_param("i", $event_id);
-$budget_stmt->execute();
-$budget_details = $budget_stmt->get_result();
+
 ?>
 
 <!DOCTYPE html>
@@ -166,28 +162,7 @@ $budget_details = $budget_stmt->get_result();
                         </tbody>
                     </table>
 
-                    <!-- Budget Section -->
-                    <h5 class="section-header">Budget Details</h5>
-                    <table class="table table-bordered">
-                        <thead>
-                            <tr>
-                                <th>Description</th>
-                                <th>Amount</th>
-                                <th>Income/Expense</th>
-                                <th>Remarks</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php while ($budget = $budget_details->fetch_assoc()): ?>
-                                <tr>
-                                    <td><?php echo $budget['Bud_Desc']; ?></td>
-                                    <td><?php echo $budget['Bud_Amount']; ?></td>
-                                    <td><?php echo $budget['Bud_Type']; ?></td>
-                                    <td><?php echo $budget['Bud_Remarks']; ?></td>
-                                </tr>
-                            <?php endwhile; ?>
-                        </tbody>
-                    </table>
+
                     <!--uploads Statement-->
                     <div class="mb-3">
                         <label for="statementPdf" class="form-label">Upload Statement and Receipt </label>
