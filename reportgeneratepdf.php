@@ -43,7 +43,7 @@ if (!$report) {
 }
 
 $event_id = $report['Ev_ID'];
-$eventflow_result = $conn->query("SELECT * FROM eventflow WHERE Ev_ID = '$event_id'");
+$eventflow_result = $conn->query("SELECT * FROM eventflows WHERE Rep_ID = '$report_id'");
 $committee_result = $conn->query("SELECT * FROM committee WHERE Ev_ID = '$event_id' AND Com_COCUClaimers = 1");
 
 $individual_query = "
@@ -109,18 +109,25 @@ $pdf->MultiCell(0, 10, "Event Nature: " . $report['Ev_ProjectNature'], 0, 'L');
 $pdf->MultiCell(0, 10, "Objectives: " . $report['Ev_Objectives'], 0, 'L');
 $pdf->MultiCell(0, 10, "Details: " . $report['Ev_Details'], 0, 'L');
 $pdf->MultiCell(0, 10, "Challenges: " . $report['Rep_ChallengesDifficulties'], 0, 'L');
+$pdf->MultiCell(0, 10, "Recommendation: " . $report['Rep_recomendation'], 0, 'L');  // 👈 new line
 $pdf->MultiCell(0, 10, "Conclusion: " . $report['Rep_Conclusion'], 0, 'L');
 
 // Page 3: Event Flow
-$pdf->AddPage();
-$pdf->Write(0, "Event Flow / Minutes of Meeting", '', 0, 'C', true, 0, false, false, 0);
-$html = '<table border="1" cellpadding="4"><tr><th>Date</th><th>Start</th><th>End</th><th>Activity</th><th>Remarks</th><th>Hours</th></tr>';
-while ($row = $eventflow_result->fetch_assoc()) {
-    $html .= '<tr><td>' . $row['Date'] . '</td><td>' . $row['Start_Time'] . '</td><td>' . $row['End_Time'] . '</td><td>' . $row['Activity'] . '</td><td>' . $row['Remarks'] . '</td><td>' . $row['Hours'] . '</td></tr>';
-}
-$html .= '</table>';
-$pdf->writeHTML($html, true, false, true, false, '');
+if ($eventflow_result && $eventflow_result->num_rows > 0) {
+    $pdf->AddPage();
+    $pdf->Write(0, "Event Flow", '', 0, 'C', true, 0, false, false, 0);
+    $pdf->Ln(5);
 
+    $pdf->SetFont('dejavusans', '', 11);
+    $html = '<table border="1" cellpadding="5"><thead><tr><th style="width: 30%;">Time</th><th>Description</th></tr></thead><tbody>';
+
+    while ($flow = $eventflow_result->fetch_assoc()) {
+        $html .= "<tr><td>{$flow['EvFlow_Time']}</td><td>{$flow['EvFlow_Description']}</td></tr>";
+    }
+
+    $html .= '</tbody></table>';
+    $pdf->writeHTML($html, true, false, true, false, '');
+}
 
 
 // Page 4: Event Photos

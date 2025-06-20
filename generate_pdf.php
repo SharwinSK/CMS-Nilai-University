@@ -37,7 +37,7 @@ $event = $event_result->fetch_assoc();
 $pic = $conn->query("SELECT * FROM personincharge WHERE Ev_ID = '$event_id'")->fetch_assoc();
 $committee_result = $conn->query("SELECT * FROM committee WHERE Ev_ID = '$event_id'");
 $budget_summary = $conn->query("SELECT * FROM budgetsummary WHERE Ev_ID = '$event_id' LIMIT 1")->fetch_assoc();
-$eventflow_result = $conn->query("SELECT * FROM eventflow WHERE Ev_ID = '$event_id'");
+$eventflow_result = $conn->query("SELECT * FROM eventminutes WHERE Ev_ID = '$event_id'");
 
 class MYPDF extends TCPDF
 {

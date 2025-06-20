@@ -96,15 +96,34 @@ if (isset($_FILES['statement_pdf']) && $_FILES['statement_pdf']['error'] == 0) {
 $photos = json_encode($photo_paths);
 $challenges = htmlspecialchars(trim($_POST['challenges']));
 $conclusion = htmlspecialchars(trim($_POST['conclusion']));
+$recommendation = htmlspecialchars(trim($_POST['recommendation']));
+
 
 $conn->begin_transaction();
 
 try {
-    // Insert into EventPostmortem (without receipt)
-    $stmt = $conn->prepare("INSERT INTO EventPostmortem (Rep_ID, Ev_ID, 
-        Rep_ChallengesDifficulties, Rep_Conclusion, Rep_Photo) VALUES (?, ?, ?, ?, ?)");
-    $stmt->bind_param("sssss", $report_id, $event_id, $challenges, $conclusion, $photos);
+    // Insert into EventPostmortem 
+    $stmt = $conn->prepare("
+    INSERT INTO EventPostmortem (
+        Rep_ID,
+        Ev_ID,
+        Rep_ChallengesDifficulties,
+        Rep_Conclusion,
+        Rep_recomendation,
+        Rep_Photo
+    ) VALUES (?, ?, ?, ?, ?, ?)
+");
+    $stmt->bind_param(
+        "ssssss",
+        $report_id,
+        $event_id,
+        $challenges,
+        $conclusion,
+        $recommendation,
+        $photos
+    );
     $stmt->execute();
+
 
     $targetDir = "uploads/individual_reports/";
     foreach ($_FILES as $key => $file) {
@@ -125,6 +144,28 @@ try {
                 $stmt->bind_param("sss", $report_id, $com_id, $newFileName);
                 $stmt->execute();
             }
+        }
+    }
+
+    if (!empty($_POST['evflow_time']) && !empty($_POST['evflow_desc'])) {
+        $times = $_POST['evflow_time'];
+        $descs = $_POST['evflow_desc'];
+
+        for ($i = 0; $i < count($times); $i++) {
+            $time = $conn->real_escape_string($times[$i]);
+            $desc = $conn->real_escape_string($descs[$i]);
+
+            if (!empty($time) && !empty($desc)) {
+                // -------------------  event-flow insert  -------------------
+                $insertFlow = $conn->prepare(
+                    "INSERT INTO eventflows (Rep_ID, EvFlow_Time, EvFlow_Description) VALUES (?, ?, ?)"
+                );
+                $insertFlow->bind_param("sss", $report_id, $time, $desc);
+
+                $insertFlow->execute();
+
+            }
+
         }
     }
 

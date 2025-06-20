@@ -34,12 +34,6 @@ $committee_result = $committee_stmt->get_result();
 
 
 
-$event_flow_query = "SELECT * FROM eventflow WHERE Ev_ID = ?";
-$event_flow_stmt = $conn->prepare($event_flow_query);
-$event_flow_stmt->bind_param("i", $event_id);
-$event_flow_stmt->execute();
-$event_flows = $event_flow_stmt->get_result();
-
 
 ?>
 
@@ -135,32 +129,29 @@ $event_flows = $event_flow_stmt->get_result();
                                 readonly><?php echo $event['Ev_Objectives']; ?></textarea>
                         </div>
                     </div>
-                    <!-- Event Flow / Minutes of Meeting -->
-                    <div class="section-header">Event Flow / Minutes of Meeting</div>
-                    <table class="table table-bordered">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Start Time</th>
-                                <th>End Time</th>
-                                <th>Hours</th>
-                                <th>Activity</th>
-                                <th>Remarks / Meeting Minutes</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php while ($flow = $event_flows->fetch_assoc()): ?>
+
+                    <!-- New Event Flow Section -->
+                    <div class="mb-3">
+                        <label class="form-label">Event Flow</label>
+                        <table class="table table-bordered" id="eventFlowTable">
+                            <thead>
                                 <tr>
-                                    <td><?php echo date("d/m/Y", strtotime($flow['Date'])); ?></td>
-                                    <td><?php echo date("h:i A", strtotime($flow['Start_Time'])); ?></td>
-                                    <td><?php echo date("h:i A", strtotime($flow['End_Time'])); ?></td>
-                                    <td><?php echo htmlspecialchars($flow['Hours']); ?></td>
-                                    <td><?php echo nl2br(htmlspecialchars($flow['Activity'])); ?></td>
-                                    <td><?php echo nl2br(htmlspecialchars($flow['Remarks'])); ?></td>
+                                    <th>Time</th>
+                                    <th>Description</th>
+                                    <th style="width: 50px;">Action</th>
                                 </tr>
-                            <?php endwhile; ?>
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><input type="time" name="evflow_time[]" class="form-control" required></td>
+                                    <td><input type="text" name="evflow_desc[]" class="form-control" required></td>
+                                    <td><button type="button" class="btn btn-danger btn-sm"
+                                            onclick="removeRow(this)">✕</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <button type="button" class="btn btn-success btn-sm" onclick="addRow()">Add Row</button>
+                    </div>
 
 
                     <!--uploads Statement-->
@@ -182,16 +173,20 @@ $event_flows = $event_flow_stmt->get_result();
                             Maximum 10 Photos.
                         </small>
 
-                        <!-- Challenges and Conclusion -->
+                        <!-- Challenges, recommendations and Conclusion -->
                         <div class="mb-3">
                             <label for="inputChallenges" class="form-label">Challenges and Difficulties</label>
                             <textarea class="form-control" id="inputChallenges" name="challenges" rows="4"></textarea>
                         </div>
                         <div class="mb-3">
+                            <label for="inputRecommendation" class="form-label mt-3">Recommendation</label>
+                            <textarea class="form-control" id="inputRecommendation" name="recommendation"
+                                rows="4"></textarea>
+                        </div>
+                        <div class="mb-3">
                             <label for="inputConclusion" class="form-label mt-3">Conclusion</label>
                             <textarea class="form-control" id="inputConclusion" name="conclusion" rows="4"></textarea>
                         </div>
-                        <!-- Individual Reports -->
                         <!-- Individual Reports -->
                         <h5>Individual Reports</h5>
                         <div class="table-responsive">
@@ -253,6 +248,12 @@ $event_flows = $event_flow_stmt->get_result();
                 isValid = false;
                 errorMessages.push("Please fill in the Conclusion field.");
             }
+            const recommendation = document.getElementById("inputRecommendation").value.trim();
+            if (recommendation === "") {
+                isValid = false;
+                errorMessages.push("Please fill in the Recommendation field.");
+            }
+
 
             const eventPhotos = document.getElementById("inputPhoto").files.length;
             if (eventPhotos === 0) {
@@ -277,6 +278,19 @@ $event_flows = $event_flow_stmt->get_result();
                 alert(errorMessages.join("\n"));
             }
         });
+        function addRow() {
+            const table = document.getElementById("eventFlowTable").getElementsByTagName("tbody")[0];
+            const newRow = table.insertRow();
+            newRow.innerHTML = `
+            <td><input type="time" name="evflow_time[]" class="form-control" required></td>
+            <td><input type="text" name="evflow_desc[]" class="form-control" required></td>
+            <td><button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">✕</button></td>
+        `;
+        }
+
+        function removeRow(btn) {
+            btn.closest("tr").remove();
+        }
     </script>
 
 </body>

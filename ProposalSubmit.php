@@ -173,7 +173,7 @@ foreach ($_POST['event_date'] as $index => $date) {
     $activity = htmlspecialchars(trim($_POST['activity'][$index]));
     $remarks = htmlspecialchars(trim($_POST['remarks'][$index]));
 
-    $stmt = $conn->prepare("INSERT INTO Eventflow (Ev_ID, Date, Start_Time, End_Time, Hours, Activity, Remarks) 
+    $stmt = $conn->prepare("INSERT INTO eventminutes (Ev_ID, Date, Start_Time, End_Time, Hours, Activity, Remarks) 
                             VALUES (?, ?, ?, ?, ?, ?, ?)");
     $stmt->bind_param("sssssss", $event_id, $date, $start_time, $end_time, $hours, $activity, $remarks);
     $stmt->execute();

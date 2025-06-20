@@ -46,7 +46,7 @@ if (!$event)
     die("Event not found or unauthorized.");
 
 // Other related data
-$eventflow_result = $conn->query("SELECT * FROM eventflow WHERE Ev_ID = '$event_id'");
+$eventflow_result = $conn->query("SELECT * FROM eventminutes WHERE Ev_ID = '$event_id'");
 $committee_result = $conn->query("SELECT * FROM committee WHERE Ev_ID = '$event_id'");
 $budget_summary = $conn->query("SELECT * FROM budgetsummary WHERE Ev_ID = '$event_id'")->fetch_assoc();
 $income_result = $conn->query("SELECT * FROM budget WHERE Ev_ID = '$event_id' AND Bud_Type = 'Income'");

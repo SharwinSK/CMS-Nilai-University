@@ -50,7 +50,7 @@ $budget_stmt->bind_param("i", $event_id);
 $budget_stmt->execute();
 $budget_details = $budget_stmt->get_result();
 
-$event_flow_query = "SELECT * FROM eventflow WHERE Ev_ID = ?";
+$event_flow_query = "SELECT * FROM eventminutes WHERE Ev_ID = ?";
 $event_flow_stmt = $conn->prepare($event_flow_query);
 $event_flow_stmt->bind_param("i", $event_id);
 $event_flow_stmt->execute();

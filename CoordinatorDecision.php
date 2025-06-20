@@ -49,16 +49,18 @@ if ($type === 'proposal') {
     $budget_stmt->execute();
     $budget_details = $budget_stmt->get_result();
 
-    $event_flow_query = "SELECT * FROM eventflow WHERE Ev_ID = ?";
+    $event_flow_query = "SELECT * FROM eventminutes WHERE Ev_ID = ?";
     $event_flow_stmt = $conn->prepare($event_flow_query);
-    $event_flow_stmt->bind_param("i", $id);
+    $event_flow_stmt->bind_param("s", $id);   // ← string, not integer
     $event_flow_stmt->execute();
     $event_flows = $event_flow_stmt->get_result();
+
+
 
 } elseif ($type === 'postmortem') {
     $query = "
     SELECT 
-        ep.Rep_ID, ep.Rep_ChallengesDifficulties, ep.Rep_Photo, 
+        ep.Rep_ID, ep.Rep_ChallengesDifficulties, ep.Rep_Photo, ep.Rep_recomendation, 
         ep.Rep_Conclusion, ep.created_at AS PostmortemDate,
         e.Ev_ID, e.Ev_Name, e.Ev_Poster, e.Ev_ProjectNature, e.Ev_Objectives, 
         e.Ev_Intro, e.Ev_Details, e.Ev_Date, e.Ev_StartTime, e.Ev_EndTime, e.Ev_Venue, e.Ev_Pax,
@@ -92,6 +94,19 @@ if ($type === 'proposal') {
     $individual_stmt->execute();
     $individual_reports = $individual_stmt->get_result();
 
+
+    $post_flow_query = "
+    SELECT EvFlow_Time, EvFlow_Description
+    FROM eventflows
+    WHERE Rep_ID = ?
+    ORDER BY STR_TO_DATE(EvFlow_Time, '%H:%i:%s')
+";
+
+
+    $post_flow_stmt = $conn->prepare($post_flow_query);
+    $post_flow_stmt->bind_param("s", $id);
+    $post_flow_stmt->execute();
+    $post_event_flows = $post_flow_stmt->get_result();
 }
 
 
@@ -582,10 +597,34 @@ $start_time = microtime(true);
                     <!-- Postmortem-Specific Details -->
                 <?php elseif ($type === 'postmortem'): ?>
 
+
+                    <!-- Post-event Flow (new) -->
+                    <div class="postmortem-header">Event Flow</div>
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th style="width: 30%;">Time</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php while ($flow = $post_event_flows->fetch_assoc()): ?>
+                                <tr>
+                                    <td><?= htmlspecialchars($flow['EvFlow_Time']); ?></td>
+                                    <td><?= nl2br(htmlspecialchars($flow['EvFlow_Description'])); ?></td>
+                                </tr>
+                            <?php endwhile; ?>
+                        </tbody>
+                    </table>
                     <div class="mb-3">
                         <label for="ev_ChallengesDifficulties" class="form-label">Challenges and Difficulties</label>
                         <textarea class="form-control" id="ev_Challenges and Difficulties" name="ev_ChallengesDifficulties"
                             rows="3" required readonly><?php echo $details['Rep_ChallengesDifficulties']; ?></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="ev_Recommendation" class="form-label">Recommendation</label>
+                        <textarea class="form-control" id="ev_Recommendation" name="ev_Recommendation" rows="3"
+                            readonly><?php echo $details['Rep_recomendation']; ?></textarea>
                     </div>
                     <div class="mb-3">
                         <label for="ev_Conclusion" class="form-label">Conclusion</label>
