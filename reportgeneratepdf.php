@@ -17,6 +17,9 @@ switch ($user_type) {
     case 'coordinator':
         $where_clause = '';
         break;
+    case 'admin':
+        $where_clause = ""; // admin can access all
+        break;
     default:
         die("Unauthorized access");
 }

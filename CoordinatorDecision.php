@@ -1,6 +1,6 @@
 <?php
 include('dbconfig.php');
-include('sendMailTemplates.php');
+//include('sendMailTemplates.php');
 
 session_start();
 if (!isset($_SESSION['Coor_ID'])) {
@@ -114,7 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $decision = $_POST['decision'] ?? '';
     $comments = $_POST['comments'] ?? '';
 
-    // Fetch Student + Advisor email info BEFORE decisions
+    /*// Fetch Student + Advisor email info BEFORE decisions
     $emailFetch = $conn->prepare("
         SELECT s.Stu_Name, s.Stu_Email, a.Adv_Email AS AdvisorEmail, e.Ev_Name 
         FROM events e
@@ -130,7 +130,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $studentEmail = $emailRow['Stu_Email'];
     $advisorEmail = $emailRow['AdvisorEmail'];
     $eventName = $emailRow['Ev_Name'];
-
+*/
 
     if ($type === 'proposal') {
         if ($decision === 'approve') {
@@ -206,7 +206,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $update_stmt->execute();
 
             // ✉️ Notify both student & advisor
-            coordinatorApproved($studentName, $eventName, $studentEmail, $advisorEmail);
+           // coordinatorApproved($studentName, $eventName, $studentEmail, $advisorEmail);
 
 
         } elseif ($decision === 'reject') {
@@ -233,7 +233,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $update_stmt->execute();
 
                 // ✉️ Notify student only
-                coordinatorRejected($studentName, $eventName, $studentEmail);
+              //  coordinatorRejected($studentName, $eventName, $studentEmail);
             }
 
         }

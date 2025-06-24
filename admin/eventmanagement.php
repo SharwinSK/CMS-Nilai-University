@@ -1,3 +1,53 @@
+<?php
+include '../dbconfig.php';
+
+//Query for proposal events
+$proposalEventQuery = "
+  SELECT 
+    e.Ev_ID, e.Ev_Name, e.Ev_Date, e.Ev_TypeRef,
+    s.Stu_Name, c.Club_Name, st.Status_Name
+  FROM events e
+  LEFT JOIN student s ON e.Stu_ID = s.Stu_ID
+  LEFT JOIN club c ON e.Club_ID = c.Club_ID
+  LEFT JOIN eventstatus st ON e.Status_ID = st.Status_ID
+  WHERE NOT EXISTS (
+    SELECT 1 FROM eventpostmortem ep 
+    WHERE ep.Ev_ID = e.Ev_ID AND ep.Rep_PostStatus = 'Accepted'
+  )
+  ORDER BY e.Ev_Date DESC
+";
+$proposalResult = $conn->query($proposalEventQuery);
+
+// Query for post-event reports
+$postEventQuery = "
+  SELECT 
+    e.Ev_ID, ep.Rep_ID, e.Ev_Name, e.Ev_Date, e.Ev_TypeRef,
+    s.Stu_Name, c.Club_Name, ep.Rep_PostStatus
+  FROM events e
+  LEFT JOIN student s ON e.Stu_ID = s.Stu_ID
+  LEFT JOIN club c ON e.Club_ID = c.Club_ID
+  JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID
+  WHERE ep.Rep_PostStatus != 'Accepted'
+  ORDER BY e.Ev_Date DESC
+";
+$postEventResult = $conn->query($postEventQuery);
+
+// Query for completed events
+$completedEventQuery = "
+  SELECT 
+    e.Ev_ID, e.Ev_Name, e.Ev_Date, e.Ev_TypeRef,
+    s.Stu_Name, c.Club_Name, ep.Rep_PostStatus
+  FROM events e
+  INNER JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID
+  LEFT JOIN student s ON e.Stu_ID = s.Stu_ID
+  LEFT JOIN club c ON e.Club_ID = c.Club_ID
+  WHERE ep.Rep_PostStatus = 'Accepted'
+  ORDER BY e.Ev_Date DESC
+";
+
+$completedResult = $conn->query($completedEventQuery);
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -352,81 +402,47 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td>EVT001</td>
-                                <td>Annual Cultural Night</td>
-                                <td>
-                                    <span class="status-badge status-pending">Pending</span>
-                                </td>
-                                <td>Cultural</td>
-                                <td>2025-07-15</td>
-                                <td>Cultural Club</td>
-                                <td>Ahmad Rahman</td>
-                                <td>
-                                    <button class="btn btn-info btn-sm" onclick="viewDetails('EVT001')">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                    <button class="btn btn-warning btn-sm" onclick="editProposal('EVT001')">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button class="btn btn-danger btn-sm" onclick="deleteProposal('EVT001')">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                    <button class="btn btn-success btn-sm" onclick="exportProposalPDF('EVT001')">
-                                        <i class="fas fa-file-pdf"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>EVT002</td>
-                                <td>Tech Innovation Workshop</td>
-                                <td>
-                                    <span class="status-badge status-approved">Approved</span>
-                                </td>
-                                <td>Academic</td>
-                                <td>2025-08-10</td>
-                                <td>IT Club</td>
-                                <td>Sarah Lim</td>
-                                <td>
-                                    <button class="btn btn-info btn-sm" onclick="viewDetails('EVT002')">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                    <button class="btn btn-warning btn-sm" onclick="editProposal('EVT002')">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button class="btn btn-danger btn-sm" onclick="deleteProposal('EVT002')">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                    <button class="btn btn-success btn-sm" onclick="exportProposalPDF('EVT002')">
-                                        <i class="fas fa-file-pdf"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>EVT003</td>
-                                <td>Sports Day 2025</td>
-                                <td>
-                                    <span class="status-badge status-rejected">Rejected</span>
-                                </td>
-                                <td>Sports</td>
-                                <td>2025-09-05</td>
-                                <td>Sports Club</td>
-                                <td>David Wong</td>
-                                <td>
-                                    <button class="btn btn-info btn-sm" onclick="viewDetails('EVT003')">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                    <button class="btn btn-warning btn-sm" onclick="editProposal('EVT003')">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button class="btn btn-danger btn-sm" onclick="deleteProposal('EVT003')">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                    <button class="btn btn-success btn-sm" onclick="exportProposalPDF('EVT003')">
-                                        <i class="fas fa-file-pdf"></i>
-                                    </button>
-                                </td>
-                            </tr>
+                            <?php while ($row = $proposalResult->fetch_assoc()): ?>
+                                <?php
+                                $status = strtolower($row['Status_Name']);
+                                $statusClass = match (true) {
+                                    str_contains($status, 'pending') => 'status-pending',
+                                    str_contains($status, 'approved') => 'status-approved',
+                                    str_contains($status, 'rejected') => 'status-rejected',
+                                    default => 'status-draft'
+                                };
+                                ?>
+                                <tr>
+                                    <td><?= htmlspecialchars($row['Ev_ID']) ?></td>
+                                    <td><?= htmlspecialchars($row['Ev_Name']) ?></td>
+                                    <td><span class="status-badge <?= $statusClass ?>"><?= $row['Status_Name'] ?></span>
+                                    </td>
+                                    <td><?= htmlspecialchars($row['Ev_TypeRef']) ?></td>
+                                    <td><?= $row['Ev_Date'] ?></td>
+                                    <td><?= htmlspecialchars($row['Club_Name']) ?></td>
+                                    <td><?= htmlspecialchars($row['Stu_Name']) ?></td>
+                                    <td>
+                                        <a class="btn btn-info btn-sm"
+                                            href="eventAction.php?action=view&type=proposal&id=<?= urlencode($row['Ev_ID']) ?>">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a class="btn btn-warning btn-sm"
+                                            href="eventAction.php?action=edit&type=proposal&id=<?= urlencode($row['Ev_ID']) ?>">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a class="btn btn-danger btn-sm"
+                                            href="eventAction.php?action=delete&type=proposal&id=<?= urlencode($row['Ev_ID']) ?>"
+                                            onclick="return confirm('Delete this proposal?');">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                        <a class="btn btn-success btn-sm"
+                                            href="eventAction.php?action=export&type=proposal&id=<?= urlencode($row['Ev_ID']) ?>">
+                                            <i class="fas fa-file-pdf"></i>
+                                        </a>
+                                    </td>
+
+                                </tr>
+                            <?php endwhile; ?>
                         </tbody>
                     </table>
                 </div>
@@ -472,50 +488,45 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td>RPT001</td>
-                                <td>Annual Cultural Night</td>
-                                <td><span class="status-badge status-draft">Draft</span></td>
-                                <td>2025-07-20</td>
-                                <td>Ahmad Rahman</td>
-                                <td>
-                                    <button class="btn btn-info btn-sm" onclick="viewReport('RPT001')">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                    <button class="btn btn-warning btn-sm" onclick="editReport('RPT001')">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button class="btn btn-danger btn-sm" onclick="deleteReport('RPT001')">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                    <button class="btn btn-success btn-sm" onclick="exportReportPDF('RPT001')">
-                                        <i class="fas fa-file-pdf"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>RPT002</td>
-                                <td>Tech Innovation Workshop</td>
-                                <td>
-                                    <span class="status-badge status-approved">Approved</span>
-                                </td>
-                                <td>2025-08-15</td>
-                                <td>Sarah Lim</td>
-                                <td>
-                                    <button class="btn btn-info btn-sm" onclick="viewReport('RPT002')">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                    <button class="btn btn-warning btn-sm" onclick="editReport('RPT002')">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button class="btn btn-danger btn-sm" onclick="deleteReport('RPT002')">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                    <button class="btn btn-success btn-sm" onclick="exportReportPDF('RPT002')">
-                                        <i class="fas fa-file-pdf"></i>
-                                    </button>
-                                </td>
-                            </tr>
+                            <?php while ($row = $postEventResult->fetch_assoc()): ?>
+                                <?php
+                                $status = strtolower($row['Rep_PostStatus']);
+                                $statusClass = match (true) {
+                                    str_contains($status, 'pending') => 'status-pending',
+                                    str_contains($status, 'approved') => 'status-approved',
+                                    str_contains($status, 'rejected') => 'status-rejected',
+                                    default => 'status-draft'
+                                };
+                                ?>
+                                <tr>
+                                    <td><?= htmlspecialchars($row['Ev_ID']) ?></td>
+                                    <td><?= htmlspecialchars($row['Ev_Name']) ?></td>
+                                    <td><span class="status-badge <?= $statusClass ?>"><?= $row['Rep_PostStatus'] ?></span>
+                                    </td>
+                                    <td><?= $row['Ev_Date'] ?></td>
+                                    <td><?= htmlspecialchars($row['Stu_Name']) ?></td>
+                                    <td>
+                                        <a class="btn btn-info btn-sm"
+                                            href="eventAction.php?action=view&type=report&id=<?= urlencode($row['Ev_ID']) ?>">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a class="btn btn-warning btn-sm"
+                                            href="eventAction.php?action=edit&type=report&id=<?= urlencode($row['Ev_ID']) ?>">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a class="btn btn-danger btn-sm"
+                                            href="eventAction.php?action=delete&type=report&id=<?= urlencode($row['Ev_ID']) ?>"
+                                            onclick="return confirm('Delete this post-event report?');">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                        <a class="btn btn-success btn-sm"
+                                            href="eventAction.php?action=export&type=report&id=<?= urlencode($row['Rep_ID']) ?>">
+                                            <i class="fas fa-file-pdf"></i>
+                                        </a>
+                                    </td>
+
+                                </tr>
+                            <?php endwhile; ?>
                         </tbody>
                     </table>
                 </div>
@@ -563,55 +574,38 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td>COMP001</td>
-                                <td>Spring Festival 2025</td>
-                                <td>Cultural</td>
-                                <td>2025-05-15</td>
-                                <td>Cultural Club</td>
-                                <td>Maria Santos</td>
-                                <td>
-                                    <button class="btn btn-success btn-sm" onclick="exportCompletedPDF('COMP001')">
-                                        <i class="fas fa-file-pdf"></i> Export
-                                    </button>
-                                    <button class="btn btn-danger btn-sm" onclick="deleteCompleted('COMP001')">
-                                        <i class="fas fa-trash"></i> Delete
-                                    </button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>COMP002</td>
-                                <td>Programming Competition</td>
-                                <td>Academic</td>
-                                <td>2025-04-20</td>
-                                <td>IT Club</td>
-                                <td>John Lee</td>
-                                <td>
-                                    <button class="btn btn-success btn-sm" onclick="exportCompletedPDF('COMP002')">
-                                        <i class="fas fa-file-pdf"></i> Export
-                                    </button>
-                                    <button class="btn btn-danger btn-sm" onclick="deleteCompleted('COMP002')">
-                                        <i class="fas fa-trash"></i> Delete
-                                    </button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>COMP003</td>
-                                <td>Basketball Tournament</td>
-                                <td>Sports</td>
-                                <td>2025-03-10</td>
-                                <td>Sports Club</td>
-                                <td>Alex Chen</td>
-                                <td>
-                                    <button class="btn btn-success btn-sm" onclick="exportCompletedPDF('COMP003')">
-                                        <i class="fas fa-file-pdf"></i> Export
-                                    </button>
-                                    <button class="btn btn-danger btn-sm" onclick="deleteCompleted('COMP003')">
-                                        <i class="fas fa-trash"></i> Delete
-                                    </button>
-                                </td>
-                            </tr>
+                            <?php while ($row = $completedResult->fetch_assoc()): ?>
+                                <tr>
+                                    <td><?= htmlspecialchars($row['Ev_ID']) ?></td>
+                                    <td><?= htmlspecialchars($row['Ev_Name']) ?></td>
+                                    <td><?= htmlspecialchars($row['Ev_TypeRef']) ?></td>
+                                    <td><?= $row['Ev_Date'] ?></td>
+                                    <td><?= htmlspecialchars($row['Club_Name']) ?></td>
+                                    <td><?= htmlspecialchars($row['Stu_Name']) ?></td>
+                                    <td>
+                                        <a class="btn btn-info btn-sm"
+                                            href="eventAction.php?action=view&type=completed&id=<?= urlencode($row['Ev_ID']) ?>">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a class="btn btn-warning btn-sm"
+                                            href="eventAction.php?action=edit&type=completed&id=<?= urlencode($row['Ev_ID']) ?>">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a class="btn btn-danger btn-sm"
+                                            href="eventAction.php?action=delete&type=completed&id=<?= urlencode($row['Ev_ID']) ?>"
+                                            onclick="return confirm('Delete this completed event?');">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                        <a class="btn btn-success btn-sm"
+                                            href="eventAction.php?action=export&type=completed&id=<?= urlencode($row['Ev_ID']) ?>">
+                                            <i class="fas fa-file-pdf"></i>
+                                        </a>
+                                    </td>
+
+                                </tr>
+                            <?php endwhile; ?>
                         </tbody>
+
                     </table>
                 </div>
             </div>

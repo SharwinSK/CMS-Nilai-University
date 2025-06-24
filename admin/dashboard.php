@@ -1,13 +1,20 @@
 <?php
 session_start();
-include '../dbconfig.php';   // adjust path if dbconfig.php sits one level up
+include __DIR__ . '/../dbconfig.php';
+
+
 
 
 /* ─── SECURITY ───────────────────────────────────────── */
-if (!isset($_SESSION['Admin_ID'])) {
-    header("Location: ../AdminLogin.php");
+if (
+    !isset($_SESSION['Admin_ID']) ||
+    !isset($_SESSION['user_type']) ||
+    $_SESSION['user_type'] !== 'admin'
+) {
+    header("Location: adminlogin.php");
     exit();
 }
+
 
 /* ─── QUICK METRICS ──────────────────────────────────── */
 $totalStudents = 0;
@@ -20,15 +27,22 @@ $res = $conn->query("SELECT COUNT(*) AS n FROM student");
 if ($row = $res->fetch_assoc())
     $totalStudents = $row['n'];
 
+
+
 /* Advisors */
 $res = $conn->query("SELECT COUNT(*) AS n FROM advisor");
 if ($row = $res->fetch_assoc())
     $totalAdvisors = $row['n'];
 
-/* Pending proposals  (Status_ID = 1 = ‘Pending Advisor Review’) */
-$res = $conn->query("SELECT COUNT(*) AS n FROM events WHERE Status_ID = 1");
-if ($row = $res->fetch_assoc())
-    $pendingProposals = $row['n'];
+// Total Events Ongoing  
+
+$res = $conn->query("SELECT COUNT(*) AS n FROM events WHERE Status_ID = 5");
+if ($row = $res->fetch_assoc()) {
+    $ongoingEvents = $row['n'];
+} else {
+    $ongoingEvents = 0;
+}
+
 
 /* Completed events  (Status_ID = 5 = ‘Approved by Coordinator’) */
 
@@ -354,7 +368,8 @@ $calendarJs = json_encode($calendarEvents, JSON_HEX_TAG);
                         <li>
                             <hr class="dropdown-divider">
                         </li>
-                        <li><a class="dropdown-item" href="#"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                        <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#logoutModal"><i
+                                    class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
                     </ul>
                 </div>
             </div>
@@ -438,8 +453,8 @@ $calendarJs = json_encode($calendarEvents, JSON_HEX_TAG);
                 <div class="stats-card">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <div class="stats-number"><?= number_format($pendingProposals) ?></div>
-                            <div class="stats-label">Pending Proposals</div>
+                            <div class="stats-number"><?= number_format($ongoingEvents) ?></div>
+                            <div class="stats-label">Total Event Ongoing</div>
                         </div>
                         <div class="stats-icon">
                             <i class="fas fa-clock"></i>
@@ -469,6 +484,11 @@ $calendarJs = json_encode($calendarEvents, JSON_HEX_TAG);
                     <h4 class="section-title">
                         <i class="fas fa-images me-2"></i>Event Highlights
                     </h4>
+                    <?php if (empty($highlights)): ?>
+                        <div class="p-4 text-center text-muted" style="font-style: italic;">
+                            No event highlights currently.
+                        </div>
+                    <?php endif; ?>
                     <div id="eventCarousel" class="carousel slide" data-bs-ride="carousel">
                         <div class="carousel-indicators">
                             <button type="button" data-bs-target="#eventCarousel" data-bs-slide-to="0"
@@ -535,6 +555,7 @@ $calendarJs = json_encode($calendarEvents, JSON_HEX_TAG);
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script>
+
         // Sample events data
         const events = <?= $calendarJs ?>;
 

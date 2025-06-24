@@ -2,19 +2,28 @@
 session_start();
 include 'dbconfig.php';
 
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $advisorID = trim($_POST['Admin_ID']);
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    $adminID = trim($_POST['Admin_ID']);
     $passwordInput = $_POST['Admin_PSW'];
 
-    if (!empty($advisorID) && !empty($passwordInput)) {
+    if ($adminID !== '' && $passwordInput !== '') {
+        /* — fetch admin by numeric ID — */
         $stmt = $conn->prepare("SELECT * FROM admin WHERE Admin_ID = ?");
-        $stmt->bind_param("s", $advisorID);
+        $stmt->bind_param("i", $adminID);   // INT, not string
         $stmt->execute();
         $result = $stmt->get_result();
 
         if ($user = $result->fetch_assoc()) {
             if (password_verify($passwordInput, $user['Admin_PSW'])) {
+
+                // ✅ good login
                 $_SESSION['Admin_ID'] = $user['Admin_ID'];
+                $_SESSION['user_type'] = 'admin';
+
+                // (optional) record last login
+                $up = $conn->prepare("UPDATE admin SET Last_Login = NOW() WHERE Admin_ID = ?");
+                $up->bind_param("i", $adminID);
+                $up->execute();
 
                 header("Location: admin/dashboard.php");
                 exit();
@@ -26,16 +35,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $error = "Please fill in all fields.";
     }
 }
-
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advisor Login</title>
+    <title>Admin Login</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -43,11 +50,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <div class="container">
         <a href="index.php"><img src="NU logo.png" alt="University Logo" class="logo"></a>
         <h1>Admin Login</h1>
-        <?php if (isset($error)) {
-            echo "<p class='error visible'>$error</p>";
-        }
-        ?>
-        <form action="AdminLogin.php" method="POST">
+
+        <?php if (isset($error)): ?>
+            <p class="error visible"><?= $error ?></p>
+        <?php endif; ?>
+
+        <!-- keep file-name case consistent -->
+        <form action="adminlogin.php" method="POST">
             <input type="text" name="Admin_ID" placeholder="Admin ID" required>
             <input type="password" name="Admin_PSW" placeholder="Password" required>
             <button type="submit">Login</button>

@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Event Management System - Preview</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        background-color: #f5f5f5;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+
+      .header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px 0;
+        text-align: center;
+        margin-bottom: 30px;
+        border-radius: 10px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      }
+
+      .header h1 {
+        font-size: 2.5em;
+        margin-bottom: 10px;
+      }
+
+      .header p {
+        font-size: 1.1em;
+        opacity: 0.9;
+      }
+
+      .section {
+        background: white;
+        margin-bottom: 30px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+      }
+
+      .section-header {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        color: white;
+        padding: 20px;
+        font-size: 1.3em;
+        font-weight: bold;
+      }
+
+      .section-content {
+        padding: 25px;
+      }
+
+      .event-basic-info {
+        display: grid;
+        grid-template-columns: 200px 1fr;
+        gap: 20px;
+        margin-bottom: 30px;
+      }
+
+      .event-poster {
+        width: 200px;
+        height: 280px;
+        background: linear-gradient(45deg, #e3f2fd, #bbdefb);
+        border: 2px dashed #2196f3;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        font-size: 14px;
+        color: #666;
+        text-align: center;
+      }
+
+      .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+      }
+
+      .info-item {
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 15px;
+      }
+
+      .info-label {
+        font-weight: bold;
+        color: #555;
+        margin-bottom: 5px;
+        font-size: 0.9em;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .info-value {
+        background: #f8f9fa;
+        padding: 10px;
+        border-radius: 5px;
+        border-left: 4px solid #4facfe;
+      }
+
+      .table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+      }
+
+      .table th {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 12px;
+        text-align: left;
+        font-weight: bold;
+      }
+
+      .table td {
+        padding: 12px;
+        border-bottom: 1px solid #eee;
+      }
+
+      .table tr:nth-child(even) {
+        background-color: #f8f9fa;
+      }
+
+      .table tr:hover {
+        background-color: #e3f2fd;
+      }
+
+      .budget-summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-top: 20px;
+      }
+
+      .budget-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 8px;
+        text-align: center;
+      }
+
+      .budget-card h3 {
+        font-size: 1.1em;
+        margin-bottom: 5px;
+        opacity: 0.9;
+      }
+
+      .budget-card .amount {
+        font-size: 1.8em;
+        font-weight: bold;
+      }
+
+      .surplus {
+        background: linear-gradient(
+          135deg,
+          #4caf50 0%,
+          #45a049 100%
+        ) !important;
+      }
+
+      .deficit {
+        background: linear-gradient(
+          135deg,
+          #f44336 0%,
+          #d32f2f 100%
+        ) !important;
+      }
+
+      .prepared-by {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        margin-top: 20px;
+        border-left: 4px solid #4facfe;
+      }
+
+      @media (max-width: 768px) {
+        .event-basic-info {
+          grid-template-columns: 1fr;
+          text-align: center;
+        }
+
+        .info-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .budget-summary {
+          grid-template-columns: 1fr;
+        }
+
+        .table {
+          font-size: 0.9em;
+        }
+      }
+
+      .action-buttons {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        display: flex;
+        gap: 10px;
+      }
+
+      .btn {
+        padding: 12px 20px;
+        border: none;
+        border-radius: 25px;
+        cursor: pointer;
+        font-weight: bold;
+        text-decoration: none;
+        display: inline-block;
+        transition: all 0.3s ease;
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+      }
+
+      .btn-secondary {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        color: white;
+      }
+
+      .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>Event Management System</h1>
+        <p>Nilai University - Event Preview</p>
+      </div>
+
+      <!-- Section 1: Event Information -->
+      <div class="section">
+        <div class="section-header">📅 Event Information</div>
+        <div class="section-content">
+          <div class="event-basic-info">
+            <div class="event-poster">
+              <div>
+                <strong>Event Poster</strong><br />
+                <small>Upload event poster here</small>
+              </div>
+            </div>
+            <div class="info-grid">
+              <div class="info-item">
+                <div class="info-label">Event ID</div>
+                <div class="info-value">EVT-2024-001</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Event Type Reference</div>
+                <div class="info-value">ACADEMIC</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Event Reference Number</div>
+                <div class="info-value">REF-2024-AC-001</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Student Name</div>
+                <div class="info-value">Ahmad Bin Abdullah</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Student ID</div>
+                <div class="info-value">20220123456</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Club ID</div>
+                <div class="info-value">CLUB-CS-001</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Event Name</div>
+                <div class="info-value">Annual Tech Symposium 2024</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Event Nature</div>
+                <div class="info-value">Educational/Networking</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Event Introduction</div>
+                <div class="info-value">
+                  A comprehensive technology symposium bringing together
+                  industry experts, students, and academia to share knowledge
+                  and innovations in the field of computer science and
+                  technology.
+                </div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Event Details</div>
+                <div class="info-value">
+                  The symposium will feature keynote speakers, technical
+                  presentations, workshop sessions, and networking
+                  opportunities. Participants will gain insights into latest
+                  technology trends, career opportunities, and industry best
+                  practices.
+                </div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Event Objectives</div>
+                <div class="info-value">
+                  1. Enhance students' understanding of current technology
+                  trends<br />2. Provide networking opportunities with industry
+                  professionals<br />3. Promote knowledge sharing and
+                  collaboration<br />4. Inspire innovation and entrepreneurship
+                </div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Event Date</div>
+                <div class="info-value">March 15, 2024</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Estimated Participants</div>
+                <div class="info-value">250 people</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Event Venue</div>
+                <div class="info-value">Nilai University Main Auditorium</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Start Time</div>
+                <div class="info-value">9:00 AM</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">End Time</div>
+                <div class="info-value">5:00 PM</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Person in Charge Name</div>
+                <div class="info-value">Dr. Sarah Lim Wei Ming</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Person in Charge ID</div>
+                <div class="info-value">STAFF-2019-001</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Person in Charge Contact</div>
+                <div class="info-value">+60 12-345 6789</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Created At</div>
+                <div class="info-value">February 20, 2024 - 2:30 PM</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 2: Event Flow/Meeting Minutes -->
+      <div class="section">
+        <div class="section-header">⏰ Event Flow / Meeting Minutes</div>
+        <div class="section-content">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Event Flow Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>8:30 AM - 9:00 AM</td>
+                <td>Registration and Welcome Coffee</td>
+              </tr>
+              <tr>
+                <td>9:00 AM - 9:15 AM</td>
+                <td>Opening Ceremony and Welcome Address</td>
+              </tr>
+              <tr>
+                <td>9:15 AM - 10:15 AM</td>
+                <td>Keynote Speech: "Future of Technology in Education"</td>
+              </tr>
+              <tr>
+                <td>10:15 AM - 10:30 AM</td>
+                <td>Coffee Break and Networking</td>
+              </tr>
+              <tr>
+                <td>10:30 AM - 12:00 PM</td>
+                <td>Technical Session 1: AI and Machine Learning</td>
+              </tr>
+              <tr>
+                <td>12:00 PM - 1:00 PM</td>
+                <td>Lunch Break</td>
+              </tr>
+              <tr>
+                <td>1:00 PM - 2:30 PM</td>
+                <td>Workshop Session: Hands-on Programming</td>
+              </tr>
+              <tr>
+                <td>2:30 PM - 2:45 PM</td>
+                <td>Tea Break</td>
+              </tr>
+              <tr>
+                <td>2:45 PM - 4:15 PM</td>
+                <td>Technical Session 2: Web Development Trends</td>
+              </tr>
+              <tr>
+                <td>4:15 PM - 5:00 PM</td>
+                <td>Panel Discussion and Q&A Session</td>
+              </tr>
+              <tr>
+                <td>5:00 PM</td>
+                <td>Closing Ceremony and Certificate Distribution</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Section 3: Committee Members -->
+      <div class="section">
+        <div class="section-header">👥 Committee Members</div>
+        <div class="section-content">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Committee ID</th>
+                <th>Position</th>
+                <th>Name</th>
+                <th>Department</th>
+                <th>Phone Number</th>
+                <th>Job Scope</th>
+                <th>Claimers</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>COM-001</td>
+                <td>Chairman</td>
+                <td>Ahmad Faris</td>
+                <td>Computer Science</td>
+                <td>012-3456789</td>
+                <td>Overall event coordination and supervision</td>
+                <td>RM 500.00</td>
+              </tr>
+              <tr>
+                <td>COM-002</td>
+                <td>Vice Chairman</td>
+                <td>Siti Nurhaliza</td>
+                <td>Information Technology</td>
+                <td>013-4567890</td>
+                <td>Assist chairman and manage logistics</td>
+                <td>RM 300.00</td>
+              </tr>
+              <tr>
+                <td>COM-003</td>
+                <td>Secretary</td>
+                <td>Lim Wei Jie</td>
+                <td>Computer Science</td>
+                <td>014-5678901</td>
+                <td>Documentation and meeting minutes</td>
+                <td>RM 200.00</td>
+              </tr>
+              <tr>
+                <td>COM-004</td>
+                <td>Treasurer</td>
+                <td>Raj Kumar</td>
+                <td>Information Systems</td>
+                <td>015-6789012</td>
+                <td>Budget management and financial reporting</td>
+                <td>RM 250.00</td>
+              </tr>
+              <tr>
+                <td>COM-005</td>
+                <td>Technical Lead</td>
+                <td>Chen Li Ming</td>
+                <td>Computer Science</td>
+                <td>016-7890123</td>
+                <td>Technical setup and AV equipment management</td>
+                <td>RM 200.00</td>
+              </tr>
+              <tr>
+                <td>COM-006</td>
+                <td>Marketing Lead</td>
+                <td>Fatimah Zahra</td>
+                <td>Information Technology</td>
+                <td>017-8901234</td>
+                <td>Promotion and social media management</td>
+                <td>RM 150.00</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Section 4: Budget -->
+      <div class="section">
+        <div class="section-header">💰 Budget Management</div>
+        <div class="section-content">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Description</th>
+                <th>Amount (RM)</th>
+                <th>Type</th>
+                <th>Remarks</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Registration Fees</td>
+                <td>5,000.00</td>
+                <td>Income</td>
+                <td>250 participants x RM 20</td>
+              </tr>
+              <tr>
+                <td>Sponsorship - Tech Corp</td>
+                <td>3,000.00</td>
+                <td>Income</td>
+                <td>Main sponsor contribution</td>
+              </tr>
+              <tr>
+                <td>University Grant</td>
+                <td>2,000.00</td>
+                <td>Income</td>
+                <td>Academic event support fund</td>
+              </tr>
+              <tr>
+                <td>Venue Rental</td>
+                <td>1,500.00</td>
+                <td>Expense</td>
+                <td>Main auditorium for 1 day</td>
+              </tr>
+              <tr>
+                <td>Keynote Speaker Fee</td>
+                <td>2,000.00</td>
+                <td>Expense</td>
+                <td>Professional speaker honorarium</td>
+              </tr>
+              <tr>
+                <td>Catering</td>
+                <td>3,750.00</td>
+                <td>Expense</td>
+                <td>Breakfast, lunch, and tea breaks</td>
+              </tr>
+              <tr>
+                <td>AV Equipment</td>
+                <td>800.00</td>
+                <td>Expense</td>
+                <td>Sound system and projectors</td>
+              </tr>
+              <tr>
+                <td>Materials & Supplies</td>
+                <td>500.00</td>
+                <td>Expense</td>
+                <td>Name tags, folders, pens</td>
+              </tr>
+              <tr>
+                <td>Committee Allowances</td>
+                <td>1,600.00</td>
+                <td>Expense</td>
+                <td>Committee member claims</td>
+              </tr>
+              <tr>
+                <td>Certificates & Printing</td>
+                <td>300.00</td>
+                <td>Expense</td>
+                <td>Participation certificates</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="budget-summary">
+            <div class="budget-card">
+              <h3>Total Income</h3>
+              <div class="amount">RM 10,000.00</div>
+            </div>
+            <div class="budget-card">
+              <h3>Total Expenses</h3>
+              <div class="amount">RM 10,450.00</div>
+            </div>
+            <div class="budget-card deficit">
+              <h3>Deficit</h3>
+              <div class="amount">RM -450.00</div>
+            </div>
+          </div>
+
+          <div class="prepared-by">
+            <strong>Prepared By:</strong><br />
+            Raj Kumar (Treasurer)<br />
+            Committee ID: COM-004<br />
+            Date: February 25, 2024<br />
+            Contact: 015-6789012
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="action-buttons">
+      <a href="#" class="btn btn-secondary" onclick="window.print()"
+        >🖨️ Print</a
+      >
+      <a href="#" class="btn btn-primary" onclick="editEvent()">✏️ Edit</a>
+    </div>
+
+    <script>
+      function editEvent() {
+        alert("Edit functionality will redirect to the event editing form.");
+        // In your actual implementation, this would redirect to the edit form
+        // window.location.href = 'edit-event.php?id=EVT-2024-001';
+      }
+
+      // Add smooth scrolling for better UX
+      document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
+        anchor.addEventListener("click", function (e) {
+          e.preventDefault();
+          document.querySelector(this.getAttribute("href")).scrollIntoView({
+            behavior: "smooth",
+          });
+        });
+      });
+
+      // Print-friendly styling
+      window.addEventListener("beforeprint", function () {
+        document.querySelector(".action-buttons").style.display = "none";
+      });
+
+      window.addEventListener("afterprint", function () {
+        document.querySelector(".action-buttons").style.display = "flex";
+      });
+    </script>
+  </body>
+</html>

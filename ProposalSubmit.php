@@ -1,6 +1,6 @@
 <?php
 include('dbconfig.php');
-include('sendMailTemplates.php');
+//include('sendMailTemplates.php');
 session_start();
 
 $stu_id = $_SESSION['Stu_ID'];
@@ -242,7 +242,7 @@ $result = $stmt->get_result();
 $advisorData = $result->fetch_assoc();
 $stmt->close();
 
-if ($advisorData) {
+/*if ($advisorData) {
     $advisorName = $advisorData['Adv_Name'];
     $advisorEmail = $advisorData['Adv_Email'];
 
@@ -257,7 +257,7 @@ if ($advisorData) {
     // Send email notification to advisor
     newProposalToAdvisor($studentName, $ev_name, $advisorName, $advisorEmail);
 }
-
+*/
 ?>
 
 <!DOCTYPE html>

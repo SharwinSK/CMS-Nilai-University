@@ -64,26 +64,23 @@
 </div>
 
 <script>
-    document.getElementById('confirmLogout').addEventListener('click', function () {
+    document.getElementById('confirmLogout').addEventListener('click', () => {
         fetch('Logout.php', {
             method: 'POST',
-            body: JSON.stringify({ action: 'logout' }),
-            headers: { 'Content-Type': 'application/json' }
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'logout' })
         })
-            .then(response => response.json())
+            .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    // Redirect to the appropriate login page
                     window.location.href = data.redirect;
                 } else {
                     alert('Logout failed. Please try again.');
                 }
             })
-            .catch(error => {
-                console.error('Error during logout:', error);
+            .catch(err => {
+                console.error('Error during logout:', err);
                 alert('An error occurred. Please try again.');
             });
     });
-
-
 </script>

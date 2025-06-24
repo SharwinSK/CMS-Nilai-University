@@ -1,6 +1,6 @@
 <?php
 include('dbconfig.php');
-include_once('sendMailTemplates.php');
+//include_once('sendMailTemplates.php');
 
 session_start();
 
@@ -106,7 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 
 
-    // EMAIL Notification (after DB updates)
+    /*// EMAIL Notification (after DB updates)
     $studentName = $proposal['Stu_Name'];
     $eventName = $proposal['Ev_Name'];
     $clubName = $proposal['Club_Name'];
@@ -120,7 +120,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($decision === 'approve') {
         advisorApproved($studentName, $eventName, $studentEmail, $coordinatorEmail, $clubName);
     }
-
+*/
     // 3. Redirect back to dashboard
     header("Location: AdvisorDashboard.php");
     exit();

@@ -12,13 +12,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         session_unset();
         session_destroy();
 
-        // Determine redirect URL based on user type
-        $redirectUrl = 'StudentLogin.php'; // Default fallback
-        if ($userType === 'coordinator') {
-            $redirectUrl = 'CoordinatorLogin.php';
-        } elseif ($userType === 'advisor') {
-            $redirectUrl = 'AdvisorLogin.php';
+        /// Determine redirect URL based on user type
+        switch ($userType) {
+            case 'admin':
+                $redirectUrl = '../index.php';
+                break;
+            case 'coordinator':
+                $redirectUrl = 'CoordinatorLogin.php';
+                break;
+            case 'advisor':
+                $redirectUrl = 'AdvisorLogin.php';
+                break;
+            default:
+                $redirectUrl = 'StudentLogin.php';
         }
+
 
         // Return JSON response with redirect URL
         echo json_encode(['success' => true, 'redirect' => $redirectUrl]);
