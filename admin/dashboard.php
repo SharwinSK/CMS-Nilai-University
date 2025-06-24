@@ -2,6 +2,7 @@
 session_start();
 include '../dbconfig.php';   // adjust path if dbconfig.php sits one level up
 
+
 /* ─── SECURITY ───────────────────────────────────────── */
 if (!isset($_SESSION['Admin_ID'])) {
     header("Location: ../AdminLogin.php");
@@ -30,20 +31,29 @@ if ($row = $res->fetch_assoc())
     $pendingProposals = $row['n'];
 
 /* Completed events  (Status_ID = 5 = ‘Approved by Coordinator’) */
-$res = $conn->query("SELECT COUNT(*) AS n FROM events WHERE Status_ID = 5");
+
+$res = $conn->query("
+    SELECT COUNT(*) AS n 
+    FROM events e
+    JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID
+    WHERE ep.Rep_PostStatus = 'Accepted'
+");
 if ($row = $res->fetch_assoc())
     $completedEvents = $row['n'];
 
 /* ─── EVENT HIGHLIGHTS (latest 3 posters) ────────────── */
 $highlights = [];
 $sql = "
-    SELECT Ev_Name, Ev_Poster
-    FROM events
-    WHERE Ev_Poster IS NOT NULL
-      AND Status_ID = 5
-    ORDER BY Updated_At DESC
+    SELECT e.Ev_Name, e.Ev_Poster
+    FROM events e
+    LEFT JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID
+    WHERE e.Ev_Poster IS NOT NULL
+      AND e.Status_ID = 5
+      AND ep.Rep_ID IS NULL  -- No post-event report yet
+    ORDER BY e.Updated_At DESC
     LIMIT 3
 ";
+
 $result = $conn->query($sql);
 while ($row = $result->fetch_assoc())
     $highlights[] = $row;
@@ -80,6 +90,9 @@ $calendarJs = json_encode($calendarEvents, JSON_HEX_TAG);
     <title>Nilai University - Admin Dashboard</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tooltip.js/1.3.3/tooltip.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/2.11.6/umd/popper.min.js"></script>
+
     <style>
         :root {
             --primary-color: #03a791;
@@ -291,6 +304,12 @@ $calendarJs = json_encode($calendarEvents, JSON_HEX_TAG);
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+            font-size: 0.75rem;
+            background: var(--primary-color);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            cursor: pointer;
         }
 
         .section-title {
@@ -352,25 +371,25 @@ $calendarJs = json_encode($calendarEvents, JSON_HEX_TAG);
         </div>
         <div class="offcanvas-body p-0">
             <nav class="nav flex-column">
-                <a class="nav-link active" href="#" data-section="dashboard">
+                <a class="nav-link active" href="dashboard.php" data-section="dashboard">
                     <i class="fas fa-home me-2"></i>Admin Dashboard
                 </a>
-                <a class="nav-link" href="#" data-section="events">
+                <a class="nav-link" href="eventmanagement.php" data-section="events">
                     <i class="fas fa-calendar-alt me-2"></i>Event Management
                 </a>
-                <a class="nav-link" href="#" data-section="clubs">
+                <a class="nav-link" href="ProposalEvent.php" data-section="clubs">
                     <i class="fas fa-users me-2"></i>Club Management
                 </a>
-                <a class="nav-link" href="#" data-section="advisors">
+                <a class="nav-link" href="advisormanagement.php" data-section="advisors">
                     <i class="fas fa-user-tie me-2"></i>Advisor Management
                 </a>
-                <a class="nav-link" href="#" data-section="coordinators">
+                <a class="nav-link" href="coordinatormanagement.php" data-section="coordinators">
                     <i class="fas fa-user-cog me-2"></i>Coordinator Management
                 </a>
-                <a class="nav-link" href="#" data-section="users">
+                <a class="nav-link" href="usermanagement.php" data-section="users">
                     <i class="fas fa-user-friends me-2"></i>User Management
                 </a>
-                <a class="nav-link" href="#" data-section="reports">
+                <a class="nav-link" href="reportexport.php" data-section="reports">
                     <i class="fas fa-chart-bar me-2"></i>Report & Export
                 </a>
             </nav>
@@ -459,15 +478,24 @@ $calendarJs = json_encode($calendarEvents, JSON_HEX_TAG);
                         </div>
                         <div class="carousel-inner">
                             <?php foreach ($highlights as $index => $ev): ?>
+                                <?php
+                                $posterPath = $ev['Ev_Poster'];
+
+                                // Fix path if it's relative (like "uploads/...")
+                                if ($posterPath && !preg_match('#^https?://#', $posterPath)) {
+                                    if (!str_starts_with($posterPath, '../')) {
+                                        $posterPath = '../' . ltrim($posterPath, '/');
+                                    }
+                                }
+                                ?>
                                 <div class="carousel-item <?= $index === 0 ? 'active' : '' ?>">
-                                    <img src="<?= htmlspecialchars($ev['Ev_Poster']) ?>" class="d-block w-100"
+
+                                    <img src="<?= htmlspecialchars($posterPath) ?>" class="d-block w-100"
                                         alt="<?= htmlspecialchars($ev['Ev_Name']) ?>"
-                                        style="height: 400px; object-fit: cover;">
-                                    <div class="carousel-caption">
-                                        <h5><?= htmlspecialchars($ev['Ev_Name']) ?></h5>
-                                    </div>
+                                        style="height: 400px; width: 100%; object-fit: contain; background: #fff;">
                                 </div>
                             <?php endforeach; ?>
+
 
                         </div>
                         <button class="carousel-control-prev" type="button" data-bs-target="#eventCarousel"
@@ -551,10 +579,15 @@ $calendarJs = json_encode($calendarEvents, JSON_HEX_TAG);
 
                 let eventHTML = '';
                 if (events[dateStr]) {
-                    eventHTML = events[dateStr].map(event =>
-                        `<div class="event-indicator">${event}</div>`
-                    ).join('');
+                    const tooltipText = events[dateStr].length + ' event(s):\n' + events[dateStr].join('\n');
+                    eventHTML = `<div class="event-indicator"
+                    data-bs-toggle="tooltip"
+                    data-bs-placement="top"
+                    title="${tooltipText.replace(/"/g, '&quot;')}">
+                    ${events[dateStr].length} event(s)
+                 </div>`;
                 }
+
 
                 calendarHTML += `<div class="${dayClass}">
                     <div style="font-weight: bold; margin-bottom: 4px;">${day}</div>
@@ -570,7 +603,9 @@ $calendarJs = json_encode($calendarEvents, JSON_HEX_TAG);
                 calendarHTML += `<div class="calendar-day other-month">${i}</div>`;
             }
 
+
             document.getElementById('calendarGrid').innerHTML = calendarHTML;
+
         }
 
         function previousMonth() {
@@ -586,39 +621,15 @@ $calendarJs = json_encode($calendarEvents, JSON_HEX_TAG);
         // Initialize calendar
         generateCalendar(currentDate.getFullYear(), currentDate.getMonth());
 
-        // Sidebar navigation
-        document.querySelectorAll('.nav-link[data-section]').forEach(link => {
-            link.addEventListener('click', function (e) {
-                e.preventDefault();
 
-                // Remove active class from all links
-                document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-
-                // Add active class to clicked link
-                this.classList.add('active');
-
-                // Here you would typically load different content based on the section
-                const section = this.getAttribute('data-section');
-                console.log('Loading section:', section);
-
-                // Close offcanvas on mobile
-                const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('adminSidebar'));
-                if (offcanvas) {
-                    offcanvas.hide();
-                }
+        // Enable Bootstrap tooltips
+        document.addEventListener('DOMContentLoaded', function () {
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
             });
         });
 
-        // Auto-refresh stats (simulate real-time updates)
-        setInterval(() => {
-            const statsNumbers = document.querySelectorAll('.stats-number');
-            statsNumbers.forEach(stat => {
-                const currentValue = parseInt(stat.textContent.replace(',', ''));
-                const change = Math.floor(Math.random() * 5) - 2; // Random change between -2 and +2
-                const newValue = Math.max(0, currentValue + change);
-                stat.textContent = newValue.toLocaleString();
-            });
-        }, 30000); // Update every 30 seconds
     </script>
 </body>
 

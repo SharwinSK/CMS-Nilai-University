@@ -1,0 +1,1725 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Event Management - Nilai University CMS</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+    <style>
+      :root {
+        --primary-color: #03a791;
+        --secondary-color: #81e7af;
+        --accent-color: #e9f5be;
+        --warm-color: #f1ba88;
+        --light-bg: #f8f9fa;
+      }
+
+      body {
+        background: linear-gradient(
+          135deg,
+          var(--accent-color),
+          var(--light-bg)
+        );
+        min-height: 100vh;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      /* Sidebar Styling */
+      .offcanvas-start {
+        background: linear-gradient(
+          135deg,
+          var(--primary-color),
+          var(--secondary-color)
+        );
+        width: 280px;
+      }
+
+      .offcanvas-header {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        padding: 1.5rem;
+      }
+
+      .offcanvas-title {
+        color: white;
+        font-weight: bold;
+        font-size: 1.4rem;
+      }
+
+      .nav-link {
+        color: rgba(255, 255, 255, 0.9) !important;
+        padding: 0.8rem 1.5rem;
+        margin: 0.2rem 0;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+      }
+
+      .nav-link:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+        color: white !important;
+        transform: translateX(5px);
+      }
+
+      .nav-link.active {
+        background-color: var(--warm-color);
+        color: var(--primary-color) !important;
+        font-weight: bold;
+      }
+
+      /* Main Content */
+      .main-content {
+        margin-left: 0;
+        padding: 2rem;
+        transition: margin-left 0.3s ease;
+      }
+
+      .content-header {
+        background: linear-gradient(
+          135deg,
+          var(--primary-color),
+          var(--secondary-color)
+        );
+        color: white;
+        padding: 2rem;
+        border-radius: 15px;
+        margin-bottom: 2rem;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      }
+
+      .content-header h1 {
+        margin: 0;
+        font-size: 2.5rem;
+        font-weight: bold;
+      }
+
+      .content-header p {
+        margin: 0.5rem 0 0 0;
+        opacity: 0.9;
+        font-size: 1.1rem;
+      }
+
+      /* Tab Navigation */
+      .nav-tabs .nav-link {
+        background: white;
+        border: 2px solid transparent;
+        color: var(--primary-color);
+        font-weight: 600;
+        padding: 0.8rem 1.5rem;
+        margin-right: 0.5rem;
+        border-radius: 10px 10px 0 0;
+        transition: all 0.3s ease;
+      }
+
+      .nav-tabs .nav-link:hover {
+        border-color: var(--secondary-color);
+        background: var(--accent-color);
+      }
+
+      .nav-tabs .nav-link.active {
+        background: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+      }
+
+      /* Table Styling */
+      .table-container {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        margin-top: 1rem;
+      }
+
+      .table-header {
+        background: linear-gradient(
+          135deg,
+          var(--primary-color),
+          var(--secondary-color)
+        );
+        color: white;
+        padding: 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .table-header h3 {
+        margin: 0;
+        font-size: 1.3rem;
+      }
+
+      .table thead th {
+        background: var(--accent-color);
+        color: var(--primary-color);
+        border: none;
+        padding: 1rem;
+        font-weight: 600;
+        text-align: center;
+      }
+
+      .table tbody td {
+        padding: 1rem;
+        vertical-align: middle;
+        text-align: center;
+      }
+
+      .table tbody tr:hover {
+        background-color: rgba(3, 167, 145, 0.05);
+      }
+
+      /* Status Badges */
+      .status-badge {
+        padding: 0.4rem 0.8rem;
+        border-radius: 20px;
+        color: white;
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+
+      .status-pending {
+        background-color: #ffc107;
+      }
+      .status-approved {
+        background-color: #28a745;
+      }
+      .status-rejected {
+        background-color: #dc3545;
+      }
+      .status-completed {
+        background-color: #007bff;
+      }
+
+      /* Action Buttons */
+      .action-btn {
+        margin: 0.1rem;
+        padding: 0.4rem 0.8rem;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        transition: all 0.3s ease;
+      }
+
+      .btn-view {
+        background-color: #17a2b8;
+        color: white;
+      }
+      .btn-edit {
+        background-color: #ffc107;
+        color: white;
+      }
+      .btn-delete {
+        background-color: #dc3545;
+        color: white;
+      }
+      .btn-export {
+        background-color: #6f42c1;
+        color: white;
+      }
+
+      .action-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      }
+
+      /* Add New Button */
+      .btn-add-new {
+        background: linear-gradient(
+          135deg,
+          var(--primary-color),
+          var(--secondary-color)
+        );
+        color: white;
+        border: none;
+        padding: 0.8rem 1.5rem;
+        border-radius: 10px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+      }
+
+      .btn-add-new:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+      }
+
+      /* Search and Filter */
+      .search-filter-container {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 10px;
+        margin-bottom: 1rem;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+      }
+
+      .search-input {
+        border: 2px solid var(--accent-color);
+        border-radius: 8px;
+        padding: 0.6rem 1rem;
+      }
+
+      .search-input:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.2rem rgba(3, 167, 145, 0.25);
+      }
+
+      /* Modal Styling */
+      .modal-header {
+        background: linear-gradient(
+          135deg,
+          var(--primary-color),
+          var(--secondary-color)
+        );
+        color: white;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .modal-content {
+        border-radius: 15px;
+        border: none;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+      }
+
+      /* Responsive Design */
+      @media (max-width: 768px) {
+        .main-content {
+          padding: 1rem;
+        }
+
+        .content-header h1 {
+          font-size: 2rem;
+        }
+
+        .table-responsive {
+          font-size: 0.9rem;
+        }
+
+        .action-btn {
+          padding: 0.3rem 0.6rem;
+          font-size: 0.8rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Navigation Bar -->
+    <nav
+      class="navbar navbar-expand-lg"
+      style="
+        background: linear-gradient(
+          135deg,
+          var(--primary-color),
+          var(--secondary-color)
+        );
+      "
+    >
+      <div class="container-fluid">
+        <button
+          class="btn btn-outline-light me-3"
+          type="button"
+          data-bs-toggle="offcanvas"
+          data-bs-target="#adminSidebar"
+        >
+          <i class="fas fa-bars"></i>
+        </button>
+        <a class="navbar-brand text-white fw-bold" href="#">
+          <i class="fas fa-university me-2"></i>Nilai University CMS
+        </a>
+        <div class="navbar-nav ms-auto">
+          <div class="nav-item dropdown">
+            <a
+              class="nav-link dropdown-toggle text-white"
+              href="#"
+              role="button"
+              data-bs-toggle="dropdown"
+            >
+              <i class="fas fa-user-circle me-1"></i>Admin
+            </a>
+            <ul class="dropdown-menu">
+              <li>
+                <a class="dropdown-item" href="#"
+                  ><i class="fas fa-user me-2"></i>Profile</a
+                >
+              </li>
+              <li>
+                <hr class="dropdown-divider" />
+              </li>
+              <li>
+                <a class="dropdown-item" href="#"
+                  ><i class="fas fa-sign-out-alt me-2"></i>Logout</a
+                >
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Offcanvas Sidebar -->
+    <div class="offcanvas offcanvas-start" tabindex="-1" id="adminSidebar">
+      <div class="offcanvas-header">
+        <h5 class="offcanvas-title">
+          <i class="fas fa-tachometer-alt me-2"></i>Admin Panel
+        </h5>
+        <button
+          type="button"
+          class="btn-close btn-close-white"
+          data-bs-dismiss="offcanvas"
+        ></button>
+      </div>
+      <div class="offcanvas-body p-0">
+        <nav class="nav flex-column">
+          <a class="nav-link" href="#" data-section="dashboard">
+            <i class="fas fa-home me-2"></i>Admin Dashboard
+          </a>
+          <a class="nav-link active" href="#" data-section="events">
+            <i class="fas fa-calendar-alt me-2"></i>Event Management
+          </a>
+          <a class="nav-link" href="#" data-section="clubs">
+            <i class="fas fa-users me-2"></i>Club Management
+          </a>
+          <a class="nav-link" href="#" data-section="advisors">
+            <i class="fas fa-user-tie me-2"></i>Advisor Management
+          </a>
+          <a class="nav-link" href="#" data-section="coordinators">
+            <i class="fas fa-user-cog me-2"></i>Coordinator Management
+          </a>
+          <a class="nav-link" href="#" data-section="users">
+            <i class="fas fa-user-friends me-2"></i>User Management
+          </a>
+          <a class="nav-link" href="#" data-section="reports">
+            <i class="fas fa-chart-bar me-2"></i>Report & Export
+          </a>
+        </nav>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <!-- Page Header -->
+      <div class="content-header">
+        <h1><i class="fas fa-calendar-alt me-3"></i>Event Management</h1>
+        <p>Manage all events including proposals and post-event reports</p>
+      </div>
+
+      <!-- Tab Navigation -->
+      <ul class="nav nav-tabs" id="eventTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button
+            class="nav-link active"
+            id="proposals-tab"
+            data-bs-toggle="tab"
+            data-bs-target="#proposals"
+            type="button"
+            role="tab"
+          >
+            <i class="fas fa-file-alt me-2"></i>Proposal Events
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button
+            class="nav-link"
+            id="reports-tab"
+            data-bs-toggle="tab"
+            data-bs-target="#reports"
+            type="button"
+            role="tab"
+          >
+            <i class="fas fa-clipboard-list me-2"></i>Post-Event Reports
+          </button>
+        </li>
+      </ul>
+
+      <!-- Tab Content -->
+      <div class="tab-content" id="eventTabContent">
+        <!-- Proposal Events Tab -->
+        <div class="tab-pane fade show active" id="proposals" role="tabpanel">
+          <!-- Search and Filter -->
+          <div class="search-filter-container">
+            <div class="row">
+              <div class="col-md-4">
+                <div class="input-group">
+                  <span class="input-group-text"
+                    ><i class="fas fa-search"></i
+                  ></span>
+                  <input
+                    type="text"
+                    class="form-control search-input"
+                    id="searchProposals"
+                    placeholder="Search proposals..."
+                  />
+                </div>
+              </div>
+              <div class="col-md-3">
+                <select class="form-select search-input" id="filterStatus">
+                  <option value="">All Status</option>
+                  <option value="pending">Pending</option>
+                  <option value="approved">Approved</option>
+                  <option value="rejected">Rejected</option>
+                </select>
+              </div>
+              <div class="col-md-3">
+                <select class="form-select search-input" id="filterType">
+                  <option value="">All Types</option>
+                  <option value="academic">Academic</option>
+                  <option value="cultural">Cultural</option>
+                  <option value="sports">Sports</option>
+                  <option value="social">Social</option>
+                </select>
+              </div>
+              <div class="col-md-2">
+                <button
+                  class="btn btn-add-new w-100"
+                  data-bs-toggle="modal"
+                  data-bs-target="#addProposalModal"
+                >
+                  <i class="fas fa-plus me-2"></i>Add New
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Proposals Table -->
+          <div class="table-container">
+            <div class="table-header">
+              <h3><i class="fas fa-file-alt me-2"></i>Proposal Events</h3>
+              <span class="badge bg-light text-dark fs-6"
+                >Total: <span id="proposalCount">5</span></span
+              >
+            </div>
+            <div class="table-responsive">
+              <table class="table table-hover mb-0" id="proposalsTable">
+                <thead>
+                  <tr>
+                    <th>Event ID</th>
+                    <th>Name</th>
+                    <th>Status</th>
+                    <th>Type</th>
+                    <th>Date</th>
+                    <th>Club</th>
+                    <th>Student</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>EVT001</strong></td>
+                    <td>Annual Tech Conference</td>
+                    <td>
+                      <span class="status-badge status-approved">Approved</span>
+                    </td>
+                    <td>Academic</td>
+                    <td>2025-07-15</td>
+                    <td>Tech Club</td>
+                    <td>John Doe</td>
+                    <td>
+                      <button
+                        class="btn action-btn btn-view"
+                        onclick="viewProposal('EVT001')"
+                        title="View Details"
+                      >
+                        <i class="fas fa-eye"></i>
+                      </button>
+                      <button
+                        class="btn action-btn btn-edit"
+                        onclick="editProposal('EVT001')"
+                        title="Edit Proposal"
+                      >
+                        <i class="fas fa-edit"></i>
+                      </button>
+                      <button
+                        class="btn action-btn btn-delete"
+                        onclick="deleteProposal('EVT001')"
+                        title="Delete Proposal"
+                      >
+                        <i class="fas fa-trash"></i>
+                      </button>
+                      <button
+                        class="btn action-btn btn-export"
+                        onclick="exportProposalPDF('EVT001')"
+                        title="Export PDF"
+                      >
+                        <i class="fas fa-file-pdf"></i>
+                      </button>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><strong>EVT002</strong></td>
+                    <td>Cultural Night 2025</td>
+                    <td>
+                      <span class="status-badge status-pending">Pending</span>
+                    </td>
+                    <td>Cultural</td>
+                    <td>2025-08-20</td>
+                    <td>Cultural Society</td>
+                    <td>Jane Smith</td>
+                    <td>
+                      <button
+                        class="btn action-btn btn-view"
+                        onclick="viewProposal('EVT002')"
+                        title="View Details"
+                      >
+                        <i class="fas fa-eye"></i>
+                      </button>
+                      <button
+                        class="btn action-btn btn-edit"
+                        onclick="editProposal('EVT002')"
+                        title="Edit Proposal"
+                      >
+                        <i class="fas fa-edit"></i>
+                      </button>
+                      <button
+                        class="btn action-btn btn-delete"
+                        onclick="deleteProposal('EVT002')"
+                        title="Delete Proposal"
+                      >
+                        <i class="fas fa-trash"></i>
+                      </button>
+                      <button
+                        class="btn action-btn btn-export"
+                        onclick="exportProposalPDF('EVT002')"
+                        title="Export PDF"
+                      >
+                        <i class="fas fa-file-pdf"></i>
+                      </button>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><strong>EVT003</strong></td>
+                    <td>Sports Tournament</td>
+                    <td>
+                      <span class="status-badge status-approved">Approved</span>
+                    </td>
+                    <td>Sports</td>
+                    <td>2025-09-10</td>
+                    <td>Sports Club</td>
+                    <td>Mike Johnson</td>
+                    <td>
+                      <button
+                        class="btn action-btn btn-view"
+                        onclick="viewProposal('EVT003')"
+                        title="View Details"
+                      >
+                        <i class="fas fa-eye"></i>
+                      </button>
+                      <button
+                        class="btn action-btn btn-edit"
+                        onclick="editProposal('EVT003')"
+                        title="Edit Proposal"
+                      >
+                        <i class="fas fa-edit"></i>
+                      </button>
+                      <button
+                        class="btn action-btn btn-delete"
+                        onclick="deleteProposal('EVT003')"
+                        title="Delete Proposal"
+                      >
+                        <i class="fas fa-trash"></i>
+                      </button>
+                      <button
+                        class="btn action-btn btn-export"
+                        onclick="exportProposalPDF('EVT003')"
+                        title="Export PDF"
+                      >
+                        <i class="fas fa-file-pdf"></i>
+                      </button>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><strong>EVT004</strong></td>
+                    <td>Charity Drive</td>
+                    <td>
+                      <span class="status-badge status-rejected">Rejected</span>
+                    </td>
+                    <td>Social</td>
+                    <td>2025-08-05</td>
+                    <td>Community Service</td>
+                    <td>Sarah Wilson</td>
+                    <td>
+                      <button
+                        class="btn action-btn btn-view"
+                        onclick="viewProposal('EVT004')"
+                        title="View Details"
+                      >
+                        <i class="fas fa-eye"></i>
+                      </button>
+                      <button
+                        class="btn action-btn btn-edit"
+                        onclick="editProposal('EVT004')"
+                        title="Edit Proposal"
+                      >
+                        <i class="fas fa-edit"></i>
+                      </button>
+                      <button
+                        class="btn action-btn btn-delete"
+                        onclick="deleteProposal('EVT004')"
+                        title="Delete Proposal"
+                      >
+                        <i class="fas fa-trash"></i>
+                      </button>
+                      <button
+                        class="btn action-btn btn-export"
+                        onclick="exportProposalPDF('EVT004')"
+                        title="Export PDF"
+                      >
+                        <i class="fas fa-file-pdf"></i>
+                      </button>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><strong>EVT005</strong></td>
+                    <td>Workshop Series</td>
+                    <td>
+                      <span class="status-badge status-pending">Pending</span>
+                    </td>
+                    <td>Academic</td>
+                    <td>2025-07-30</td>
+                    <td>Academic Society</td>
+                    <td>David Lee</td>
+                    <td>
+                      <button
+                        class="btn action-btn btn-view"
+                        onclick="viewProposal('EVT005')"
+                        title="View Details"
+                      >
+                        <i class="fas fa-eye"></i>
+                      </button>
+                      <button
+                        class="btn action-btn btn-edit"
+                        onclick="editProposal('EVT005')"
+                        title="Edit Proposal"
+                      >
+                        <i class="fas fa-edit"></i>
+                      </button>
+                      <button
+                        class="btn action-btn btn-delete"
+                        onclick="deleteProposal('EVT005')"
+                        title="Delete Proposal"
+                      >
+                        <i class="fas fa-trash"></i>
+                      </button>
+                      <button
+                        class="btn action-btn btn-export"
+                        onclick="exportProposalPDF('EVT005')"
+                        title="Export PDF"
+                      >
+                        <i class="fas fa-file-pdf"></i>
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Post-Event Reports Tab -->
+        <div class="tab-pane fade" id="reports" role="tabpanel">
+          <!-- Search and Filter -->
+          <div class="search-filter-container">
+            <div class="row">
+              <div class="col-md-4">
+                <div class="input-group">
+                  <span class="input-group-text"
+                    ><i class="fas fa-search"></i
+                  ></span>
+                  <input
+                    type="text"
+                    class="form-control search-input"
+                    id="searchReports"
+                    placeholder="Search reports..."
+                  />
+                </div>
+              </div>
+              <div class="col-md-3">
+                <select
+                  class="form-select search-input"
+                  id="filterReportStatus"
+                >
+                  <option value="">All Status</option>
+                  <option value="completed">Completed</option>
+                  <option value="pending">Pending</option>
+                  <option value="approved">Approved</option>
+                </select>
+              </div>
+              <div class="col-md-3">
+                <input
+                  type="date"
+                  class="form-control search-input"
+                  id="filterDate"
+                  placeholder="Filter by date"
+                />
+              </div>
+              <div class="col-md-2">
+                <button
+                  class="btn btn-add-new w-100"
+                  data-bs-toggle="modal"
+                  data-bs-target="#addReportModal"
+                >
+                  <i class="fas fa-plus me-2"></i>Add New
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Reports Table -->
+          <div class="table-container">
+            <div class="table-header">
+              <h3>
+                <i class="fas fa-clipboard-list me-2"></i>Post-Event Reports
+              </h3>
+              <span class="badge bg-light text-dark fs-6"
+                >Total: <span id="reportCount">3</span></span
+              >
+            </div>
+            <div class="table-responsive">
+              <table class="table table-hover mb-0" id="reportsTable">
+                <thead>
+                  <tr>
+                    <th>Report ID</th>
+                    <th>Event Name</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                    <th>Student</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>RPT001</strong></td>
+                    <td>Annual Tech Conference</td>
+                    <td>
+                      <span class="status-badge status-completed"
+                        >Completed</span
+                      >
+                    </td>
+                    <td>2025-07-16</td>
+                    <td>John Doe</td>
+                    <td>
+                      <button
+                        class="btn action-btn btn-view"
+                        onclick="viewReport('RPT001')"
+                        title="View Report"
+                      >
+                        <i class="fas fa-eye"></i>
+                      </button>
+                      <button
+                        class="btn action-btn btn-edit"
+                        onclick="editReport('RPT001')"
+                        title="Edit Report"
+                      >
+                        <i class="fas fa-edit"></i>
+                      </button>
+                      <button
+                        class="btn action-btn btn-delete"
+                        onclick="deleteReport('RPT001')"
+                        title="Delete Report"
+                      >
+                        <i class="fas fa-trash"></i>
+                      </button>
+                      <button
+                        class="btn action-btn btn-export"
+                        onclick="exportReportPDF('RPT001')"
+                        title="Export PDF"
+                      >
+                        <i class="fas fa-file-pdf"></i>
+                      </button>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><strong>RPT002</strong></td>
+                    <td>Sports Tournament</td>
+                    <td>
+                      <span class="status-badge status-pending">Pending</span>
+                    </td>
+                    <td>2025-09-11</td>
+                    <td>Mike Johnson</td>
+                    <td>
+                      <button
+                        class="btn action-btn btn-view"
+                        onclick="viewReport('RPT002')"
+                        title="View Report"
+                      >
+                        <i class="fas fa-eye"></i>
+                      </button>
+                      <button
+                        class="btn action-btn btn-edit"
+                        onclick="editReport('RPT002')"
+                        title="Edit Report"
+                      >
+                        <i class="fas fa-edit"></i>
+                      </button>
+                      <button
+                        class="btn action-btn btn-delete"
+                        onclick="deleteReport('RPT002')"
+                        title="Delete Report"
+                      >
+                        <i class="fas fa-trash"></i>
+                      </button>
+                      <button
+                        class="btn action-btn btn-export"
+                        onclick="exportReportPDF('RPT002')"
+                        title="Export PDF"
+                      >
+                        <i class="fas fa-file-pdf"></i>
+                      </button>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><strong>RPT003</strong></td>
+                    <td>Workshop Series</td>
+                    <td>
+                      <span class="status-badge status-approved">Approved</span>
+                    </td>
+                    <td>2025-07-31</td>
+                    <td>David Lee</td>
+                    <td>
+                      <button
+                        class="btn action-btn btn-view"
+                        onclick="viewReport('RPT003')"
+                        title="View Report"
+                      >
+                        <i class="fas fa-eye"></i>
+                      </button>
+                      <button
+                        class="btn action-btn btn-edit"
+                        onclick="editReport('RPT003')"
+                        title="Edit Report"
+                      >
+                        <i class="fas fa-edit"></i>
+                      </button>
+                      <button
+                        class="btn action-btn btn-delete"
+                        onclick="deleteReport('RPT003')"
+                        title="Delete Report"
+                      >
+                        <i class="fas fa-trash"></i>
+                      </button>
+                      <button
+                        class="btn action-btn btn-export"
+                        onclick="exportReportPDF('RPT003')"
+                        title="Export PDF"
+                      >
+                        <i class="fas fa-file-pdf"></i>
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Proposal Modal -->
+    <div class="modal fade" id="addProposalModal" tabindex="-1">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">
+              <i class="fas fa-plus me-2"></i>Add New Event Proposal
+            </h5>
+            <button
+              type="button"
+              class="btn-close btn-close-white"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <form id="proposalForm">
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label class="form-label">Event Date</label>
+                    <input
+                      type="date"
+                      class="form-control"
+                      id="eventDate"
+                      required
+                    />
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label class="form-label">Club</label>
+                    <select class="form-select" id="eventClub" required>
+                      <option value="">Select Club</option>
+                      <option value="Tech Club">Tech Club</option>
+                      <option value="Cultural Society">Cultural Society</option>
+                      <option value="Sports Club">Sports Club</option>
+                      <option value="Community Service">
+                        Community Service
+                      </option>
+                      <option value="Academic Society">Academic Society</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label class="form-label">Student Name</label>
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="studentName"
+                      required
+                    />
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label class="form-label">Status</label>
+                    <select class="form-select" id="eventStatus">
+                      <option value="pending">Pending</option>
+                      <option value="approved">Approved</option>
+                      <option value="rejected">Rejected</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Event Description</label>
+                <textarea
+                  class="form-control"
+                  id="eventDescription"
+                  rows="4"
+                  placeholder="Enter event description..."
+                ></textarea>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              class="btn btn-primary"
+              onclick="saveProposal()"
+            >
+              Save Proposal
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Report Modal -->
+    <div class="modal fade" id="addReportModal" tabindex="-1">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">
+              <i class="fas fa-plus me-2"></i>Add New Post-Event Report
+            </h5>
+            <button
+              type="button"
+              class="btn-close btn-close-white"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <form id="reportForm">
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label class="form-label">Event Name</label>
+                    <select class="form-select" id="reportEventName" required>
+                      <option value="">Select Event</option>
+                      <option value="Annual Tech Conference">
+                        Annual Tech Conference
+                      </option>
+                      <option value="Cultural Night 2025">
+                        Cultural Night 2025
+                      </option>
+                      <option value="Sports Tournament">
+                        Sports Tournament
+                      </option>
+                      <option value="Workshop Series">Workshop Series</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label class="form-label">Report Date</label>
+                    <input
+                      type="date"
+                      class="form-control"
+                      id="reportDate"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label class="form-label">Student Name</label>
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="reportStudentName"
+                      required
+                    />
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label class="form-label">Status</label>
+                    <select class="form-select" id="reportStatus">
+                      <option value="pending">Pending</option>
+                      <option value="completed">Completed</option>
+                      <option value="approved">Approved</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Event Summary</label>
+                <textarea
+                  class="form-control"
+                  id="eventSummary"
+                  rows="4"
+                  placeholder="Enter event summary..."
+                ></textarea>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Outcomes & Achievements</label>
+                <textarea
+                  class="form-control"
+                  id="eventOutcomes"
+                  rows="3"
+                  placeholder="Enter outcomes and achievements..."
+                ></textarea>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Recommendations</label>
+                <textarea
+                  class="form-control"
+                  id="eventRecommendations"
+                  rows="3"
+                  placeholder="Enter recommendations for future events..."
+                ></textarea>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              class="btn btn-primary"
+              onclick="saveReport()"
+            >
+              Save Report
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- View Details Modal -->
+    <div class="modal fade" id="viewDetailsModal" tabindex="-1">
+      <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="viewModalTitle">
+              <i class="fas fa-eye me-2"></i>View Details
+            </h5>
+            <button
+              type="button"
+              class="btn-close btn-close-white"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body" id="viewModalBody">
+            <!-- Dynamic content will be loaded here -->
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Close
+            </button>
+            <button
+              type="button"
+              class="btn btn-primary"
+              id="viewModalExportBtn"
+            >
+              Export PDF
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Success/Error Toast -->
+    <div class="toast-container position-fixed top-0 end-0 p-3">
+      <div id="actionToast" class="toast" role="alert">
+        <div class="toast-header">
+          <i class="fas fa-check-circle text-success me-2"></i>
+          <strong class="me-auto">Success</strong>
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="toast"
+          ></button>
+        </div>
+        <div class="toast-body" id="toastMessage">
+          Action completed successfully!
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      // Sample data for demonstration
+      let proposalsData = [
+        {
+          id: "EVT001",
+          name: "Annual Tech Conference",
+          status: "approved",
+          type: "academic",
+          date: "2025-07-15",
+          club: "Tech Club",
+          student: "John Doe",
+          description:
+            "A comprehensive technology conference featuring industry leaders and emerging technologies.",
+        },
+        {
+          id: "EVT002",
+          name: "Cultural Night 2025",
+          status: "pending",
+          type: "cultural",
+          date: "2025-08-20",
+          club: "Cultural Society",
+          student: "Jane Smith",
+          description:
+            "An evening celebrating diverse cultures through performances, food, and exhibitions.",
+        },
+        {
+          id: "EVT003",
+          name: "Sports Tournament",
+          status: "approved",
+          type: "sports",
+          date: "2025-09-10",
+          club: "Sports Club",
+          student: "Mike Johnson",
+          description:
+            "Inter-university sports tournament featuring multiple disciplines.",
+        },
+        {
+          id: "EVT004",
+          name: "Charity Drive",
+          status: "rejected",
+          type: "social",
+          date: "2025-08-05",
+          club: "Community Service",
+          student: "Sarah Wilson",
+          description:
+            "Community outreach program to support local underprivileged families.",
+        },
+        {
+          id: "EVT005",
+          name: "Workshop Series",
+          status: "pending",
+          type: "academic",
+          date: "2025-07-30",
+          club: "Academic Society",
+          student: "David Lee",
+          description:
+            "Series of skill-building workshops for students and faculty.",
+        },
+      ];
+
+      let reportsData = [
+        {
+          id: "RPT001",
+          eventName: "Annual Tech Conference",
+          status: "completed",
+          date: "2025-07-16",
+          student: "John Doe",
+          summary:
+            "Successfully hosted the annual tech conference with 500+ participants.",
+          outcomes:
+            "Increased tech awareness, successful networking, positive feedback from industry partners.",
+          recommendations:
+            "Consider expanding to include more hands-on workshops next year.",
+        },
+        {
+          id: "RPT002",
+          eventName: "Sports Tournament",
+          status: "pending",
+          date: "2025-09-11",
+          student: "Mike Johnson",
+          summary: "Multi-day sports tournament with excellent participation.",
+          outcomes:
+            "Enhanced inter-university relations, discovered new talent.",
+          recommendations:
+            "Improve facility booking process for future events.",
+        },
+        {
+          id: "RPT003",
+          eventName: "Workshop Series",
+          status: "approved",
+          date: "2025-07-31",
+          student: "David Lee",
+          summary: "Conducted 5 workshops on various professional skills.",
+          outcomes:
+            "High student engagement, practical skill development achieved.",
+          recommendations:
+            "Continue with similar format, add more advanced topics.",
+        },
+      ];
+
+      // Initialize page
+      document.addEventListener("DOMContentLoaded", function () {
+        setupEventListeners();
+        updateCounts();
+      });
+
+      // Setup event listeners
+      function setupEventListeners() {
+        // Search functionality
+        document
+          .getElementById("searchProposals")
+          .addEventListener("input", filterProposals);
+        document
+          .getElementById("filterStatus")
+          .addEventListener("change", filterProposals);
+        document
+          .getElementById("filterType")
+          .addEventListener("change", filterProposals);
+
+        document
+          .getElementById("searchReports")
+          .addEventListener("input", filterReports);
+        document
+          .getElementById("filterReportStatus")
+          .addEventListener("change", filterReports);
+        document
+          .getElementById("filterDate")
+          .addEventListener("change", filterReports);
+      }
+
+      // Filter proposals
+      function filterProposals() {
+        const searchTerm = document
+          .getElementById("searchProposals")
+          .value.toLowerCase();
+        const statusFilter = document.getElementById("filterStatus").value;
+        const typeFilter = document.getElementById("filterType").value;
+
+        const rows = document.querySelectorAll("#proposalsTable tbody tr");
+        let visibleCount = 0;
+
+        rows.forEach((row) => {
+          const name = row.cells[1].textContent.toLowerCase();
+          const status = row.cells[2].textContent.toLowerCase();
+          const type = row.cells[3].textContent.toLowerCase();
+
+          const matchesSearch = name.includes(searchTerm);
+          const matchesStatus = !statusFilter || status.includes(statusFilter);
+          const matchesType = !typeFilter || type.includes(typeFilter);
+
+          if (matchesSearch && matchesStatus && matchesType) {
+            row.style.display = "";
+            visibleCount++;
+          } else {
+            row.style.display = "none";
+          }
+        });
+
+        document.getElementById("proposalCount").textContent = visibleCount;
+      }
+
+      // Filter reports
+      function filterReports() {
+        const searchTerm = document
+          .getElementById("searchReports")
+          .value.toLowerCase();
+        const statusFilter =
+          document.getElementById("filterReportStatus").value;
+        const dateFilter = document.getElementById("filterDate").value;
+
+        const rows = document.querySelectorAll("#reportsTable tbody tr");
+        let visibleCount = 0;
+
+        rows.forEach((row) => {
+          const eventName = row.cells[1].textContent.toLowerCase();
+          const status = row.cells[2].textContent.toLowerCase();
+          const date = row.cells[3].textContent;
+
+          const matchesSearch = eventName.includes(searchTerm);
+          const matchesStatus = !statusFilter || status.includes(statusFilter);
+          const matchesDate = !dateFilter || date === dateFilter;
+
+          if (matchesSearch && matchesStatus && matchesDate) {
+            row.style.display = "";
+            visibleCount++;
+          } else {
+            row.style.display = "none";
+          }
+        });
+
+        document.getElementById("reportCount").textContent = visibleCount;
+      }
+
+      // Update counts
+      function updateCounts() {
+        document.getElementById("proposalCount").textContent =
+          proposalsData.length;
+        document.getElementById("reportCount").textContent = reportsData.length;
+      }
+
+      // View proposal details
+      function viewProposal(id) {
+        const proposal = proposalsData.find((p) => p.id === id);
+        if (proposal) {
+          document.getElementById("viewModalTitle").innerHTML =
+            '<i class="fas fa-eye me-2"></i>Proposal Details - ' +
+            proposal.name;
+          document.getElementById("viewModalBody").innerHTML = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-primary">Event Information</h6>
+                            <p><strong>Event ID:</strong> ${proposal.id}</p>
+                            <p><strong>Name:</strong> ${proposal.name}</p>
+                            <p><strong>Type:</strong> ${proposal.type}</p>
+                            <p><strong>Date:</strong> ${proposal.date}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-primary">Organization Details</h6>
+                            <p><strong>Club:</strong> ${proposal.club}</p>
+                            <p><strong>Student:</strong> ${proposal.student}</p>
+                            <p><strong>Status:</strong> <span class="status-badge status-${proposal.status}">${proposal.status}</span></p>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <h6 class="text-primary">Description</h6>
+                            <p>${proposal.description}</p>
+                        </div>
+                    </div>
+                `;
+          document.getElementById("viewModalExportBtn").onclick = () =>
+            exportProposalPDF(id);
+          new bootstrap.Modal(
+            document.getElementById("viewDetailsModal")
+          ).show();
+        }
+      }
+
+      // View report details
+      function viewReport(id) {
+        const report = reportsData.find((r) => r.id === id);
+        if (report) {
+          document.getElementById("viewModalTitle").innerHTML =
+            '<i class="fas fa-eye me-2"></i>Report Details - ' +
+            report.eventName;
+          document.getElementById("viewModalBody").innerHTML = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-primary">Report Information</h6>
+                            <p><strong>Report ID:</strong> ${report.id}</p>
+                            <p><strong>Event Name:</strong> ${report.eventName}</p>
+                            <p><strong>Date:</strong> ${report.date}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-primary">Report Details</h6>
+                            <p><strong>Student:</strong> ${report.student}</p>
+                            <p><strong>Status:</strong> <span class="status-badge status-${report.status}">${report.status}</span></p>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <h6 class="text-primary">Event Summary</h6>
+                            <p>${report.summary}</p>
+                            <h6 class="text-primary">Outcomes & Achievements</h6>
+                            <p>${report.outcomes}</p>
+                            <h6 class="text-primary">Recommendations</h6>
+                            <p>${report.recommendations}</p>
+                        </div>
+                    </div>
+                `;
+          document.getElementById("viewModalExportBtn").onclick = () =>
+            exportReportPDF(id);
+          new bootstrap.Modal(
+            document.getElementById("viewDetailsModal")
+          ).show();
+        }
+      }
+
+      // Edit proposal
+      function editProposal(id) {
+        const proposal = proposalsData.find((p) => p.id === id);
+        if (proposal) {
+          // Populate form with existing data
+          document.getElementById("eventName").value = proposal.name;
+          document.getElementById("eventType").value = proposal.type;
+          document.getElementById("eventDate").value = proposal.date;
+          document.getElementById("eventClub").value = proposal.club;
+          document.getElementById("studentName").value = proposal.student;
+          document.getElementById("eventStatus").value = proposal.status;
+          document.getElementById("eventDescription").value =
+            proposal.description;
+
+          // Change modal title and save function
+          document.querySelector("#addProposalModal .modal-title").innerHTML =
+            '<i class="fas fa-edit me-2"></i>Edit Event Proposal';
+          document.querySelector(
+            "#addProposalModal .modal-footer .btn-primary"
+          ).onclick = () => updateProposal(id);
+
+          new bootstrap.Modal(
+            document.getElementById("addProposalModal")
+          ).show();
+        }
+      }
+
+      // Edit report
+      function editReport(id) {
+        const report = reportsData.find((r) => r.id === id);
+        if (report) {
+          // Populate form with existing data
+          document.getElementById("reportEventName").value = report.eventName;
+          document.getElementById("reportDate").value = report.date;
+          document.getElementById("reportStudentName").value = report.student;
+          document.getElementById("reportStatus").value = report.status;
+          document.getElementById("eventSummary").value = report.summary;
+          document.getElementById("eventOutcomes").value = report.outcomes;
+          document.getElementById("eventRecommendations").value =
+            report.recommendations;
+
+          // Change modal title and save function
+          document.querySelector("#addReportModal .modal-title").innerHTML =
+            '<i class="fas fa-edit me-2"></i>Edit Post-Event Report';
+          document.querySelector(
+            "#addReportModal .modal-footer .btn-primary"
+          ).onclick = () => updateReport(id);
+
+          new bootstrap.Modal(document.getElementById("addReportModal")).show();
+        }
+      }
+
+      // Delete proposal
+      function deleteProposal(id) {
+        if (
+          confirm(
+            "Are you sure you want to delete this proposal? This action cannot be undone."
+          )
+        ) {
+          proposalsData = proposalsData.filter((p) => p.id !== id);
+          location.reload(); // Refresh to update table
+          showToast("Proposal deleted successfully!", "success");
+        }
+      }
+
+      // Delete report
+      function deleteReport(id) {
+        if (
+          confirm(
+            "Are you sure you want to delete this report? This action cannot be undone."
+          )
+        ) {
+          reportsData = reportsData.filter((r) => r.id !== id);
+          location.reload(); // Refresh to update table
+          showToast("Report deleted successfully!", "success");
+        }
+      }
+
+      // Export proposal PDF
+      function exportProposalPDF(id) {
+        const proposal = proposalsData.find((p) => p.id === id);
+        if (proposal) {
+          // In a real application, this would generate and download a PDF
+          showToast(`Exporting proposal PDF for ${proposal.name}...`, "info");
+          // Simulate PDF generation
+          setTimeout(() => {
+            showToast("PDF exported successfully!", "success");
+          }, 2000);
+        }
+      }
+
+      // Export report PDF
+      function exportReportPDF(id) {
+        const report = reportsData.find((r) => r.id === id);
+        if (report) {
+          // In a real application, this would generate and download a PDF
+          showToast(`Exporting report PDF for ${report.eventName}...`, "info");
+          // Simulate PDF generation
+          setTimeout(() => {
+            showToast("PDF exported successfully!", "success");
+          }, 2000);
+        }
+      }
+
+      // Save new proposal
+      function saveProposal() {
+        const form = document.getElementById("proposalForm");
+        if (form.checkValidity()) {
+          const newId =
+            "EVT" + String(proposalsData.length + 1).padStart(3, "0");
+          const newProposal = {
+            id: newId,
+            name: document.getElementById("eventName").value,
+            status: document.getElementById("eventStatus").value,
+            type: document.getElementById("eventType").value,
+            date: document.getElementById("eventDate").value,
+            club: document.getElementById("eventClub").value,
+            student: document.getElementById("studentName").value,
+            description: document.getElementById("eventDescription").value,
+          };
+
+          proposalsData.push(newProposal);
+          bootstrap.Modal.getInstance(
+            document.getElementById("addProposalModal")
+          ).hide();
+          location.reload(); // Refresh to update table
+          showToast("Proposal saved successfully!", "success");
+        } else {
+          form.reportValidity();
+        }
+      }
+
+      // Save new report
+      function saveReport() {
+        const form = document.getElementById("reportForm");
+        if (form.checkValidity()) {
+          const newId = "RPT" + String(reportsData.length + 1).padStart(3, "0");
+          const newReport = {
+            id: newId,
+            eventName: document.getElementById("reportEventName").value,
+            status: document.getElementById("reportStatus").value,
+            date: document.getElementById("reportDate").value,
+            student: document.getElementById("reportStudentName").value,
+            summary: document.getElementById("eventSummary").value,
+            outcomes: document.getElementById("eventOutcomes").value,
+            recommendations: document.getElementById("eventRecommendations")
+              .value,
+          };
+
+          reportsData.push(newReport);
+          bootstrap.Modal.getInstance(
+            document.getElementById("addReportModal")
+          ).hide();
+          location.reload(); // Refresh to update table
+          showToast("Report saved successfully!", "success");
+        } else {
+          form.reportValidity();
+        }
+      }
+
+      // Update existing proposal
+      function updateProposal(id) {
+        const proposalIndex = proposalsData.findIndex((p) => p.id === id);
+        if (proposalIndex !== -1) {
+          proposalsData[proposalIndex] = {
+            ...proposalsData[proposalIndex],
+            name: document.getElementById("eventName").value,
+            status: document.getElementById("eventStatus").value,
+            type: document.getElementById("eventType").value,
+            date: document.getElementById("eventDate").value,
+            club: document.getElementById("eventClub").value,
+            student: document.getElementById("studentName").value,
+            description: document.getElementById("eventDescription").value,
+          };
+
+          bootstrap.Modal.getInstance(
+            document.getElementById("addProposalModal")
+          ).hide();
+          location.reload(); // Refresh to update table
+          showToast("Proposal updated successfully!", "success");
+        }
+      }
+
+      // Update existing report
+      function updateReport(id) {
+        const reportIndex = reportsData.findIndex((r) => r.id === id);
+        if (reportIndex !== -1) {
+          reportsData[reportIndex] = {
+            ...reportsData[reportIndex],
+            eventName: document.getElementById("reportEventName").value,
+            status: document.getElementById("reportStatus").value,
+            date: document.getElementById("reportDate").value,
+            student: document.getElementById("reportStudentName").value,
+            summary: document.getElementById("eventSummary").value,
+            outcomes: document.getElementById("eventOutcomes").value,
+            recommendations: document.getElementById("eventRecommendations")
+              .value,
+          };
+
+          bootstrap.Modal.getInstance(
+            document.getElementById("addReportModal")
+          ).hide();
+          location.reload(); // Refresh to update table
+          showToast("Report updated successfully!", "success");
+        }
+      }
+
+      // Show toast notification
+      function showToast(message, type = "success") {
+        const toastElement = document.getElementById("actionToast");
+        const toastMessage = document.getElementById("toastMessage");
+        const toastHeader = toastElement.querySelector(".toast-header");
+
+        // Update icon and color based on type
+        const icon = toastHeader.querySelector("i");
+        if (type === "success") {
+          icon.className = "fas fa-check-circle text-success me-2";
+          toastHeader.querySelector("strong").textContent = "Success";
+        } else if (type === "error") {
+          icon.className = "fas fa-exclamation-circle text-danger me-2";
+          toastHeader.querySelector("strong").textContent = "Error";
+        } else if (type === "info") {
+          icon.className = "fas fa-info-circle text-info me-2";
+          toastHeader.querySelector("strong").textContent = "Info";
+        }
+
+        toastMessage.textContent = message;
+        new bootstrap.Toast(toastElement).show();
+      }
+
+      // Reset modal forms when closed
+      document
+        .getElementById("addProposalModal")
+        .addEventListener("hidden.bs.modal", function () {
+          document.getElementById("proposalForm").reset();
+          document.querySelector("#addProposalModal .modal-title").innerHTML =
+            '<i class="fas fa-plus me-2"></i>Add New Event Proposal';
+          document.querySelector(
+            "#addProposalModal .modal-footer .btn-primary"
+          ).onclick = saveProposal;
+        });
+
+      document
+        .getElementById("addReportModal")
+        .addEventListener("hidden.bs.modal", function () {
+          document.getElementById("reportForm").reset();
+          document.querySelector("#addReportModal .modal-title").innerHTML =
+            '<i class="fas fa-plus me-2"></i>Add New Post-Event Report';
+          document.querySelector(
+            "#addReportModal .modal-footer .btn-primary"
+          ).onclick = saveReport;
+        });
+    </script>
+  </body>
+</html>
+">

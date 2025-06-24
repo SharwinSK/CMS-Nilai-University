@@ -92,8 +92,8 @@ $start_time = microtime(true);
                             <select class="form-select" id="inputClub" name="club_id" required>
                                 <option selected disabled>Select Your Club</option>
                                 <?php while ($club = $clubs->fetch_assoc()): ?>
-                                    <option value="<?php echo $club['Club_ID']; ?>"><?php echo $club['Club_Name']; ?>
-                                    </option>
+                                        <option value="<?php echo $club['Club_ID']; ?>"><?php echo $club['Club_Name']; ?>
+                                        </option>
                                 <?php endwhile; ?>
                             </select>
                         </div>
