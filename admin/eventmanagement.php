@@ -1,36 +1,46 @@
 <?php
 include '../dbconfig.php';
 
-//Query for proposal events
+// Fetch all proposal events with activity status and club list
 $proposalEventQuery = "
-  SELECT 
-    e.Ev_ID, e.Ev_Name, e.Ev_Date, e.Ev_TypeRef,
-    s.Stu_Name, c.Club_Name, st.Status_Name
-  FROM events e
-  LEFT JOIN student s ON e.Stu_ID = s.Stu_ID
-  LEFT JOIN club c ON e.Club_ID = c.Club_ID
-  LEFT JOIN eventstatus st ON e.Status_ID = st.Status_ID
-  WHERE NOT EXISTS (
-    SELECT 1 FROM eventpostmortem ep 
-    WHERE ep.Ev_ID = e.Ev_ID AND ep.Rep_PostStatus = 'Accepted'
-  )
-  ORDER BY e.Ev_Date DESC
+    SELECT 
+        e.Ev_ID, e.Ev_Name, e.Ev_Date, e.Ev_TypeRef, e.Updated_At, e.created_at,
+        s.Stu_Name, c.Club_Name, st.Status_Name,
+        CASE 
+            WHEN (st.Status_Name IN ('Rejected by Advisor', 'Rejected by Coordinator') 
+                  AND DATEDIFF(NOW(), e.Updated_At) >= 30) 
+            THEN 'No Activity'
+            ELSE 'Active'
+        END AS activity_flag
+    FROM events e
+    LEFT JOIN student s ON e.Stu_ID = s.Stu_ID
+    LEFT JOIN club c ON e.Club_ID = c.Club_ID
+    LEFT JOIN eventstatus st ON e.Status_ID = st.Status_ID
+    ORDER BY e.Ev_Date DESC
 ";
 $proposalResult = $conn->query($proposalEventQuery);
 
+// Fetch clubs for filter dropdown
+$clubsQuery = "SELECT DISTINCT Club_Name FROM club ORDER BY Club_Name ASC";
+$clubsResult = $conn->query($clubsQuery);
+
+
 // Query for post-event reports
 $postEventQuery = "
-  SELECT 
-    e.Ev_ID, ep.Rep_ID, e.Ev_Name, e.Ev_Date, e.Ev_TypeRef,
-    s.Stu_Name, c.Club_Name, ep.Rep_PostStatus
-  FROM events e
-  LEFT JOIN student s ON e.Stu_ID = s.Stu_ID
-  LEFT JOIN club c ON e.Club_ID = c.Club_ID
-  JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID
-  WHERE ep.Rep_PostStatus != 'Accepted'
-  ORDER BY e.Ev_Date DESC
+    SELECT 
+        ep.Rep_ID, ep.Ev_ID, ep.Rep_PostStatus, ep.Updated_At, ep.created_at,
+        e.Ev_Name, e.Ev_Date,
+        s.Stu_Name, c.Club_Name
+    FROM eventpostmortem ep
+    JOIN events e ON ep.Ev_ID = e.Ev_ID
+    LEFT JOIN student s ON e.Stu_ID = s.Stu_ID
+    LEFT JOIN club c ON e.Club_ID = c.Club_ID
+    ORDER BY ep.Updated_At DESC
 ";
 $postEventResult = $conn->query($postEventQuery);
+
+$clubsResultPost = $conn->query("SELECT DISTINCT Club_Name FROM club ORDER BY Club_Name ASC");
+
 
 // Query for completed events
 $completedEventQuery = "
@@ -322,12 +332,9 @@ $completedResult = $conn->query($completedEventQuery);
     <div class="main-content">
         <div class="content-header">
             <h2>
-                <i class="fas fa-calendar-check me-3"></i>Event Management System
+                <i class="fas fa-calendar-check me-3"></i>Event Management
             </h2>
-            <p class="mb-0 text-muted">
-                Manage all events including proposals, post-event reports, and
-                completed events
-            </p>
+
         </div>
 
         <!-- Tab Navigation -->
@@ -344,12 +351,7 @@ $completedResult = $conn->query($completedEventQuery);
                     <i class="fas fa-file-medical me-2"></i>Post-Event Reports
                 </button>
             </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="completed-tab" data-bs-toggle="tab" data-bs-target="#completed"
-                    type="button" role="tab">
-                    <i class="fas fa-check-circle me-2"></i>Complete Events
-                </button>
-            </li>
+
         </ul>
 
         <!-- Tab Content -->
@@ -371,14 +373,16 @@ $completedResult = $conn->query($completedEventQuery);
                             </select>
                         </div>
                         <div class="col-md-3">
-                            <select class="form-select" id="proposalTypeFilter">
-                                <option value="">All Types</option>
-                                <option value="academic">Academic</option>
-                                <option value="cultural">Cultural</option>
-                                <option value="sports">Sports</option>
-                                <option value="social">Social</option>
+                            <select class="form-select" id="proposalClubFilter">
+                                <option value="">All Clubs</option>
+                                <?php while ($club = $clubsResult->fetch_assoc()): ?>
+                                    <option value="<?= htmlspecialchars($club['Club_Name']) ?>">
+                                        <?= htmlspecialchars($club['Club_Name']) ?>
+                                    </option>
+                                <?php endwhile; ?>
                             </select>
                         </div>
+
                         <div class="col-md-2">
                             <button class="btn btn-outline-primary w-100" onclick="resetProposalFilters()">
                                 <i class="fas fa-refresh me-1"></i>Reset
@@ -386,19 +390,20 @@ $completedResult = $conn->query($completedEventQuery);
                         </div>
                     </div>
                 </div>
-
+                <!-- Proposal Events Table -->
                 <div class="table-container">
                     <table class="table table-hover mb-0" id="proposalsTable">
                         <thead>
                             <tr>
-                                <th>Event ID</th>
+                                <th>Event&nbsp;ID</th>
                                 <th>Name</th>
                                 <th>Status</th>
-                                <th>Type</th>
-                                <th>Date</th>
+                                <th>Create&nbsp;Date</th>
                                 <th>Club</th>
                                 <th>Student</th>
+                                <th>Active</th>
                                 <th>Actions</th>
+
                             </tr>
                         </thead>
                         <tbody>
@@ -417,29 +422,43 @@ $completedResult = $conn->query($completedEventQuery);
                                     <td><?= htmlspecialchars($row['Ev_Name']) ?></td>
                                     <td><span class="status-badge <?= $statusClass ?>"><?= $row['Status_Name'] ?></span>
                                     </td>
-                                    <td><?= htmlspecialchars($row['Ev_TypeRef']) ?></td>
-                                    <td><?= $row['Ev_Date'] ?></td>
+                                    <td><?= date('d-m-Y', strtotime($row['created_at'])) ?></td>
                                     <td><?= htmlspecialchars($row['Club_Name']) ?></td>
                                     <td><?= htmlspecialchars($row['Stu_Name']) ?></td>
                                     <td>
-                                        <a class="btn btn-info btn-sm"
-                                            href="eventAction.php?action=view&type=proposal&id=<?= urlencode($row['Ev_ID']) ?>">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-                                        <a class="btn btn-warning btn-sm"
-                                            href="eventAction.php?action=edit&type=proposal&id=<?= urlencode($row['Ev_ID']) ?>">
-                                            <i class="fas fa-edit"></i>
-                                        </a>
-                                        <a class="btn btn-danger btn-sm"
-                                            href="eventAction.php?action=delete&type=proposal&id=<?= urlencode($row['Ev_ID']) ?>"
-                                            onclick="return confirm('Delete this proposal?');">
-                                            <i class="fas fa-trash"></i>
-                                        </a>
-                                        <a class="btn btn-success btn-sm"
-                                            href="eventAction.php?action=export&type=proposal&id=<?= urlencode($row['Ev_ID']) ?>">
-                                            <i class="fas fa-file-pdf"></i>
-                                        </a>
+                                        <?php if ($row['activity_flag'] === 'No Activity'): ?>
+                                            <span class="badge bg-warning-subtle text-warning">⚠ No Activity</span>
+                                        <?php else: ?>
+                                            <span class="badge bg-success-subtle text-success">🟢 Active</span>
+                                        <?php endif; ?>
                                     </td>
+
+                                    <td>
+                                        <div class="d-flex align-items-center gap-1 flex-wrap">
+                                            <a class="btn btn-info btn-sm"
+                                                href="eventAction.php?action=view&type=proposal&id=<?= urlencode($row['Ev_ID']) ?>"
+                                                title="View">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a class="btn btn-warning btn-sm"
+                                                href="eventAction.php?action=edit&type=proposal&id=<?= urlencode($row['Ev_ID']) ?>"
+                                                title="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a class="btn btn-danger btn-sm"
+                                                href="eventAction.php?action=delete&type=abandoned&id=<?= urlencode($row['Ev_ID']) ?>"
+                                                title="Delete"
+                                                onclick="return confirm('This event has no activity. Delete permanently?');">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </a>
+                                            <a class="btn btn-success btn-sm"
+                                                href="eventAction.php?action=export&type=proposal&id=<?= urlencode($row['Ev_ID']) ?>"
+                                                title="Export PDF">
+                                                <i class="fas fa-file-pdf"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+
 
                                 </tr>
                             <?php endwhile; ?>
@@ -459,14 +478,23 @@ $completedResult = $conn->query($completedEventQuery);
                         <div class="col-md-3">
                             <select class="form-select" id="reportStatusFilter">
                                 <option value="">All Status</option>
-                                <option value="draft">Draft</option>
-                                <option value="submitted">Submitted</option>
-                                <option value="approved">Approved</option>
+                                <option value="Pending">Pending</option>
+                                <option value="Accepted">Accepted</option>
+                                <option value="Rejected">Rejected</option>
                             </select>
                         </div>
+
                         <div class="col-md-3">
-                            <input type="date" class="form-control" id="reportDateFilter" />
+                            <select class="form-select" id="reportClubFilter">
+                                <option value="">All Clubs</option>
+                                <?php while ($club = $clubsResultPost->fetch_assoc()): ?>
+                                    <option value="<?= htmlspecialchars($club['Club_Name']) ?>">
+                                        <?= htmlspecialchars($club['Club_Name']) ?>
+                                    </option>
+                                <?php endwhile; ?>
+                            </select>
                         </div>
+
                         <div class="col-md-2">
                             <button class="btn btn-outline-primary w-100" onclick="resetReportFilters()">
                                 <i class="fas fa-refresh me-1"></i>Reset
@@ -479,12 +507,14 @@ $completedResult = $conn->query($completedEventQuery);
                     <table class="table table-hover mb-0" id="reportsTable">
                         <thead>
                             <tr>
-                                <th>Report ID</th>
+                                <th>Event&nbsp;ID</th>
                                 <th>Event Name</th>
                                 <th>Status</th>
-                                <th>Date</th>
+                                <th>Create&nbsp;Date</th>
+                                <th>Club</th>
                                 <th>Student</th>
                                 <th>Actions</th>
+
                             </tr>
                         </thead>
                         <tbody>
@@ -493,7 +523,7 @@ $completedResult = $conn->query($completedEventQuery);
                                 $status = strtolower($row['Rep_PostStatus']);
                                 $statusClass = match (true) {
                                     str_contains($status, 'pending') => 'status-pending',
-                                    str_contains($status, 'approved') => 'status-approved',
+                                    str_contains($status, 'accepted') => 'status-approved',
                                     str_contains($status, 'rejected') => 'status-rejected',
                                     default => 'status-draft'
                                 };
@@ -503,109 +533,38 @@ $completedResult = $conn->query($completedEventQuery);
                                     <td><?= htmlspecialchars($row['Ev_Name']) ?></td>
                                     <td><span class="status-badge <?= $statusClass ?>"><?= $row['Rep_PostStatus'] ?></span>
                                     </td>
-                                    <td><?= $row['Ev_Date'] ?></td>
-                                    <td><?= htmlspecialchars($row['Stu_Name']) ?></td>
-                                    <td>
-                                        <a class="btn btn-info btn-sm"
-                                            href="eventAction.php?action=view&type=report&id=<?= urlencode($row['Ev_ID']) ?>">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-                                        <a class="btn btn-warning btn-sm"
-                                            href="eventAction.php?action=edit&type=report&id=<?= urlencode($row['Ev_ID']) ?>">
-                                            <i class="fas fa-edit"></i>
-                                        </a>
-                                        <a class="btn btn-danger btn-sm"
-                                            href="eventAction.php?action=delete&type=report&id=<?= urlencode($row['Ev_ID']) ?>"
-                                            onclick="return confirm('Delete this post-event report?');">
-                                            <i class="fas fa-trash"></i>
-                                        </a>
-                                        <a class="btn btn-success btn-sm"
-                                            href="eventAction.php?action=export&type=report&id=<?= urlencode($row['Rep_ID']) ?>">
-                                            <i class="fas fa-file-pdf"></i>
-                                        </a>
-                                    </td>
-
-                                </tr>
-                            <?php endwhile; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Complete Events Tab -->
-            <div class="tab-pane fade" id="completed" role="tabpanel">
-                <div class="search-filter-container">
-                    <div class="row g-3">
-                        <div class="col-md-4">
-                            <input type="text" class="form-control" placeholder="Search by event name..."
-                                id="completedSearch" />
-                        </div>
-                        <div class="col-md-3">
-                            <select class="form-select" id="completedTypeFilter">
-                                <option value="">All Types</option>
-                                <option value="academic">Academic</option>
-                                <option value="cultural">Cultural</option>
-                                <option value="sports">Sports</option>
-                                <option value="social">Social</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <input type="date" class="form-control" id="completedDateFilter" />
-                        </div>
-                        <div class="col-md-2">
-                            <button class="btn btn-outline-primary w-100" onclick="resetCompletedFilters()">
-                                <i class="fas fa-refresh me-1"></i>Reset
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="table-container">
-                    <table class="table table-hover mb-0" id="completedTable">
-                        <thead>
-                            <tr>
-                                <th>Event ID</th>
-                                <th>Event Name</th>
-                                <th>Type</th>
-                                <th>Date Completed</th>
-                                <th>Club</th>
-                                <th>Organizer</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php while ($row = $completedResult->fetch_assoc()): ?>
-                                <tr>
-                                    <td><?= htmlspecialchars($row['Ev_ID']) ?></td>
-                                    <td><?= htmlspecialchars($row['Ev_Name']) ?></td>
-                                    <td><?= htmlspecialchars($row['Ev_TypeRef']) ?></td>
-                                    <td><?= $row['Ev_Date'] ?></td>
+                                    <td><?= date('d-m-Y', strtotime($row['created_at'])) ?></td>
                                     <td><?= htmlspecialchars($row['Club_Name']) ?></td>
                                     <td><?= htmlspecialchars($row['Stu_Name']) ?></td>
                                     <td>
-                                        <a class="btn btn-info btn-sm"
-                                            href="eventAction.php?action=view&type=completed&id=<?= urlencode($row['Ev_ID']) ?>">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-                                        <a class="btn btn-warning btn-sm"
-                                            href="eventAction.php?action=edit&type=completed&id=<?= urlencode($row['Ev_ID']) ?>">
-                                            <i class="fas fa-edit"></i>
-                                        </a>
-                                        <a class="btn btn-danger btn-sm"
-                                            href="eventAction.php?action=delete&type=completed&id=<?= urlencode($row['Ev_ID']) ?>"
-                                            onclick="return confirm('Delete this completed event?');">
-                                            <i class="fas fa-trash"></i>
-                                        </a>
-                                        <a class="btn btn-success btn-sm"
-                                            href="eventAction.php?action=export&type=completed&id=<?= urlencode($row['Ev_ID']) ?>">
-                                            <i class="fas fa-file-pdf"></i>
-                                        </a>
+                                        <div class="d-flex align-items-center gap-1 flex-wrap">
+                                            <a class="btn btn-info btn-sm"
+                                                href="eventAction.php?action=view&type=report&id=<?= urlencode($row['Ev_ID']) ?>"
+                                                title="View">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a class="btn btn-warning btn-sm"
+                                                href="eventAction.php?action=edit&type=report&id=<?= urlencode($row['Ev_ID']) ?>"
+                                                title="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a class="btn btn-danger btn-sm"
+                                                href="eventAction.php?action=delete&type=report&id=<?= urlencode($row['Ev_ID']) ?>"
+                                                title="Delete" onclick="return confirm('Delete this post-event report?');">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                            <a class="btn btn-success btn-sm"
+                                                href="eventAction.php?action=export&type=report&id=<?= urlencode($row['Rep_ID']) ?>"
+                                                title="Export PDF">
+                                                <i class="fas fa-file-pdf"></i>
+                                            </a>
+                                        </div>
                                     </td>
+
 
                                 </tr>
                             <?php endwhile; ?>
                         </tbody>
-
                     </table>
                 </div>
             </div>
@@ -673,71 +632,79 @@ $completedResult = $conn->query($completedEventQuery);
             }
         }
 
-        // Filter Functions
+        document.getElementById("proposalStatusFilter").addEventListener("change", filterProposalTable);
+        document.getElementById("proposalClubFilter").addEventListener("change", filterProposalTable);
+        document.getElementById("proposalSearch").addEventListener("input", filterProposalTable);
+
+        function filterProposalTable() {
+            const search = document.getElementById("proposalSearch").value.toLowerCase();
+            const status = document.getElementById("proposalStatusFilter").value.toLowerCase();
+            const club = document.getElementById("proposalClubFilter").value.toLowerCase();
+
+            const rows = document.querySelectorAll("#proposalsTable tbody tr");
+
+            rows.forEach(row => {
+                const name = row.children[1].textContent.toLowerCase();
+                const rowStatus = row.children[2].textContent.toLowerCase();
+                const rowClub = row.children[4].textContent.toLowerCase();
+
+                const matchSearch = name.includes(search);
+                const matchStatus = !status || rowStatus.includes(status);
+                const matchClub = !club || rowClub.includes(club);
+
+                if (matchSearch && matchStatus && matchClub) {
+                    row.style.display = "";
+                } else {
+                    row.style.display = "none";
+                }
+            });
+        }
+
         function resetProposalFilters() {
             document.getElementById("proposalSearch").value = "";
             document.getElementById("proposalStatusFilter").value = "";
-            document.getElementById("proposalTypeFilter").value = "";
-            // Add filter logic here
+            document.getElementById("proposalClubFilter").value = "";
+            filterProposalTable();
+        }
+
+        // Post-Event Reports Filtering
+        document.getElementById("reportSearch").addEventListener("input", filterReportTable);
+        document.getElementById("reportStatusFilter").addEventListener("change", filterReportTable);
+        document.getElementById("reportClubFilter").addEventListener("change", filterReportTable);
+
+        function filterReportTable() {
+            const search = document.getElementById("reportSearch").value.toLowerCase();
+            const status = document.getElementById("reportStatusFilter").value.toLowerCase();
+            const club = document.getElementById("reportClubFilter").value.toLowerCase();
+
+            const rows = document.querySelectorAll("#reportsTable tbody tr");
+
+            rows.forEach(row => {
+                const evName = row.children[1].textContent.toLowerCase();
+                const evStatus = row.children[2].textContent.toLowerCase();
+                const evClub = row.children[4].textContent.toLowerCase();
+
+                const matchSearch = evName.includes(search);
+                const matchStatus = !status || evStatus.includes(status);
+                const matchClub = !club || evClub.includes(club);
+
+                if (matchSearch && matchStatus && matchClub) {
+                    row.style.display = "";
+                } else {
+                    row.style.display = "none";
+                }
+            });
         }
 
         function resetReportFilters() {
             document.getElementById("reportSearch").value = "";
             document.getElementById("reportStatusFilter").value = "";
-            document.getElementById("reportDateFilter").value = "";
-            // Add filter logic here
+            document.getElementById("reportClubFilter").value = "";
+            filterReportTable();
         }
-
-        function resetCompletedFilters() {
-            document.getElementById("completedSearch").value = "";
-            document.getElementById("completedTypeFilter").value = "";
-            document.getElementById("completedDateFilter").value = "";
-            // Add filter logic here
-        }
-
-        // Search and Filter Implementation
-        document
-            .getElementById("proposalSearch")
-            .addEventListener("input", function () {
-                // Add search functionality for proposals
-            });
-
-        document
-            .getElementById("reportSearch")
-            .addEventListener("input", function () {
-                // Add search functionality for reports
-            });
-
-        document
-            .getElementById("completedSearch")
-            .addEventListener("input", function () {
-                // Add search functionality for completed events
-            });
-
-        // Status and Type Filter Implementation
-        document
-            .getElementById("proposalStatusFilter")
-            .addEventListener("change", function () {
-                // Add status filter functionality for proposals
-            });
-
-        document
-            .getElementById("proposalTypeFilter")
-            .addEventListener("change", function () {
-                // Add type filter functionality for proposals
-            });
-
-        document
-            .getElementById("reportStatusFilter")
-            .addEventListener("change", function () {
-                // Add status filter functionality for reports
-            });
-
-        document
-            .getElementById("completedTypeFilter")
-            .addEventListener("change", function () {
-                // Add type filter functionality for completed events
-            });
+        document.querySelectorAll('[title]').forEach(el => {
+            new bootstrap.Tooltip(el);
+        });
     </script>
 </body>
 

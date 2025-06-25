@@ -392,7 +392,7 @@ $calendarJs = json_encode($calendarEvents, JSON_HEX_TAG);
                 <a class="nav-link" href="eventmanagement.php" data-section="events">
                     <i class="fas fa-calendar-alt me-2"></i>Event Management
                 </a>
-                <a class="nav-link" href="ProposalEvent.php" data-section="clubs">
+                <a class="nav-link" href="clubmanagement.php" data-section="clubs">
                     <i class="fas fa-users me-2"></i>Club Management
                 </a>
                 <a class="nav-link" href="advisormanagement.php" data-section="advisors">

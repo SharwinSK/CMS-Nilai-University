@@ -9,7 +9,8 @@ $id = $_GET['id'] ?? '';
 
 // Validation
 $validActions = ['view', 'edit', 'delete', 'export'];
-$validTypes = ['proposal', 'report', 'completed'];
+$validTypes = ['proposal', 'report', 'completed', 'abandoned'];
+
 
 if (!in_array($action, $validActions) || !in_array($type, $validTypes) || empty($id)) {
     die("Invalid request.");
@@ -35,20 +36,30 @@ if ($action === 'export') {
     exit();
 }
 
-// ───────────────────────────────────────
 // DELETE (based on type)
 if ($action === 'delete') {
     if (!isset($_SESSION['Admin_ID'])) {
         die("Unauthorized.");
     }
 
-    [$table, $column] = match ($type) {
-        'proposal' => ['events', 'Ev_ID'],
-        'report' => ['eventpostmortem', 'Ev_ID'],
-        'completed' => ['events', 'Ev_ID'],
-    };
+    switch ($type) {
+        case 'proposal':
+        case 'completed':
+            $stmt = $conn->prepare("DELETE FROM events WHERE Ev_ID = ?");
+            break;
 
-    $stmt = $conn->prepare("DELETE FROM $table WHERE $column = ?");
+        case 'report':
+            $stmt = $conn->prepare("DELETE FROM eventpostmortem WHERE Ev_ID = ?");
+            break;
+
+        case 'abandoned': // NEW CASE for No Activity events
+            $stmt = $conn->prepare("DELETE FROM events WHERE Ev_ID = ?");
+            break;
+
+        default:
+            die("Invalid delete type.");
+    }
+
     $stmt->bind_param("s", $id);
 
     if ($stmt->execute()) {
@@ -58,4 +69,5 @@ if ($action === 'delete') {
     }
     exit();
 }
+
 ?>

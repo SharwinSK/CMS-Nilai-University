@@ -20,11 +20,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 $_SESSION['Admin_ID'] = $user['Admin_ID'];
                 $_SESSION['user_type'] = 'admin';
 
-                // (optional) record last login
-                $up = $conn->prepare("UPDATE admin SET Last_Login = NOW() WHERE Admin_ID = ?");
-                $up->bind_param("i", $adminID);
-                $up->execute();
-
                 header("Location: admin/dashboard.php");
                 exit();
             }
