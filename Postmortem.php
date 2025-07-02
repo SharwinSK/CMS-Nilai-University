@@ -172,6 +172,38 @@ $committee_result = $committee_stmt->get_result();
                         <small class="text-danger" style="display: block; margin-bottom: 10px;">
                             Maximum 10 Photos.
                         </small>
+                        <!-- Post-Event Meeting Section -->
+                        <h5 class="mt-4">Post-Event Meeting</h5>
+                        <div class="table-responsive">
+                            <table class="table table-bordered" id="postMeetingTable">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Start Time</th>
+                                        <th>End Time</th>
+                                        <th>Description</th>
+                                        <th>Location</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="postMeetingTableBody">
+                                    <tr>
+                                        <td><input type="date" name="meeting_date[]" class="form-control" required></td>
+                                        <td><input type="time" name="start_time[]" class="form-control" required></td>
+                                        <td><input type="time" name="end_time[]" class="form-control" required></td>
+                                        <td><input type="text" name="meeting_description[]" class="form-control"
+                                                required></td>
+                                        <td><input type="text" name="meeting_location[]" class="form-control" required>
+                                        </td>
+                                        <td><button type="button" class="btn btn-danger btn-sm"
+                                                onclick="removeMeetingRow(this)">✕</button></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <button type="button" class="btn btn-success mb-3" onclick="addMeetingRow()">+ Add Meeting
+                            Row</button>
+
 
                         <!-- Challenges, recommendations and Conclusion -->
                         <div class="mb-3">
@@ -291,6 +323,31 @@ $committee_result = $committee_stmt->get_result();
         function removeRow(btn) {
             btn.closest("tr").remove();
         }
+        function addMeetingRow() {
+            const tableBody = document.getElementById("postMeetingTableBody");
+            const newRow = document.createElement("tr");
+
+            newRow.innerHTML = `
+        <td><input type="date" name="meeting_date[]" class="form-control" required></td>
+        <td><input type="time" name="start_time[]" class="form-control" required></td>
+        <td><input type="time" name="end_time[]" class="form-control" required></td>
+        <td><input type="text" name="meeting_description[]" class="form-control" required></td>
+        <td><input type="text" name="meeting_location[]" class="form-control" required></td>
+        <td><button type="button" class="btn btn-danger btn-sm" onclick="removeMeetingRow(this)">✕</button></td>
+    `;
+            tableBody.appendChild(newRow);
+        }
+
+        function removeMeetingRow(button) {
+            const row = button.closest("tr");
+            const allRows = document.querySelectorAll("#postMeetingTableBody tr");
+            if (allRows.length > 1) {
+                row.remove();
+            } else {
+                alert("At least one meeting is required.");
+            }
+        }
+
     </script>
 
 </body>

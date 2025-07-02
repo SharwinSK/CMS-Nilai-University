@@ -391,6 +391,45 @@
           padding: 20px;
         }
       }
+
+      @media (max-width: 768px) {
+        .form-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .form-container {
+          padding: 15px;
+        }
+
+        .section {
+          padding: 20px 15px;
+        }
+
+        .submit-btn,
+        .back-btn {
+          width: 100%;
+          margin-top: 10px;
+          margin-left: 0;
+        }
+
+        .budget-summary,
+        .hours-summary {
+          padding: 15px;
+        }
+
+        table {
+          font-size: 0.9rem;
+        }
+
+        th,
+        td {
+          padding: 8px 6px;
+        }
+
+        .btn {
+          padding: 8px 12px;
+        }
+      }
     </style>
   </head>
   <body>
@@ -419,30 +458,6 @@
                   required
                 />
                 <span class="error-message" id="studentNameError"></span>
-              </div>
-
-              <div class="hours-summary">
-                <div class="hours-row">
-                  <span
-                    ><strong
-                      >Total Hours Required: 40 hours minimum</strong
-                    ></span
-                  >
-                </div>
-                <div class="hours-row">
-                  <span><strong>Current Total Hours:</strong></span>
-                  <span id="totalHours" class="hours-total">0 hours</span>
-                </div>
-                <div
-                  id="hoursWarning"
-                  class="hours-warning"
-                  style="display: none"
-                >
-                  <strong
-                    >⚠️ Warning: You need at least 40 hours to submit the
-                    proposal!</strong
-                  >
-                </div>
               </div>
 
               <div class="form-group">
@@ -558,6 +573,10 @@
               <div class="form-group">
                 <label for="poster">Upload Poster</label>
                 <input type="file" id="poster" name="poster" accept="image/*" />
+                <small style="color: #555"
+                  >* Upload JPEG and PNG only. Maximum file size: 20 MB.</small
+                >
+
                 <span class="error-message" id="posterError"></span>
               </div>
             </div>
@@ -627,6 +646,23 @@
               </table>
             </div>
           </div>
+          <div class="hours-summary">
+            <div class="hours-row">
+              <span
+                ><strong>Total Hours Required: 40 hours minimum</strong></span
+              >
+            </div>
+            <div class="hours-row">
+              <span><strong>Current Total Hours:</strong></span>
+              <span id="totalHours" class="hours-total">0 hours</span>
+            </div>
+            <div id="hoursWarning" class="hours-warning" style="display: none">
+              <strong
+                >⚠️ Warning: You need at least 40 hours to submit the
+                proposal!</strong
+              >
+            </div>
+          </div>
 
           <!-- Section 4: Committee Members -->
           <div class="section">
@@ -662,6 +698,9 @@
                   <!-- Dynamic rows will be added here -->
                 </tbody>
               </table>
+              <small style="display: block; margin-top: 10px; color: #555">
+                * Students shall upload PDF files only. Maximum file size: 5 MB.
+              </small>
             </div>
           </div>
 
