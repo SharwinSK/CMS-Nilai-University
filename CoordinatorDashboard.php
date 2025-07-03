@@ -16,11 +16,14 @@ $result = $query->get_result();
 $coordinator_name = ($result && $result->num_rows > 0) ? $result->fetch_assoc()['Coor_Name'] : "Coordinator";
 
 $carousel_query = "
-    SELECT e.Ev_ID, e.Ev_Name, e.Ev_Details, e.Ev_Poster 
+SELECT e.Ev_ID, e.Ev_Name, e.Ev_Details, e.Ev_Poster 
 FROM events e
 JOIN eventstatus es ON e.Status_ID = es.Status_ID
-LEFT JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID AND ep.Rep_PostStatus = 'Accepted'
-WHERE es.Status_Name = 'Approved by Coordinator' AND ep.Rep_PostStatus IS NULL
+LEFT JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID 
+    AND ep.Status_ID = (SELECT Status_ID FROM eventstatus WHERE Status_Name = 'Postmortem Approved')
+WHERE es.Status_Name = 'Approved by Coordinator' 
+  AND ep.Ev_ID IS NULL
+
 
 ";
 $carousel_result = $conn->query($carousel_query);
@@ -37,10 +40,12 @@ $proposals_result = $conn->query($proposals_query);
 
 $postmortems_query = "
     SELECT ep.Rep_ID, e.Ev_Name, s.Stu_Name 
-    FROM eventpostmortem ep
-    JOIN events e ON ep.Ev_ID = e.Ev_ID
-    JOIN student s ON e.Stu_ID = s.Stu_ID
-    WHERE ep.Rep_PostStatus = 'Pending Coordinator Review'
+FROM eventpostmortem ep
+JOIN events e ON ep.Ev_ID = e.Ev_ID
+JOIN student s ON e.Stu_ID = s.Stu_ID
+JOIN eventstatus es ON ep.Status_ID = es.Status_ID
+WHERE es.Status_Name = 'Postmortem Pending Review'
+
 ";
 $postmortems_result = $conn->query($postmortems_query);
 $start_time = microtime(true);

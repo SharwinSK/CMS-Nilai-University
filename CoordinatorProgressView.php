@@ -26,10 +26,15 @@ $query = "
     LEFT JOIN personincharge pic ON e.Ev_ID = pic.Ev_ID
     LEFT JOIN club c ON e.Club_ID = c.Club_ID
     LEFT JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID
+    LEFT JOIN eventstatus es_post ON ep.Status_ID = es_post.Status_ID
     JOIN eventstatus es ON e.Status_ID = es.Status_ID
     WHERE es.Status_Name IN ('Pending Coordinator Review', 'Approved by Coordinator')
-      AND (ep.Rep_PostStatus IS NULL OR ep.Rep_PostStatus NOT IN ('Pending Coordinator Review', 'Accepted'))
+      AND (
+          ep.Status_ID IS NULL OR 
+          es_post.Status_Name NOT IN ('Postmortem Pending Review', 'Postmortem Approved')
+      )
 ";
+
 
 
 

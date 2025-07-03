@@ -51,10 +51,11 @@ $carousel_query = "
     SELECT DISTINCT e.Ev_ID, e.Ev_Poster 
     FROM events e
     JOIN eventstatus es ON e.Status_ID = es.Status_ID
-    LEFT JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID AND ep.Rep_PostStatus = 'Accepted'
-    WHERE es.Status_Name = 'Approved by Coordinator' AND ep.Rep_PostStatus IS NULL
+    LEFT JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID
+    LEFT JOIN eventstatus eps ON ep.Status_ID = eps.Status_ID
+    WHERE es.Status_Name = 'Approved by Coordinator' 
+      AND (ep.Status_ID IS NULL OR eps.Status_Name != 'Postmortem Approved')
 ";
-
 
 $carousel_result = $conn->query($carousel_query);
 $start_time = microtime(true);

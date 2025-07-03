@@ -94,6 +94,36 @@ if ($type === 'proposal') {
     $individual_stmt->execute();
     $individual_reports = $individual_stmt->get_result();
 
+    $attendance_query = "
+    SELECT 
+        c.Com_ID,
+        c.Com_Name,
+        c.Com_Position,
+        c.Com_COCUClaimers,
+        COUNT(CASE WHEN ca.Attendance_Status = 'Present' THEN 1 END) AS attended,
+        (
+            SELECT COUNT(*) 
+            FROM posteventmeeting pm 
+            WHERE pm.Rep_ID = ep.Rep_ID
+        ) AS total_meetings
+    FROM committee c
+    LEFT JOIN committeeattendance ca ON c.Com_ID = ca.Com_ID
+    LEFT JOIN posteventmeeting pm ON ca.Meeting_ID = pm.Meeting_ID
+    JOIN eventpostmortem ep ON ep.Ev_ID = c.Ev_ID
+    WHERE c.Ev_ID = ? AND c.Com_COCUClaimers = '1'
+    GROUP BY c.Com_ID
+";
+
+    $attendance_stmt = $conn->prepare($attendance_query);
+    $attendance_stmt->bind_param("s", $details['Ev_ID']);
+    $attendance_stmt->execute();
+    $attendance_result = $attendance_stmt->get_result();
+
+    $meeting_query = "SELECT * FROM posteventmeeting WHERE Rep_ID = ?";
+    $meeting_stmt = $conn->prepare($meeting_query);
+    $meeting_stmt->bind_param("s", $id);
+    $meeting_stmt->execute();
+    $meeting_result = $meeting_stmt->get_result();
 
     $post_flow_query = "
     SELECT EvFlow_Time, EvFlow_Description
@@ -101,6 +131,7 @@ if ($type === 'proposal') {
     WHERE Rep_ID = ?
     ORDER BY STR_TO_DATE(EvFlow_Time, '%H:%i:%s')
 ";
+
 
 
     $post_flow_stmt = $conn->prepare($post_flow_query);
@@ -206,7 +237,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $update_stmt->execute();
 
             // ✉️ Notify both student & advisor
-           // coordinatorApproved($studentName, $eventName, $studentEmail, $advisorEmail);
+            // coordinatorApproved($studentName, $eventName, $studentEmail, $advisorEmail);
 
 
         } elseif ($decision === 'reject') {
@@ -233,18 +264,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $update_stmt->execute();
 
                 // ✉️ Notify student only
-              //  coordinatorRejected($studentName, $eventName, $studentEmail);
+                //  coordinatorRejected($studentName, $eventName, $studentEmail);
             }
 
         }
+    } elseif ($type === 'postmortem' && $decision === 'reject') {
+        if (empty(trim($comments))) {
+            die("Feedback is required when rejecting a postmortem.");
+        }
+
+        // Reject: Update status to 7
+        $status_id = 7;
+        $update = $conn->prepare("UPDATE eventpostmortem SET Status_ID = ? WHERE Rep_ID = ?");
+        $update->bind_param("is", $status_id, $id);
+        $update->execute();
+
+        // Insert comment into eventcomment
+        $ev_id = $details['Ev_ID'];  // Already fetched earlier
+        $insert = $conn->prepare("INSERT INTO eventcomment (Ev_ID, Status_ID, Reviewer_Comment, Updated_By, Comment_Type)
+        VALUES (?, ?, ?, 'Coordinator', 'postmortem')");
+        $insert->bind_param("sis", $ev_id, $status_id, $comments);
+        $insert->execute();
     } elseif ($type === 'postmortem' && $decision === 'approve') {
-        $status = 'Accepted';
-        $query = "UPDATE eventpostmortem SET Rep_PostStatus = ? WHERE Rep_ID = ?";
-        $stmt = $conn->prepare($query);
-        $stmt->bind_param("si", $status, $id);
-    } else {
-        die("Invalid decision or type.");
+        // Approve: Update status to 8
+        $status_id = 8;
+        $update = $conn->prepare("UPDATE eventpostmortem SET Status_ID = ? WHERE Rep_ID = ?");
+        $update->bind_param("is", $status_id, $id);
+        $update->execute();
     }
+
+
 
     if (isset($stmt) && !$stmt->execute()) {
         die("Database Error: " . $stmt->error);
@@ -616,6 +665,32 @@ $start_time = microtime(true);
                             <?php endwhile; ?>
                         </tbody>
                     </table>
+
+                    <!-- Post-Event Meeting Section -->
+                    <div class="postmortem-header">Post-Event Meeting Details</div>
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Meeting Date</th>
+                                <th>Start Time</th>
+                                <th>End Time</th>
+                                <th>Location</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php while ($meet = $meeting_result->fetch_assoc()): ?>
+                                <tr>
+                                    <td><?= date("d-m-Y", strtotime($meet['Meeting_Date'])); ?></td>
+                                    <td><?= date("H:i A", strtotime($meet['Start_Time'])); ?></td>
+                                    <td><?= date("H:i A", strtotime($meet['End_Time'])); ?></td>
+                                    <td><?= htmlspecialchars($meet['Meeting_Location']); ?></td>
+                                    <td><?= nl2br(htmlspecialchars($meet['Meeting_Description'])); ?></td>
+                                </tr>
+                            <?php endwhile; ?>
+                        </tbody>
+                    </table>
+
                     <div class="mb-3">
                         <label for="ev_ChallengesDifficulties" class="form-label">Challenges and Difficulties</label>
                         <textarea class="form-control" id="ev_Challenges and Difficulties" name="ev_ChallengesDifficulties"
@@ -648,6 +723,36 @@ $start_time = microtime(true);
                     <?php else: ?>
                         <p class="text-muted">No event photos uploaded for this event.</p>
                     <?php endif; ?>
+
+                    <!-- Attendance -->
+                    <div class="postmortem-header">Post Event Meeting Attendance</div>
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Committee Name</th>
+                                <th>Position</th>
+                                <th>Meetings Attended</th>
+                                <th>Total Meetings</th>
+                                <th>Attendance (%)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php while ($att = $attendance_result->fetch_assoc()): ?>
+                                <?php
+                                $attended = $att['attended'];
+                                $total = $att['total_meetings'];
+                                $percent = $total > 0 ? round(($attended / $total) * 100, 2) : 0;
+                                ?>
+                                <tr>
+                                    <td><?= htmlspecialchars($att['Com_Name']); ?></td>
+                                    <td><?= htmlspecialchars($att['Com_Position']); ?></td>
+                                    <td><?= $attended; ?></td>
+                                    <td><?= $total; ?></td>
+                                    <td><?= $percent; ?>%</td>
+                                </tr>
+                            <?php endwhile; ?>
+                        </tbody>
+                    </table>
 
                     <!-- Individual report -->
                     <div class="section-header">Individual Report For Cocu Claimers</div>
@@ -742,10 +847,13 @@ $start_time = microtime(true);
                             <div class="text-center">
                                 <button type="submit" name="decision" value="approve"
                                     class="btn btn-success">Approve</button>
+                                <button type="button" data-bs-toggle="modal" data-bs-target="#feedbackModal"
+                                    class="btn btn-danger">Reject</button>
                                 <a href="reportgeneratepdf.php?id=<?php echo $id; ?>" class="btn btn-primary">Export to
                                     PDF</a>
                                 <a href="CoordinatorDashboard.php" class="btn btn-secondary">Return to Dashboard</a>
                             </div>
+
                         <?php endif; ?>
                     </form>
 

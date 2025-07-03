@@ -33,9 +33,11 @@ $postmortems_query = "
     JOIN events e ON ep.Ev_ID = e.Ev_ID
     JOIN student s ON e.Stu_ID = s.Stu_ID
     JOIN club c ON e.Club_ID = c.Club_ID
-    WHERE ep.Rep_PostStatus = 'Pending Coordinator Review'
+    JOIN eventstatus es ON ep.Status_ID = es.Status_ID
+    WHERE es.Status_Name = 'Postmortem Pending Review'
     ORDER BY ep.Updated_At DESC
 ";
+
 
 $postmortems_result = $conn->query($postmortems_query);
 $start_time = microtime(true);

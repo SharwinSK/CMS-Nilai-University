@@ -18,11 +18,12 @@ $filter_club = $_GET['club'] ?? '';
 $filter_type = $_GET['type'] ?? ''; // 💡 You forgot this line earlier!
 
 $completed_events_query = "
-    SELECT e.Ev_ID, e.Ev_Name, ep.Rep_PostStatus, e.Ev_Date, c.Club_Name, e.Ev_TypeCode, e.Ev_RefNum
-    FROM events e
-    JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID
-    LEFT JOIN club c ON e.Club_ID = c.Club_ID
-    WHERE e.Stu_ID = '$stu_id' AND ep.Rep_PostStatus = 'Accepted'
+    SELECT e.Ev_ID, e.Ev_Name, eps.Status_Name, e.Ev_Date, c.Club_Name, e.Ev_TypeCode, e.Ev_RefNum
+FROM events e
+JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID
+JOIN eventstatus eps ON ep.Status_ID = eps.Status_ID
+LEFT JOIN club c ON e.Club_ID = c.Club_ID
+WHERE e.Stu_ID = '$stu_id' AND eps.Status_Name = 'Postmortem Approved'
 ";
 
 

@@ -29,9 +29,10 @@ $query = "
     FROM events e
     JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID
     JOIN club c ON e.Club_ID = c.Club_ID
-
-    WHERE ep.Rep_PostStatus = 'Accepted'
+    JOIN eventstatus es ON ep.Status_ID = es.Status_ID
+    WHERE es.Status_Name = 'Postmortem Approved'
 ";
+
 
 
 $params = [];

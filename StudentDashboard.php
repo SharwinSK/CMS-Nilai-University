@@ -14,10 +14,11 @@ $student_name = $_SESSION['Stu_Name'];
 $carousel_query = "
     SELECT e.Ev_ID, e.Ev_Poster 
     FROM events e
-    LEFT JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID AND ep.Rep_PostStatus = 'Accepted'
-    JOIN eventstatus es ON e.Status_ID = es.Status_ID
-    WHERE es.Status_Name = 'Approved by Coordinator' AND ep.Rep_PostStatus IS NULL
+    LEFT JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID
+    LEFT JOIN eventstatus es ON ep.Status_ID = es.Status_ID
+    WHERE e.Status_ID = 5 AND (ep.Status_ID IS NULL OR es.Status_Name != 'Postmortem Approved')
 ";
+
 
 $carousel_result = $conn->query($carousel_query);
 
@@ -25,9 +26,11 @@ $carousel_result = $conn->query($carousel_query);
 $events_completed_query = "
     SELECT COUNT(*) AS total_completed 
     FROM eventpostmortem ep
+    JOIN eventstatus es ON ep.Status_ID = es.Status_ID
     JOIN events e ON ep.Ev_ID = e.Ev_ID
-    WHERE e.Stu_ID = '$stu_id' AND ep.Rep_PostStatus = 'Accepted'
+    WHERE e.Stu_ID = '$stu_id' AND es.Status_Name = 'Postmortem Approved'
 ";
+
 $events_completed_result = $conn->query($events_completed_query);
 $events_completed = $events_completed_result->fetch_assoc()['total_completed'];
 
@@ -50,11 +53,13 @@ $proposals_pending = $proposals_pending_result->fetch_assoc()['total_pending'];
 // Postmortems Pending
 $postmortem_query = "
     SELECT 
-        COALESCE(SUM(CASE WHEN Rep_PostStatus = 'Pending Coordinator Review' THEN 1 ELSE 0 END), 0) AS postmortems_pending
+        COALESCE(SUM(CASE WHEN es.Status_Name = 'Postmortem Pending Review' THEN 1 ELSE 0 END), 0) AS postmortems_pending
     FROM eventpostmortem ep
+    JOIN eventstatus es ON ep.Status_ID = es.Status_ID
     JOIN events e ON ep.Ev_ID = e.Ev_ID
     WHERE e.Stu_ID = '$stu_id'
 ";
+
 
 $postmortem_result = $conn->query($postmortem_query);
 $postmortem_data = $postmortem_result->fetch_assoc();
@@ -66,8 +71,10 @@ $completed_events_query = "
     SELECT e.Ev_ID, e.Ev_Name, e.Ev_Poster 
     FROM events e
     JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID
-    WHERE e.Stu_ID = '$stu_id' AND ep.Rep_PostStatus = 'Accepted'
+    JOIN eventstatus es ON ep.Status_ID = es.Status_ID
+    WHERE e.Stu_ID = '$stu_id' AND es.Status_Name = 'Postmortem Approved'
 ";
+
 $completed_events_result = $conn->query($completed_events_query);
 $start_time = microtime(true);
 ?>

@@ -12,16 +12,30 @@ $stu_id = $_SESSION['Stu_ID'];
 $student_name = $_SESSION['Stu_Name'];
 
 $proposals_query = "
-    SELECT e.Ev_ID, e.Ev_Name, es.Status_Name, ec.Reviewer_Comment, ec.Updated_By
+    SELECT 
+        e.Ev_ID, 
+        e.Ev_Name, 
+        es.Status_Name, 
+        ec.Reviewer_Comment, 
+        ec.Updated_By
     FROM events e
     JOIN eventstatus es ON e.Status_ID = es.Status_ID
-    LEFT JOIN eventcomment ec ON e.Ev_ID = ec.Ev_ID
-    WHERE e.Stu_ID = ? AND (
-        NOT EXISTS (
-            SELECT 1 FROM eventpostmortem ep WHERE ep.Ev_ID = e.Ev_ID AND ep.Rep_PostStatus = 'Accepted'
-        )
+    LEFT JOIN eventcomment ec ON ec.Comment_ID = (
+        SELECT Comment_ID 
+        FROM eventcomment 
+        WHERE Ev_ID = e.Ev_ID 
+          AND Comment_Type = 'proposal'
+        ORDER BY Updated_At DESC 
+        LIMIT 1
+    )
+    WHERE e.Stu_ID = ? 
+    AND NOT EXISTS (
+        SELECT 1 
+        FROM eventpostmortem ep
+        WHERE ep.Ev_ID = e.Ev_ID
     )
 ";
+
 $stmt = $conn->prepare($proposals_query);
 $stmt->bind_param("s", $stu_id);
 $stmt->execute();
@@ -29,12 +43,34 @@ $proposals_result = $stmt->get_result();
 
 
 $postmortem_query = "
-    SELECT ep.Rep_ID, ep.Ev_ID, e.Ev_Name, ep.Rep_PostStatus
-    FROM eventpostmortem ep
-    JOIN events e ON ep.Ev_ID = e.Ev_ID
-    WHERE e.Stu_ID = '$stu_id' AND ep.Rep_PostStatus = 'Pending Coordinator Review'
+SELECT 
+    ep.Rep_ID, 
+    ep.Ev_ID, 
+    e.Ev_Name, 
+    es.Status_Name, 
+    ec.Reviewer_Comment,
+    ec.Updated_By,
+    ec.Updated_At
+FROM eventpostmortem ep
+JOIN events e ON ep.Ev_ID = e.Ev_ID
+JOIN eventstatus es ON ep.Status_ID = es.Status_ID
+LEFT JOIN eventcomment ec ON ec.Comment_ID = (
+    SELECT Comment_ID 
+    FROM eventcomment 
+    WHERE Ev_ID = ep.Ev_ID 
+      AND Comment_Type = 'postmortem'
+    ORDER BY Updated_At DESC 
+    LIMIT 1
+)
+WHERE e.Stu_ID = ?
 ";
-$postmortem_result = $conn->query($postmortem_query);
+
+
+$postmortem_stmt = $conn->prepare($postmortem_query);
+$postmortem_stmt->bind_param("s", $stu_id);
+$postmortem_stmt->execute();
+$postmortem_result = $postmortem_stmt->get_result();
+
 $feedback_by_event = [];
 while ($proposal = $proposals_result->fetch_assoc()) {
     $event_id = $proposal['Ev_ID'];
@@ -275,14 +311,31 @@ $start_time = microtime(true);
                             <td><?php echo $report['Ev_ID']; ?></td>
                             <td><?php echo $report['Ev_Name']; ?></td>
                             <td>
-                                <span class="badge bg-warning">Pending</span>
+                                <?php
+                                $status = $report['Status_Name'];
+                                $badge = ($status === 'Approved') ? 'success' :
+                                    (($status === 'Rejected') ? 'danger' : 'warning');
+                                echo "<span class='badge bg-$badge'>$status</span>";
+                                ?>
                             </td>
+
                             <td>
                                 <a href="reportgeneratepdf.php?id=<?php echo $report['Rep_ID']; ?>"
                                     class="btn btn-warning btn-sm">Export</a>
+                                <?php if ($report['Status_Name'] === 'Postmortem Rejected'): ?>
+                                    <a href="ModifyPostmortem.php?rep_id=<?php echo $report['Rep_ID']; ?>"
+                                        class="btn btn-danger btn-sm ms-1">Modify</a>
+                                    <button class="btn btn-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#feedbackModal"
+                                        onclick="showFeedback('Postmortem Feedback', '<?php echo addslashes($report['Reviewer_Comment']); ?>')">
+                                        View Feedback
+                                    </button>
+                                <?php endif; ?>
+
                             </td>
                         </tr>
                     <?php endwhile; ?>
+
+
                 </tbody>
             </table>
         <?php else: ?>

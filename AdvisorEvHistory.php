@@ -30,10 +30,12 @@ $completed_events_query = "
         e.Ev_Date, 
         et.Type_Code
     FROM events e
-    JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID
-    JOIN student s ON e.Stu_ID = s.Stu_ID
-    LEFT JOIN eventtyperef et ON e.Ev_TypeCode = et.Type_Code
-    WHERE ep.Rep_PostStatus = 'Accepted' AND e.Club_ID = ?
+JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID
+JOIN eventstatus es ON ep.Status_ID = es.Status_ID
+JOIN student s ON e.Stu_ID = s.Stu_ID
+LEFT JOIN eventtyperef et ON e.Ev_TypeCode = et.Type_Code
+WHERE es.Status_Name = 'Accepted' AND e.Club_ID = ?
+
 ";
 
 
