@@ -10,7 +10,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CMS NU</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="./assets/css/style.css">
 
     <style>
         * {
@@ -67,14 +67,14 @@
 
 <body>
     <div class="container">
-        <a href="index.php"><img src="NU logo.png" alt="University Logo" class="logo"></a>
+        <a href="index.php"><img src="./assets/img/NU logo.png" alt="University Logo" class="logo"></a>
 
         <h1>Welcome to CMS NU</h1>
         <div class="user-type">
-            <a href="StudentLogin.php">STUDENT</a>
-            <a href="AdvisorLogin.php">ADVISOR</a>
-            <a href="CoordinatorLogin.php">COORDINATOR</a>
-            <a href="adminlogin.php">ADMIN</a>
+            <a href="auth/studentlogin.php">STUDENT</a>
+            <a href="auth/advisorlogin.php">ADVISOR</a>
+            <a href="auth/coordinatorlogin.php">COORDINATOR</a>
+            <a href="auth/adminlogin.php">ADMIN</a>
 
         </div>
 

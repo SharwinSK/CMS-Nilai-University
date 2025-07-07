@@ -50,7 +50,7 @@ $res = $conn->query("
     SELECT COUNT(*) AS n 
     FROM events e
     JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID
-    WHERE ep.Rep_PostStatus = 'Accepted'
+ 
 ");
 if ($row = $res->fetch_assoc())
     $completedEvents = $row['n'];

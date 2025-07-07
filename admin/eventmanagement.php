@@ -28,7 +28,7 @@ $clubsResult = $conn->query($clubsQuery);
 // Query for post-event reports
 $postEventQuery = "
     SELECT 
-        ep.Rep_ID, ep.Ev_ID, ep.Rep_PostStatus, ep.Updated_At, ep.created_at,
+        ep.Rep_ID, ep.Ev_ID,  ep.Updated_At, ep.created_at,
         e.Ev_Name, e.Ev_Date,
         s.Stu_Name, c.Club_Name
     FROM eventpostmortem ep
@@ -42,20 +42,7 @@ $postEventResult = $conn->query($postEventQuery);
 $clubsResultPost = $conn->query("SELECT DISTINCT Club_Name FROM club ORDER BY Club_Name ASC");
 
 
-// Query for completed events
-$completedEventQuery = "
-  SELECT 
-    e.Ev_ID, e.Ev_Name, e.Ev_Date, e.Ev_TypeRef,
-    s.Stu_Name, c.Club_Name, ep.Rep_PostStatus
-  FROM events e
-  INNER JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID
-  LEFT JOIN student s ON e.Stu_ID = s.Stu_ID
-  LEFT JOIN club c ON e.Club_ID = c.Club_ID
-  WHERE ep.Rep_PostStatus = 'Accepted'
-  ORDER BY e.Ev_Date DESC
-";
 
-$completedResult = $conn->query($completedEventQuery);
 ?>
 
 <!DOCTYPE html>
