@@ -30,7 +30,7 @@ $event_id = $new_num . '/' . $year_suffix;
 $poster = null;
 
 if (!empty($_FILES["poster"]["name"])) {
-    $target_dir = "uploads/";
+    $target_dir = "uploads/posters/";
     $target_file = $target_dir . basename($_FILES["poster"]["name"]);
 
     if (move_uploaded_file($_FILES["poster"]["tmp_name"], $target_file)) {

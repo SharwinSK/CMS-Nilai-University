@@ -24,7 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $redirectUrl = 'AdvisorLogin.php';
                 break;
             default:
-                $redirectUrl = 'StudentLogin.php';
+                $redirectUrl = '../auth/studentlogin.php';
         }
 
 

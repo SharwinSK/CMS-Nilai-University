@@ -65,7 +65,7 @@
 
 <script>
     document.getElementById('confirmLogout').addEventListener('click', () => {
-        fetch('Logout.php', {
+        fetch('../Logout.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ action: 'logout' })

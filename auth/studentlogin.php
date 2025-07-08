@@ -17,7 +17,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $_SESSION['Stu_ID'] = $user['Stu_ID'];
                 $_SESSION['Stu_Name'] = $user['Stu_Name'];
                 $_SESSION['user_type'] = 'student';
-                header("Location: StudentDashboard.php");
+                header("Location: ../student/StudentDashboard.php");
                 exit();
             }
         }

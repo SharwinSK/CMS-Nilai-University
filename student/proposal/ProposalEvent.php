@@ -1,6 +1,6 @@
 <?php
 session_start();
-include('dbconfig.php');
+include '../../DB/dbconfig.php';
 
 $stu_id = $_SESSION['Stu_ID'];
 $result = $conn->query("SELECT Stu_Name FROM Student WHERE Stu_ID='$stu_id'");
@@ -345,7 +345,7 @@ $start_time = microtime(true);
 
                     <!-- Submit Section -->
                     <div class="text-center">
-                        <a href="StudentDashboard.php" class="btn btn-secondary mt-4">Back</a>
+                        <a href="../StudentDashboard.php" class="btn btn-secondary mt-4">Back</a>
                         <button type="submit" class="btn btn-primary mt-4">Submit Proposal</button>
                     </div>
                 </form>
