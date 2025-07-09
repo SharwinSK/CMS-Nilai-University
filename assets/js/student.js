@@ -1,61 +1,45 @@
 let currentDate = new Date();
 let isFloatingMenuOpen = false;
 
-// Dummy event data (you can fetch from PHP later)
-const events = {
-  "2025-07-08": "AI Workshop",
-  "2025-07-10": "Leadership Camp",
-  "2025-07-20": "Cultural Day",
-};
-
-function initCalendar() {
-  updateCalendarDisplay();
-}
-
 function updateCalendarDisplay() {
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
-  const firstDay = new Date(year, month, 1);
-  const lastDay = new Date(year, month + 1, 0);
-  const firstDayWeek = firstDay.getDay();
-  const daysInMonth = lastDay.getDate();
   const today = new Date();
 
-  // Display current month
-  document.getElementById("currentMonth").textContent = firstDay.toLocaleString(
-    "default",
-    {
-      month: "long",
-      year: "numeric",
-    }
-  );
+  const firstDayOfMonth = new Date(year, month, 1);
+  const lastDayOfMonth = new Date(year, month + 1, 0);
+
+  const firstDayWeek = firstDayOfMonth.getDay(); // Sunday = 0
+  const totalDaysInMonth = lastDayOfMonth.getDate();
 
   const calendarDays = document.getElementById("calendarDays");
   calendarDays.innerHTML = "";
 
-  // Empty cells before 1st day of the month
-  for (let i = 0; i < firstDayWeek; i++) {
-    const emptyDay = document.createElement("div");
-    emptyDay.className = "calendar-day";
-    calendarDays.appendChild(emptyDay);
-  }
+  // Calculate the starting date of the grid (including previous month's trailing days)
+  let startDate = new Date(firstDayOfMonth);
+  startDate.setDate(startDate.getDate() - firstDayWeek); // Go back to the previous Sunday
 
-  // Day cells
-  for (let day = 1; day <= daysInMonth; day++) {
-    const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(
-      day
-    ).padStart(2, "0")}`;
+  // Always show 6 full weeks (6 * 7 = 42 cells)
+  for (let i = 0; i < 42; i++) {
+    const cellDate = new Date(startDate);
+    cellDate.setDate(startDate.getDate() + i);
+
+    const dateStr = cellDate.toISOString().split("T")[0];
     const dayElement = document.createElement("div");
     dayElement.className = "calendar-day";
-    dayElement.textContent = day;
+    dayElement.textContent = cellDate.getDate();
+
+    // Dim the days from other months
+    if (cellDate.getMonth() !== month) {
+      dayElement.style.opacity = "0.4";
+    }
 
     // Highlight today
-    const currentDayDate = new Date(year, month, day);
-    if (currentDayDate.toDateString() === today.toDateString()) {
+    if (cellDate.toDateString() === today.toDateString()) {
       dayElement.classList.add("today");
     }
 
-    // If event on that date
+    // Add event if matched
     if (events[dateStr]) {
       dayElement.classList.add("has-event");
 
@@ -72,6 +56,13 @@ function updateCalendarDisplay() {
 
     calendarDays.appendChild(dayElement);
   }
+
+  // Update month title
+  document.getElementById("currentMonth").textContent =
+    firstDayOfMonth.toLocaleString("default", {
+      month: "long",
+      year: "numeric",
+    });
 }
 
 function previousMonth() {
@@ -90,8 +81,6 @@ function showEventDetails(date, eventName) {
   document.getElementById("eventModalBody").innerHTML = `
     <p><strong>Event:</strong> ${eventName}</p>
     <p><strong>Date:</strong> ${new Date(date).toLocaleDateString()}</p>
-    <p><strong>Status:</strong> <span class="status-badge status-approved">Scheduled</span></p>
-    <p><strong>Description:</strong> Join us for this exciting event!</p>
   `;
   new bootstrap.Modal(document.getElementById("eventModal")).show();
 }

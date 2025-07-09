@@ -59,16 +59,42 @@ $completed_query = "
 $completed_result = $conn->query($completed_query);
 $total_completed = $completed_result->fetch_assoc()['total_completed'] ?? 0;
 
+
 $notification_query = "
-    SELECT e.Ev_ID, e.Ev_Name, es.Status_Name
+    SELECT 
+        e.Ev_ID, 
+        e.Ev_Name, 
+        es.Status_Name, 
+        es.Status_ID,
+        CASE 
+            WHEN ep.Rep_ID IS NULL THEN 'Proposal'
+            ELSE 'Postmortem'
+        END AS Type
     FROM events e
     JOIN eventstatus es ON e.Status_ID = es.Status_ID
+    LEFT JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID
     WHERE e.Stu_ID = '$stu_id'
+      AND (
+        (ep.Rep_ID IS NULL AND es.Status_ID BETWEEN 1 AND 5)
+        OR (ep.Status_ID BETWEEN 6 AND 7)
+      )
     ORDER BY e.Updated_At DESC
-    LIMIT 5
 ";
 
 $notification_result = $conn->query($notification_query);
+
+$calendar_event_query = "
+    SELECT e.Ev_ID, e.Ev_Name, e.Ev_Date 
+    FROM events e
+    WHERE e.Stu_ID = '$stu_id' AND e.Status_ID = 5
+";
+$calendar_event_result = $conn->query($calendar_event_query);
+
+$events_by_date = [];
+while ($row = $calendar_event_result->fetch_assoc()) {
+    $date = $row['Ev_Date'];
+    $events_by_date[$date][] = $row['Ev_Name'];
+}
 ?>
 
 <?php include('../components/header.php'); ?>
@@ -133,7 +159,7 @@ $notification_result = $conn->query($notification_query);
                 </div>
             </div>
         </div>
-
+        <!-- Attach Components -->
         <div class="row">
             <div class="col-lg-8">
                 <?php include('../components/carousel.php'); ?> <!-- Event Carousel -->
@@ -171,7 +197,7 @@ $notification_result = $conn->query($notification_query);
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body" id="eventModalBody">
-                    <!-- Event details will be populated here -->
+                    <!-- Event details will be populated here, i already done in student.js -->
                 </div>
             </div>
         </div>
@@ -179,6 +205,15 @@ $notification_result = $conn->query($notification_query);
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script src="../assets/js/student.js"></script>
+    <script>
+        const calendarEvents = <?php echo json_encode($events_by_date); ?>;
+        const events = calendarEvents; // Ensure this is defined globally
+        document.addEventListener("DOMContentLoaded", () => {
+            updateCalendarDisplay(); // Directly call update on load
+        });
+    </script>
+
+
 
 </body>
 

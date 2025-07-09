@@ -8,17 +8,22 @@
         <?php while ($row = $notification_result->fetch_assoc()): ?>
             <div class="notification-item">
                 <div>
+                    <small class="text-muted"><?= $row['Type'] ?> </small>
                     <strong><?= htmlspecialchars($row['Ev_Name']) ?></strong><br />
                     <?php
                     $status = $row['Status_Name'];
+
                     $badgeClass = 'status-pending';
+
                     if (stripos($status, 'Approved') !== false) {
                         $badgeClass = 'status-approved';
                     } elseif (stripos($status, 'Rejected') !== false || stripos($status, 'Sent Back') !== false) {
                         $badgeClass = 'status-rejected';
                     }
                     ?>
+
                     <span class="status-badge <?= $badgeClass ?>"><?= $status ?></span>
+
                 </div>
                 <button class="view-btn" onclick="viewNotification('<?= addslashes($row['Ev_Name']) ?>')">View</button>
             </div>
