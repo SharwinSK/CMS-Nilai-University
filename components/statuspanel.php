@@ -1,7 +1,7 @@
 <div class="notification-panel">
     <h4 class="section-title">
         <i class="fas fa-bell me-2"></i>
-        Notifications
+        Status Panel
     </h4>
 
     <?php if ($notification_result->num_rows > 0): ?>
@@ -29,6 +29,6 @@
             </div>
         <?php endwhile; ?>
     <?php else: ?>
-        <p class="text-muted">No recent notifications.</p>
+        <p class="text-muted">No recent status updates.</p>
     <?php endif; ?>
 </div>

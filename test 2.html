@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Track Progress - Nilai University CMS</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --primary-light: #d5fdff;
+        --primary-medium: #9de5ff;
+        --primary-dark: #aca8ff;
+        --primary-purple: #ac73ff;
+      }
+      body {
+        background: linear-gradient(
+          135deg,
+          var(--primary-light) 0%,
+          var(--primary-medium) 100%
+        );
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        min-height: 100vh;
+      }
+      .navbar {
+        background: linear-gradient(
+          90deg,
+          var(--primary-purple) 0%,
+          var(--primary-dark) 100%
+        );
+        box-shadow: 0 4px 15px rgba(172, 115, 255, 0.2);
+      }
+      .navbar-brand {
+        font-weight: bold;
+        color: white !important;
+        font-size: 1.3rem;
+      }
+      .navbar-nav .nav-link {
+        color: white !important;
+        font-weight: 500;
+      }
+      .dropdown-menu {
+        background: var(--primary-light);
+        border: none;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        right: 0;
+        left: auto;
+      }
+      .offcanvas {
+        background: linear-gradient(
+          180deg,
+          var(--primary-light) 0%,
+          var(--primary-medium) 100%
+        );
+        border-right: 3px solid var(--primary-purple);
+      }
+      .offcanvas-header {
+        background: var(--primary-purple);
+        color: white;
+      }
+      .offcanvas-body {
+        display: flex;
+        flex-direction: column;
+      }
+      .sidebar-footer {
+        padding: 10px;
+      }
+      .sidebar-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 16px;
+        border-radius: 12px;
+        color: black;
+        text-decoration: none;
+        font-weight: 500;
+        transition: 0.3s;
+      }
+      .sidebar-item:hover {
+        background-color: var(--primary-purple);
+        color: white;
+      }
+      .sidebar-item.active {
+        background-color: var(--primary-purple);
+        color: white;
+      }
+      .stats-card {
+        background: white;
+        border-radius: 20px;
+        padding: 25px;
+        margin-bottom: 25px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        border: 3px solid transparent;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+      }
+      .stats-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 5px;
+        background: linear-gradient(
+          90deg,
+          var(--primary-purple),
+          var(--primary-dark)
+        );
+      }
+      .stats-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+      }
+      .content-wrapper {
+        padding: 30px;
+      }
+      .section-title {
+        color: var(--primary-purple);
+        font-weight: bold;
+        margin-bottom: 20px;
+        font-size: 1.5rem;
+      }
+      .table-responsive {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        margin-bottom: 30px;
+      }
+      .table {
+        margin-bottom: 0;
+      }
+      .table thead {
+        background: var(--primary-purple);
+        color: white;
+      }
+      .table thead th {
+        border: none;
+        padding: 15px;
+        font-weight: 600;
+        text-align: center;
+      }
+      .table tbody td {
+        padding: 12px;
+        vertical-align: middle;
+        text-align: center;
+      }
+      .table tbody tr:hover {
+        background-color: var(--primary-light);
+      }
+      .status-badge {
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+      }
+      .status-pending {
+        background-color: #fff3cd;
+        color: #856404;
+      }
+      .status-approved {
+        background-color: #d4edda;
+        color: #155724;
+      }
+      .status-rejected {
+        background-color: #f8d7da;
+        color: #721c24;
+      }
+      .action-btn {
+        margin: 2px;
+        padding: 5px 10px;
+        border: none;
+        border-radius: 5px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+      .btn-edit {
+        background-color: #17a2b8;
+        color: white;
+      }
+      .btn-edit:hover {
+        background-color: #138496;
+      }
+      .btn-modify {
+        background-color: #ffc107;
+        color: black;
+      }
+      .btn-modify:hover {
+        background-color: #e0a800;
+      }
+      .btn-delete {
+        background-color: #dc3545;
+        color: white;
+      }
+      .btn-delete:hover {
+        background-color: #c82333;
+      }
+      .btn-postmortem {
+        background-color: #28a745;
+        color: white;
+      }
+      .btn-postmortem:hover {
+        background-color: #218838;
+      }
+      .btn-export {
+        background-color: var(--primary-purple);
+        color: white;
+      }
+      .btn-export:hover {
+        background-color: #9a5fff;
+      }
+      .btn-feedback {
+        background-color: #6c757d;
+        color: white;
+      }
+      .btn-feedback:hover {
+        background-color: #5a6268;
+      }
+      .no-data {
+        text-align: center;
+        color: #666;
+        font-style: italic;
+        padding: 40px;
+      }
+
+      /* Modal styles */
+      .modal-header {
+        background: var(--primary-purple);
+        color: white;
+      }
+      .modal-body {
+        background: var(--primary-light);
+      }
+      .feedback-content {
+        background: white;
+        padding: 15px;
+        border-radius: 10px;
+        margin: 10px 0;
+        border-left: 4px solid var(--primary-purple);
+      }
+      .feedback-author {
+        font-weight: bold;
+        color: var(--primary-purple);
+        margin-bottom: 5px;
+      }
+      .feedback-text {
+        color: #555;
+        line-height: 1.6;
+      }
+      .feedback-date {
+        font-size: 0.8rem;
+        color: #888;
+        margin-top: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Sidebar -->
+    <div class="offcanvas offcanvas-start" tabindex="-1" id="sidebar">
+      <div class="offcanvas-header">
+        <h5 class="offcanvas-title">
+          <i class="fas fa-user-graduate me-2"></i>
+          Student Panel
+        </h5>
+        <button
+          type="button"
+          class="btn-close btn-close-white"
+          data-bs-dismiss="offcanvas"
+        ></button>
+      </div>
+      <div class="offcanvas-body">
+        <a class="sidebar-item" href="../student/StudentDashboard.php">
+          <i class="fas fa-home"></i>
+          <span>Home</span>
+        </a>
+        <a class="sidebar-item" href="../student/StudentProfile.php">
+          <i class="fas fa-user"></i>
+          <span>Profile</span>
+        </a>
+        <a class="sidebar-item" href="../student/proposal/ProposalEvent.php">
+          <i class="fas fa-file-alt"></i>
+          <span>Create Proposal</span>
+        </a>
+        <a class="sidebar-item" href="../student/Postmortem.php">
+          <i class="fas fa-calendar-plus"></i>
+          <span>Create Post Event</span>
+        </a>
+        <a class="sidebar-item active" href="../student/ProgressPage.php">
+          <i class="fas fa-chart-line"></i>
+          <span>Track Progress</span>
+        </a>
+        <a class="sidebar-item" href="../student/EventHistory.php">
+          <i class="fas fa-history"></i>
+          <span>History</span>
+        </a>
+        <a class="sidebar-item" href="#">
+          <i class="fas fa-question-circle"></i>
+          <span>User Guide</span>
+        </a>
+        <a class="sidebar-item" href="#">
+          <i class="fas fa-phone"></i>
+          <span>Contact</span>
+        </a>
+        <div class="sidebar-footer text-center mt-auto">
+          <hr />
+          <small style="color: black; font-size: 0.8rem">
+            CMS v1.0 © 2025 Nilai University
+          </small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+      <div class="container-fluid">
+        <button
+          class="btn me-3"
+          type="button"
+          data-bs-toggle="offcanvas"
+          data-bs-target="#sidebar"
+        >
+          <i class="fas fa-bars text-white"></i>
+        </button>
+        <a class="navbar-brand" href="#">
+          <i class="fas fa-university me-2"></i>
+          Nilai University CMS
+        </a>
+        <div class="navbar-nav ms-auto">
+          <div class="nav-item dropdown">
+            <a
+              class="nav-link dropdown-toggle"
+              href="#"
+              role="button"
+              data-bs-toggle="dropdown"
+            >
+              <i class="fas fa-user-circle me-2"></i>
+              John Doe
+            </a>
+            <ul class="dropdown-menu">
+              <li>
+                <a
+                  class="dropdown-item"
+                  href="../student/profile/StudentProfile.php"
+                >
+                  <i class="fas fa-user me-2"></i>Profile
+                </a>
+              </li>
+              <li>
+                <hr class="dropdown-divider" />
+              </li>
+              <li>
+                <a
+                  class="dropdown-item"
+                  href="#"
+                  data-bs-toggle="modal"
+                  data-bs-target="#logoutModal"
+                >
+                  <i class="fas fa-sign-out-alt me-2"></i>Log Out
+                </a>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="content-wrapper">
+      <div class="container-fluid">
+        <!-- Page Title -->
+        <div class="row">
+          <div class="col-12">
+            <h1 class="section-title">
+              <i class="fas fa-chart-line me-2"></i>
+              Event Track Progress
+            </h1>
+          </div>
+        </div>
+
+        <!-- Proposal Section -->
+        <div class="row">
+          <div class="col-12">
+            <h2 class="section-title">
+              <i class="fas fa-file-alt me-2"></i>
+              Event Proposals
+            </h2>
+            <div class="table-responsive">
+              <table class="table table-hover">
+                <thead>
+                  <tr>
+                    <th>Event ID</th>
+                    <th>Event Name</th>
+                    <th>Status</th>
+                    <th>Event Date</th>
+                    <th>Export</th>
+                    <th>Advisor Feedback</th>
+                    <th>Coordinator Feedback</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="proposalTableBody">
+                  <!-- Sample data - replace with PHP/MySQL data -->
+                  <tr>
+                    <td>EVT001</td>
+                    <td>Annual Tech Conference</td>
+                    <td>
+                      <span class="status-badge status-pending">Pending</span>
+                    </td>
+                    <td>2025-08-15</td>
+                    <td>
+                      <button
+                        class="action-btn btn-export"
+                        onclick="exportProposal('EVT001')"
+                      >
+                        <i class="fas fa-download"></i> Export
+                      </button>
+                    </td>
+                    <td>
+                      <button
+                        class="action-btn btn-feedback"
+                        onclick="showFeedback('advisor', 'EVT001')"
+                      >
+                        <i class="fas fa-comments"></i> View
+                      </button>
+                    </td>
+                    <td>
+                      <button
+                        class="action-btn btn-feedback"
+                        onclick="showFeedback('coordinator', 'EVT001')"
+                      >
+                        <i class="fas fa-comments"></i> View
+                      </button>
+                    </td>
+                    <td>
+                      <button
+                        class="action-btn btn-edit"
+                        onclick="editProposal('EVT001')"
+                      >
+                        <i class="fas fa-edit"></i> Edit
+                      </button>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>EVT002</td>
+                    <td>Student Workshop</td>
+                    <td>
+                      <span class="status-badge status-rejected">Rejected</span>
+                    </td>
+                    <td>2025-07-20</td>
+                    <td>
+                      <button
+                        class="action-btn btn-export"
+                        onclick="exportProposal('EVT002')"
+                      >
+                        <i class="fas fa-download"></i> Export
+                      </button>
+                    </td>
+                    <td>
+                      <button
+                        class="action-btn btn-feedback"
+                        onclick="showFeedback('advisor', 'EVT002')"
+                      >
+                        <i class="fas fa-comments"></i> View
+                      </button>
+                    </td>
+                    <td>
+                      <button
+                        class="action-btn btn-feedback"
+                        onclick="showFeedback('coordinator', 'EVT002')"
+                      >
+                        <i class="fas fa-comments"></i> View
+                      </button>
+                    </td>
+                    <td>
+                      <button
+                        class="action-btn btn-modify"
+                        onclick="modifyProposal('EVT002')"
+                      >
+                        <i class="fas fa-wrench"></i> Modify
+                      </button>
+                      <button
+                        class="action-btn btn-delete"
+                        onclick="deleteProposal('EVT002')"
+                      >
+                        <i class="fas fa-trash"></i> Delete
+                      </button>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>EVT003</td>
+                    <td>Career Fair</td>
+                    <td>
+                      <span class="status-badge status-approved">Approved</span>
+                    </td>
+                    <td>2025-09-10</td>
+                    <td>
+                      <button
+                        class="action-btn btn-export"
+                        onclick="exportProposal('EVT003')"
+                      >
+                        <i class="fas fa-download"></i> Export
+                      </button>
+                    </td>
+                    <td>
+                      <button
+                        class="action-btn btn-feedback"
+                        onclick="showFeedback('advisor', 'EVT003')"
+                      >
+                        <i class="fas fa-comments"></i> View
+                      </button>
+                    </td>
+                    <td>
+                      <button
+                        class="action-btn btn-feedback"
+                        onclick="showFeedback('coordinator', 'EVT003')"
+                      >
+                        <i class="fas fa-comments"></i> View
+                      </button>
+                    </td>
+                    <td>
+                      <button
+                        class="action-btn btn-postmortem"
+                        onclick="createPostmortem('EVT003')"
+                      >
+                        <i class="fas fa-plus"></i> Create Postmortem
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Post Event Section -->
+        <div class="row">
+          <div class="col-12">
+            <h2 class="section-title">
+              <i class="fas fa-calendar-check me-2"></i>
+              Post Event Reports
+            </h2>
+            <div class="table-responsive">
+              <table class="table table-hover">
+                <thead>
+                  <tr>
+                    <th>Event ID</th>
+                    <th>Event Name</th>
+                    <th>Report Submit Date</th>
+                    <th>Status</th>
+                    <th>Export</th>
+                    <th>Coordinator Feedback</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="postEventTableBody">
+                  <!-- Sample data - replace with PHP/MySQL data -->
+                  <tr>
+                    <td>EVT004</td>
+                    <td>Science Fair</td>
+                    <td>2025-06-15</td>
+                    <td>
+                      <span class="status-badge status-pending">Pending</span>
+                    </td>
+                    <td>
+                      <button
+                        class="action-btn btn-export"
+                        onclick="exportPostEvent('EVT004')"
+                      >
+                        <i class="fas fa-download"></i> Export PDF
+                      </button>
+                    </td>
+                    <td>
+                      <button
+                        class="action-btn btn-feedback"
+                        onclick="showPostEventFeedback('EVT004')"
+                      >
+                        <i class="fas fa-comments"></i> View
+                      </button>
+                    </td>
+                    <td>
+                      <button
+                        class="action-btn btn-edit"
+                        onclick="editPostEvent('EVT004')"
+                      >
+                        <i class="fas fa-edit"></i> Edit
+                      </button>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>EVT005</td>
+                    <td>Sports Day</td>
+                    <td>2025-05-28</td>
+                    <td>
+                      <span class="status-badge status-rejected">Rejected</span>
+                    </td>
+                    <td>
+                      <button
+                        class="action-btn btn-export"
+                        onclick="exportPostEvent('EVT005')"
+                      >
+                        <i class="fas fa-download"></i> Export PDF
+                      </button>
+                    </td>
+                    <td>
+                      <button
+                        class="action-btn btn-feedback"
+                        onclick="showPostEventFeedback('EVT005')"
+                      >
+                        <i class="fas fa-comments"></i> View
+                      </button>
+                    </td>
+                    <td>
+                      <button
+                        class="action-btn btn-modify"
+                        onclick="modifyPostEvent('EVT005')"
+                      >
+                        <i class="fas fa-wrench"></i> Modify
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Feedback Modal -->
+    <div class="modal fade" id="feedbackModal" tabindex="-1">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">
+              <i class="fas fa-comments me-2"></i>
+              <span id="feedbackTitle">Feedback</span>
+            </h5>
+            <button
+              type="button"
+              class="btn-close btn-close-white"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <div id="feedbackContent">
+              <!-- Feedback content will be loaded here -->
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Logout Modal -->
+    <div class="modal fade" id="logoutModal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Confirm Logout</h5>
+            <button
+              type="button"
+              class="btn-close btn-close-white"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body">Are you sure you want to log out?</div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Cancel
+            </button>
+            <a href="../logout.php" class="btn btn-danger">Logout</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      // Sample feedback data - replace with database queries
+      const feedbackData = {
+        advisor: {
+          EVT001: {
+            author: "Dr. Sarah Johnson",
+            feedback:
+              "The proposal looks promising but needs more detailed budget breakdown. Please provide more specific information about the expected number of participants and venue requirements.",
+            date: "2025-07-10",
+          },
+          EVT002: {
+            author: "Dr. Michael Chen",
+            feedback:
+              "The workshop concept is good, but the timeline is too ambitious. Please revise the schedule and consider reducing the scope for better execution.",
+            date: "2025-07-05",
+          },
+          EVT003: {
+            author: "Dr. Emily Rodriguez",
+            feedback:
+              "Excellent proposal! The career fair concept is well-structured and the budget is realistic. Approved for implementation.",
+            date: "2025-07-12",
+          },
+        },
+        coordinator: {
+          EVT001: {
+            author: "Prof. Ahmad Rahman",
+            feedback:
+              "Good initiative. Please coordinate with the IT department for technical requirements and ensure proper risk assessment is conducted.",
+            date: "2025-07-11",
+          },
+          EVT002: {
+            author: "Prof. Lisa Wong",
+            feedback:
+              "The proposal lacks proper risk management planning. Please revise and include contingency plans for potential issues.",
+            date: "2025-07-06",
+          },
+          EVT003: {
+            author: "Prof. David Lee",
+            feedback:
+              "Well-planned event. The coordination with industry partners is commendable. Proceed with the implementation as proposed.",
+            date: "2025-07-13",
+          },
+        },
+        postEvent: {
+          EVT004: {
+            author: "Prof. Ahmad Rahman",
+            feedback:
+              "The report needs more detailed analysis of attendee feedback. Please include participant satisfaction surveys and recommendations for future improvements.",
+            date: "2025-06-20",
+          },
+          EVT005: {
+            author: "Prof. Lisa Wong",
+            feedback:
+              "The financial report is incomplete. Please provide detailed expense breakdown and reconciliation with the approved budget.",
+            date: "2025-06-01",
+          },
+        },
+      };
+
+      function showFeedback(type, eventId) {
+        const modal = new bootstrap.Modal(
+          document.getElementById("feedbackModal")
+        );
+        const titleElement = document.getElementById("feedbackTitle");
+        const contentElement = document.getElementById("feedbackContent");
+
+        titleElement.textContent = `${
+          type.charAt(0).toUpperCase() + type.slice(1)
+        } Feedback - ${eventId}`;
+
+        const feedback = feedbackData[type][eventId];
+        if (feedback) {
+          contentElement.innerHTML = `
+                    <div class="feedback-content">
+                        <div class="feedback-author">${feedback.author}</div>
+                        <div class="feedback-text">${feedback.feedback}</div>
+                        <div class="feedback-date">Date: ${feedback.date}</div>
+                    </div>
+                `;
+        } else {
+          contentElement.innerHTML =
+            '<div class="no-data">No feedback available yet.</div>';
+        }
+
+        modal.show();
+      }
+
+      function showPostEventFeedback(eventId) {
+        const modal = new bootstrap.Modal(
+          document.getElementById("feedbackModal")
+        );
+        const titleElement = document.getElementById("feedbackTitle");
+        const contentElement = document.getElementById("feedbackContent");
+
+        titleElement.textContent = `Coordinator Feedback - ${eventId}`;
+
+        const feedback = feedbackData.postEvent[eventId];
+        if (feedback) {
+          contentElement.innerHTML = `
+                    <div class="feedback-content">
+                        <div class="feedback-author">${feedback.author}</div>
+                        <div class="feedback-text">${feedback.feedback}</div>
+                        <div class="feedback-date">Date: ${feedback.date}</div>
+                    </div>
+                `;
+        } else {
+          contentElement.innerHTML =
+            '<div class="no-data">No feedback available yet.</div>';
+        }
+
+        modal.show();
+      }
+
+      function editProposal(eventId) {
+        // Redirect to edit proposal page
+        window.location.href = `../student/proposal/EditProposal.php?id=${eventId}`;
+      }
+
+      function modifyProposal(eventId) {
+        // Redirect to modify proposal page
+        window.location.href = `../student/proposal/ModifyProposal.php?id=${eventId}`;
+      }
+
+      function deleteProposal(eventId) {
+        if (
+          confirm(
+            `Are you sure you want to delete the proposal for ${eventId}?`
+          )
+        ) {
+          // Send delete request to server
+          fetch(`../student/proposal/DeleteProposal.php?id=${eventId}`, {
+            method: "POST",
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.success) {
+                alert("Proposal deleted successfully!");
+                location.reload();
+              } else {
+                alert("Error deleting proposal: " + data.message);
+              }
+            })
+            .catch((error) => {
+              console.error("Error:", error);
+              alert("Error deleting proposal");
+            });
+        }
+      }
+
+      function createPostmortem(eventId) {
+        // Redirect to create postmortem page
+        window.location.href = `../student/Postmortem.php?event_id=${eventId}`;
+      }
+
+      function exportProposal(eventId) {
+        // Generate and download proposal PDF
+        window.open(
+          `../student/proposal/ExportProposal.php?id=${eventId}`,
+          "_blank"
+        );
+      }
+
+      function editPostEvent(eventId) {
+        // Redirect to edit post event page
+        window.location.href = `../student/postEvent/EditPostEvent.php?id=${eventId}`;
+      }
+
+      function modifyPostEvent(eventId) {
+        // Redirect to modify post event page
+        window.location.href = `../student/postEvent/ModifyPostEvent.php?id=${eventId}`;
+      }
+
+      function exportPostEvent(eventId) {
+        // Generate and download post event report PDF
+        window.open(
+          `../student/postEvent/ExportPostEvent.php?id=${eventId}`,
+          "_blank"
+        );
+      }
+
+      // Initialize page
+      document.addEventListener("DOMContentLoaded", function () {
+        // Any initialization code here
+        console.log("Event Track Progress page loaded");
+      });
+    </script>
+  </body>
+</html>

@@ -2,7 +2,7 @@
 session_start();
 include('../db/dbconfig.php'); // Adjust path if needed
 
-
+$currentPage = 'dashboard'; // Set current page for active sidebar item
 if (!isset($_SESSION['Stu_ID'])) {
     header("Location: ../studentlogin.php");
     exit();
@@ -108,7 +108,7 @@ while ($row = $calendar_event_result->fetch_assoc()) {
     <title>Student Dashboard</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
-    <link href="../assets/css/student.css" rel="stylesheet" />
+    <link href="../assets/css/student.css?v=<?= time() ?>" rel="stylesheet" />
 
 </head>
 
@@ -166,7 +166,7 @@ while ($row = $calendar_event_result->fetch_assoc()) {
                 <?php include('../components/calendar.php'); ?><!-- Event Calendar -->
             </div>
             <div class="col-lg-4">
-                <?php include('../components/notificationpanel.php'); ?> <!-- Notification Panel -->
+                <?php include('../components/statuspanel.php'); ?> <!-- Status Panel -->
             </div>
         </div>
     </div>
@@ -204,7 +204,8 @@ while ($row = $calendar_event_result->fetch_assoc()) {
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
-    <script src="../assets/js/student.js"></script>
+    <script src="../assets/js/studentjs/student.js?v=<?= time(); ?>"></script>
+
     <script>
         const calendarEvents = <?php echo json_encode($events_by_date); ?>;
         const events = calendarEvents; // Ensure this is defined globally
@@ -212,9 +213,6 @@ while ($row = $calendar_event_result->fetch_assoc()) {
             updateCalendarDisplay(); // Directly call update on load
         });
     </script>
-
-
-
 </body>
 
 </html>

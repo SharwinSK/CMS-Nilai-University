@@ -3,729 +3,1375 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Student Profile - Nilai University CMS</title>
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-    />
-    <link
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
-      rel="stylesheet"
-    />
+    <title>Nilai University - Proposal Form</title>
     <style>
-      :root {
-        --primary-light: #d5fdff;
-        --primary-medium: #9de5ff;
-        --primary-dark: #aca8ff;
-        --primary-purple: #ac73ff;
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
       }
 
       body {
-        background: linear-gradient(
-          135deg,
-          var(--primary-light) 0%,
-          var(--primary-medium) 100%
-        );
-        min-height: 100vh;
-        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        font-family: "Arial", sans-serif;
+        background-color: #f5f5f5;
+        line-height: 1.6;
+        color: #333;
       }
 
-      .navbar {
-        background: linear-gradient(
-          90deg,
-          var(--primary-purple) 0%,
-          var(--primary-dark) 100%
-        );
-        box-shadow: 0 4px 15px rgba(172, 115, 255, 0.2);
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
       }
 
-      .navbar-brand {
-        font-weight: bold;
-        color: white !important;
-        font-size: 1.3rem;
+      .form-container {
+        background-color: #9edf9c;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
       }
 
-      .navbar-nav .nav-link {
-        color: white !important;
-        font-weight: 500;
-      }
-
-      .dropdown-menu {
-        background: var(--primary-light);
-        border: none;
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-      }
-
-      .offcanvas {
-        background: linear-gradient(
-          180deg,
-          var(--primary-light) 0%,
-          var(--primary-medium) 100%
-        );
-        border-right: 3px solid var(--primary-purple);
-      }
-
-      .offcanvas-header {
-        background: var(--primary-purple);
-        color: white;
-      }
-
-      .offcanvas-body {
-        display: flex;
-        flex-direction: column;
-      }
-
-      .sidebar-footer {
-        padding: 10px;
-      }
-
-      .sidebar-item {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 12px 16px;
-        border-radius: 12px;
-        color: black;
-        text-decoration: none;
-        font-weight: 500;
-        transition: 0.3s;
-      }
-
-      .sidebar-item:hover {
-        background-color: var(--primary-purple);
-        color: white;
-      }
-
-      .sidebar-item.active {
-        background-color: var(--primary-purple);
-        color: white;
-      }
-
-      .main-content {
-        padding: 2rem;
-      }
-
-      .profile-card {
-        background: white;
-        border-radius: 20px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-        overflow: hidden;
-        margin-bottom: 2rem;
-      }
-
-      .profile-header {
-        background: linear-gradient(
-          135deg,
-          var(--primary-purple) 0%,
-          var(--primary-dark) 100%
-        );
-        color: white;
-        padding: 2rem;
+      h1 {
         text-align: center;
+        margin-bottom: 30px;
+        color: #2d5a2d;
+        font-size: 2.5em;
+        font-weight: bold;
       }
 
-      .profile-avatar {
-        width: 120px;
-        height: 120px;
-        border-radius: 50%;
-        border: 4px solid white;
-        margin: 0 auto 1rem;
-        background: var(--primary-light);
+      .section {
+        background-color: white;
+        margin-bottom: 25px;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .section-header {
+        background-color: #c2ffc7;
+        padding: 15px 20px;
+        font-weight: bold;
+        font-size: 1.2em;
+        color: #2d5a2d;
+        border-bottom: 2px solid #9edf9c;
+      }
+
+      .section-content {
+        padding: 20px;
+      }
+
+      .form-group {
+        margin-bottom: 20px;
+      }
+
+      .form-row {
         display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 3rem;
-        color: var(--primary-purple);
+        gap: 20px;
+        flex-wrap: wrap;
       }
 
-      .profile-info {
-        padding: 2rem;
+      .form-col {
+        flex: 1;
+        min-width: 250px;
       }
 
-      .info-group {
-        margin-bottom: 1.5rem;
-      }
-
-      .info-label {
-        font-weight: 600;
-        color: var(--primary-purple);
-        margin-bottom: 0.5rem;
+      label {
         display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+        color: #2d5a2d;
       }
 
-      .info-value {
-        background: var(--primary-light);
-        padding: 0.75rem 1rem;
-        border-radius: 10px;
-        border: 2px solid transparent;
-        font-size: 1rem;
+      .required {
+        color: red;
+        margin-left: 3px;
+      }
+
+      input,
+      select,
+      textarea {
         width: 100%;
-        transition: all 0.3s ease;
+        padding: 10px;
+        border: 2px solid #ddd;
+        border-radius: 5px;
+        font-size: 14px;
+        transition: border-color 0.3s ease;
       }
 
-      .info-value:focus {
+      input:focus,
+      select:focus,
+      textarea:focus {
         outline: none;
-        border-color: var(--primary-purple);
-        box-shadow: 0 0 0 3px rgba(172, 115, 255, 0.1);
+        border-color: #9edf9c;
       }
 
-      .info-value:disabled {
-        background: #f8f9fa;
-        color: #6c757d;
-        cursor: not-allowed;
+      textarea {
+        resize: vertical;
+        min-height: 120px;
       }
 
-      .btn-primary {
-        background: linear-gradient(
-          135deg,
-          var(--primary-purple) 0%,
-          var(--primary-dark) 100%
-        );
+      .large-textarea {
+        min-height: 200px;
+      }
+
+      .btn {
+        background-color: #9edf9c;
+        color: #2d5a2d;
+        padding: 10px 20px;
         border: none;
-        padding: 0.75rem 2rem;
-        border-radius: 10px;
-        font-weight: 600;
-        transition: all 0.3s ease;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: bold;
+        margin-right: 10px;
+        margin-bottom: 10px;
+        transition: background-color 0.3s ease;
       }
 
-      .btn-primary:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(172, 115, 255, 0.3);
+      .btn:hover {
+        background-color: #8fdf8c;
+      }
+
+      .btn-danger {
+        background-color: #ff6b6b;
+        color: white;
+      }
+
+      .btn-danger:hover {
+        background-color: #ff5252;
       }
 
       .btn-secondary {
-        background: #6c757d;
-        border: none;
-        padding: 0.75rem 2rem;
-        border-radius: 10px;
-        font-weight: 600;
-        transition: all 0.3s ease;
+        background-color: #6c757d;
+        color: white;
       }
 
       .btn-secondary:hover {
-        transform: translateY(-2px);
-        background: #5a6268;
+        background-color: #5a6268;
       }
 
-      .edit-mode .info-value:not(:disabled) {
-        background: white;
-        border-color: var(--primary-purple);
+      .table-container {
+        overflow-x: auto;
       }
 
-      .page-title {
-        color: var(--primary-purple);
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+      }
+
+      th,
+      td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+      }
+
+      th {
+        background-color: #c2ffc7;
         font-weight: bold;
-        margin-bottom: 2rem;
+        color: #2d5a2d;
       }
 
-      .alert {
-        border-radius: 10px;
-        border: none;
-      }
-
-      .alert-success {
-        background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
-        color: #155724;
-      }
-
-      .alert-danger {
-        background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
-        color: #721c24;
-      }
-
-      .password-toggle {
-        position: relative;
-      }
-
-      .password-toggle-btn {
-        position: absolute;
-        right: 10px;
-        top: 50%;
-        transform: translateY(-50%);
-        background: none;
-        border: none;
-        color: var(--primary-purple);
+      .drag-drop-area {
+        border: 2px dashed #9edf9c;
+        padding: 40px;
+        text-align: center;
+        border-radius: 5px;
+        background-color: #f9f9f9;
         cursor: pointer;
-        z-index: 10;
+        transition: background-color 0.3s ease;
       }
 
-      .password-toggle-btn:hover {
-        color: var(--primary-dark);
+      .drag-drop-area:hover {
+        background-color: #f0f8f0;
+      }
+
+      .drag-drop-area.dragover {
+        background-color: #e8f5e8;
+        border-color: #7fd977;
+      }
+
+      .file-info {
+        margin-top: 10px;
+        font-size: 12px;
+        color: #666;
+      }
+
+      .preview-container {
+        margin-top: 15px;
+        text-align: center;
+      }
+
+      .preview-image {
+        max-width: 200px;
+        max-height: 200px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+      }
+
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+      }
+
+      .modal-content {
+        background-color: white;
+        margin: 15% auto;
+        padding: 20px;
+        border-radius: 10px;
+        width: 80%;
+        max-width: 500px;
+      }
+
+      .close {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+      }
+
+      .close:hover {
+        color: #000;
+      }
+
+      .form-actions {
+        text-align: center;
+        margin-top: 30px;
+        padding: 20px;
+        background-color: white;
+        border-radius: 8px;
+      }
+
+      .budget-summary {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 5px;
+        margin-top: 15px;
+      }
+
+      .budget-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+      }
+
+      .budget-total {
+        font-weight: bold;
+        font-size: 1.1em;
+        color: #2d5a2d;
+      }
+
+      .error {
+        color: red;
+        font-size: 12px;
+        margin-top: 5px;
+      }
+
+      .success {
+        color: green;
+        font-size: 12px;
+        margin-top: 5px;
       }
 
       @media (max-width: 768px) {
-        .main-content {
-          padding: 1rem;
+        .container {
+          padding: 10px;
         }
 
-        .profile-info {
-          padding: 1.5rem;
+        .form-container {
+          padding: 15px;
+        }
+
+        h1 {
+          font-size: 2em;
+        }
+
+        .form-row {
+          flex-direction: column;
+        }
+
+        .form-col {
+          min-width: auto;
+        }
+
+        .modal-content {
+          width: 95%;
+          margin: 10% auto;
+        }
+
+        table {
+          font-size: 12px;
         }
       }
     </style>
   </head>
   <body>
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
-      <div class="container-fluid">
-        <button
-          class="btn me-3"
-          type="button"
-          data-bs-toggle="offcanvas"
-          data-bs-target="#sidebar"
-        >
-          <i class="fas fa-bars text-white"></i>
-        </button>
-        <a class="navbar-brand" href="#">
-          <i class="fas fa-university me-2"></i>
-          Nilai University CMS
-        </a>
-        <div class="navbar-nav ms-auto">
-          <div class="nav-item dropdown">
-            <a
-              class="nav-link dropdown-toggle"
-              href="#"
-              role="button"
-              data-bs-toggle="dropdown"
-            >
-              <i class="fas fa-user-circle me-2"></i>
-              <span id="navStudentName">John Doe</span>
-            </a>
-            <ul class="dropdown-menu">
-              <li>
-                <a class="dropdown-item" href="#"
-                  ><i class="fas fa-user me-2"></i>Profile</a
-                >
-              </li>
-              <li>
-                <hr class="dropdown-divider" />
-              </li>
-              <li>
-                <a class="dropdown-item" href="../Logout.php"
-                  ><i class="fas fa-sign-out-alt me-2"></i>Log Out</a
-                >
-              </li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </nav>
+    <div class="container">
+      <div class="form-container">
+        <h1>Proposal Form</h1>
 
-    <!-- Sidebar -->
-    <div class="offcanvas offcanvas-start" tabindex="-1" id="sidebar">
-      <div class="offcanvas-header">
-        <h5 class="offcanvas-title">
-          <i class="fas fa-user-graduate me-2"></i>
-          Student Panel
-        </h5>
-        <button
-          type="button"
-          class="btn-close btn-close-white"
-          data-bs-dismiss="offcanvas"
-        ></button>
-      </div>
-      <div class="offcanvas-body">
-        <a class="sidebar-item" href="../student/StudentDashboard.php">
-          <i class="fas fa-home"></i>
-          <span>Home</span>
-        </a>
-        <a class="sidebar-item active" href="../student/StudentProfile.php">
-          <i class="fas fa-user"></i>
-          <span>Profile</span>
-        </a>
-        <a class="sidebar-item" href="../student/ProposalEvent.php">
-          <i class="fas fa-file-alt"></i>
-          <span>Create Proposal</span>
-        </a>
-        <a class="sidebar-item" href="../student/Postmortem.php">
-          <i class="fas fa-calendar-plus"></i>
-          <span>Create Post Event</span>
-        </a>
-        <a class="sidebar-item" href="../student/ProgressPage.php">
-          <i class="fas fa-chart-line"></i>
-          <span>Track Progress</span>
-        </a>
-        <a class="sidebar-item" href="../student/EventHistory.php">
-          <i class="fas fa-history"></i>
-          <span>History</span>
-        </a>
-        <a class="sidebar-item" href="#">
-          <i class="fas fa-question-circle"></i>
-          <span>User Guide</span>
-        </a>
-        <a class="sidebar-item" href="#">
-          <i class="fas fa-phone"></i>
-          <span>Contact</span>
-        </a>
-        <div class="sidebar-footer text-center mt-auto">
-          <hr />
-          <small style="color: black; font-size: 0.8rem">
-            CMS v1.0 © 2025 Nilai University
-          </small>
-        </div>
-      </div>
-    </div>
-
-    <!-- Main Content -->
-    <div class="main-content">
-      <div class="container-fluid">
-        <h1 class="page-title">
-          <i class="fas fa-user me-2"></i>
-          Student Profile
-        </h1>
-
-        <!-- Alert Messages -->
-        <div id="alertContainer"></div>
-
-        <!-- Profile Card -->
-        <div class="profile-card">
-          <div class="profile-header">
-            <div class="profile-avatar">
-              <i class="fas fa-user-graduate"></i>
+        <form id="proposalForm">
+          <!-- Section 1: Student Information -->
+          <div class="section">
+            <div class="section-header">Section 1: Student Information</div>
+            <div class="section-content">
+              <div class="form-row">
+                <div class="form-col">
+                  <label for="studentName"
+                    >Student Name <span class="required">*</span></label
+                  >
+                  <input
+                    type="text"
+                    id="studentName"
+                    name="studentName"
+                    required
+                  />
+                </div>
+                <div class="form-col">
+                  <label for="club">Club <span class="required">*</span></label>
+                  <select id="club" name="club" required>
+                    <option value="">Select Club</option>
+                    <option value="Computer Science Club">
+                      Computer Science Club
+                    </option>
+                    <option value="Business Club">Business Club</option>
+                    <option value="Engineering Club">Engineering Club</option>
+                    <option value="Arts Club">Arts Club</option>
+                    <option value="Sports Club">Sports Club</option>
+                    <option value="Cultural Club">Cultural Club</option>
+                    <option value="Debate Club">Debate Club</option>
+                    <option value="Photography Club">Photography Club</option>
+                  </select>
+                </div>
+                <div class="form-col">
+                  <label for="studentId"
+                    >Student ID <span class="required">*</span></label
+                  >
+                  <input type="text" id="studentId" name="studentId" required />
+                </div>
+              </div>
             </div>
-            <h2 id="profileName">John Doe</h2>
-            <p class="mb-0">Student</p>
           </div>
 
-          <div class="profile-info">
-            <form id="profileForm">
-              <div class="row">
-                <div class="col-md-6">
-                  <div class="info-group">
-                    <label class="info-label">Full Name</label>
-                    <input
-                      type="text"
-                      class="info-value"
-                      id="studentName"
-                      name="studentName"
-                      value="John Doe"
-                      disabled
-                    />
-                  </div>
+          <!-- Section 2: Event Details -->
+          <div class="section">
+            <div class="section-header">Section 2: Event Details</div>
+            <div class="section-content">
+              <div class="form-row">
+                <div class="form-col">
+                  <label for="eventName"
+                    >Event Name <span class="required">*</span></label
+                  >
+                  <input type="text" id="eventName" name="eventName" required />
                 </div>
-                <div class="col-md-6">
-                  <div class="info-group">
-                    <label class="info-label">Student ID</label>
-                    <input
-                      type="text"
-                      class="info-value"
-                      id="studentId"
-                      name="studentId"
-                      value="STU2024001"
-                      disabled
-                    />
-                  </div>
+                <div class="form-col">
+                  <label for="eventNature"
+                    >Event Nature <span class="required">*</span></label
+                  >
+                  <select id="eventNature" name="eventNature" required>
+                    <option value="">Select Event Nature</option>
+                    <option value="Academic">Academic</option>
+                    <option value="Cultural">Cultural</option>
+                    <option value="Sports">Sports</option>
+                    <option value="Social">Social</option>
+                    <option value="Competition">Competition</option>
+                    <option value="Workshop">Workshop</option>
+                    <option value="Seminar">Seminar</option>
+                    <option value="Fundraising">Fundraising</option>
+                  </select>
                 </div>
               </div>
 
-              <div class="row">
-                <div class="col-md-6">
-                  <div class="info-group">
-                    <label class="info-label">School</label>
-                    <input
-                      type="text"
-                      class="info-value"
-                      id="school"
-                      name="school"
-                      value="School of Engineering"
-                      disabled
-                    />
-                  </div>
+              <div class="form-group">
+                <label for="eventObjectives"
+                  >Event Objectives <span class="required">*</span></label
+                >
+                <textarea
+                  id="eventObjectives"
+                  name="eventObjectives"
+                  required
+                ></textarea>
+              </div>
+
+              <div class="form-group">
+                <label for="eventIntroduction"
+                  >Introduction Event <span class="required">*</span></label
+                >
+                <textarea
+                  id="eventIntroduction"
+                  name="eventIntroduction"
+                  class="large-textarea"
+                  required
+                ></textarea>
+              </div>
+
+              <div class="form-group">
+                <label for="eventPurpose"
+                  >Purpose of Event <span class="required">*</span></label
+                >
+                <textarea
+                  id="eventPurpose"
+                  name="eventPurpose"
+                  required
+                ></textarea>
+              </div>
+
+              <div class="form-row">
+                <div class="form-col">
+                  <label for="estimatedParticipants"
+                    >Estimated Participants
+                    <span class="required">*</span></label
+                  >
+                  <input
+                    type="number"
+                    id="estimatedParticipants"
+                    name="estimatedParticipants"
+                    min="1"
+                    required
+                  />
                 </div>
-                <div class="col-md-6">
-                  <div class="info-group">
-                    <label class="info-label">Program</label>
-                    <input
-                      type="text"
-                      class="info-value"
-                      id="program"
-                      name="program"
-                      value="Bachelor of Computer Science"
-                      disabled
-                    />
-                  </div>
+                <div class="form-col">
+                  <label for="eventDate"
+                    >Event Date <span class="required">*</span></label
+                  >
+                  <input type="date" id="eventDate" name="eventDate" required />
                 </div>
               </div>
 
-              <div class="row">
-                <div class="col-md-6">
-                  <div class="info-group">
-                    <label class="info-label">Email Address</label>
-                    <input
-                      type="email"
-                      class="info-value"
-                      id="email"
-                      name="email"
-                      value="john.doe@student.nilai.edu.my"
-                      disabled
-                    />
-                  </div>
+              <div class="form-row">
+                <div class="form-col">
+                  <label for="startTime"
+                    >Start Time <span class="required">*</span></label
+                  >
+                  <input type="time" id="startTime" name="startTime" required />
                 </div>
-                <div class="col-md-6">
-                  <div class="info-group">
-                    <label class="info-label">Password</label>
-                    <div class="password-toggle">
-                      <input
-                        type="password"
-                        class="info-value"
-                        id="password"
-                        name="password"
-                        value="password123"
-                        disabled
-                      />
-                      <button
-                        type="button"
-                        class="password-toggle-btn"
-                        onclick="togglePassword()"
-                      >
-                        <i class="fas fa-eye" id="passwordToggleIcon"></i>
-                      </button>
-                    </div>
-                  </div>
+                <div class="form-col">
+                  <label for="endTime"
+                    >End Time <span class="required">*</span></label
+                  >
+                  <input type="time" id="endTime" name="endTime" required />
+                </div>
+                <div class="form-col">
+                  <label for="venue"
+                    >Venue <span class="required">*</span></label
+                  >
+                  <select id="venue" name="venue" required>
+                    <option value="">Select Venue</option>
+                    <option value="Auditorium">Auditorium</option>
+                    <option value="Conference Hall">Conference Hall</option>
+                    <option value="Sports Complex">Sports Complex</option>
+                    <option value="Library">Library</option>
+                    <option value="Cafeteria">Cafeteria</option>
+                    <option value="Outdoor Area">Outdoor Area</option>
+                    <option value="Classroom A">Classroom A</option>
+                    <option value="Classroom B">Classroom B</option>
+                  </select>
                 </div>
               </div>
 
-              <div class="text-end mt-4">
-                <button
-                  type="button"
-                  class="btn btn-primary me-2"
-                  id="editBtn"
-                  onclick="toggleEdit()"
+              <div class="form-group">
+                <label for="eventPoster"
+                  >Event Poster <span class="required">*</span></label
                 >
-                  <i class="fas fa-edit me-2"></i>Edit Profile
-                </button>
-                <button
-                  type="button"
-                  class="btn btn-secondary me-2"
-                  id="cancelBtn"
-                  onclick="cancelEdit()"
-                  style="display: none"
-                >
-                  <i class="fas fa-times me-2"></i>Cancel
-                </button>
-                <button
-                  type="submit"
-                  class="btn btn-primary"
-                  id="saveBtn"
-                  style="display: none"
-                >
-                  <i class="fas fa-save me-2"></i>Save Changes
-                </button>
+                <div class="drag-drop-area" id="posterDropArea">
+                  <p>Drag and drop your poster here, or click to select</p>
+                  <input
+                    type="file"
+                    id="eventPoster"
+                    name="eventPoster"
+                    accept=".jpg,.jpeg,.png"
+                    style="display: none"
+                  />
+                </div>
+                <div class="file-info">
+                  Maximum file size: 20MB. Only JPEG and PNG files are allowed.
+                </div>
+                <div id="posterPreview" class="preview-container"></div>
               </div>
-            </form>
+            </div>
           </div>
-        </div>
+
+          <!-- Section 3: Person in Charge -->
+          <div class="section">
+            <div class="section-header">Section 3: Person in Charge</div>
+            <div class="section-content">
+              <div class="form-row">
+                <div class="form-col">
+                  <label for="picName"
+                    >Name <span class="required">*</span></label
+                  >
+                  <input type="text" id="picName" name="picName" required />
+                </div>
+                <div class="form-col">
+                  <label for="picId">ID <span class="required">*</span></label>
+                  <input type="text" id="picId" name="picId" required />
+                </div>
+                <div class="form-col">
+                  <label for="picPhone"
+                    >Phone Number <span class="required">*</span></label
+                  >
+                  <input type="tel" id="picPhone" name="picPhone" required />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 4: Event Flow -->
+          <div class="section">
+            <div class="section-header">
+              Section 4: Event Flow (Minutes of Meeting)
+            </div>
+            <div class="section-content">
+              <button type="button" class="btn" onclick="addEventFlowRow()">
+                Add New Row
+              </button>
+              <div class="table-container">
+                <table id="eventFlowTable">
+                  <thead>
+                    <tr>
+                      <th>Date <span class="required">*</span></th>
+                      <th>Start Time <span class="required">*</span></th>
+                      <th>End Time <span class="required">*</span></th>
+                      <th>Hours <span class="required">*</span></th>
+                      <th>
+                        Activity Description <span class="required">*</span>
+                      </th>
+                      <th>Remarks</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="eventFlowBody">
+                    <tr>
+                      <td><input type="date" name="flowDate[]" required /></td>
+                      <td>
+                        <input type="time" name="flowStartTime[]" required />
+                      </td>
+                      <td>
+                        <input type="time" name="flowEndTime[]" required />
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          name="flowHours[]"
+                          step="0.5"
+                          required
+                        />
+                      </td>
+                      <td>
+                        <button
+                          type="button"
+                          class="btn btn-secondary"
+                          onclick="addActivityDescription(this)"
+                        >
+                          Add
+                        </button>
+                        <button
+                          type="button"
+                          class="btn"
+                          onclick="viewActivityDescription(this)"
+                        >
+                          View
+                        </button>
+                        <input
+                          type="hidden"
+                          name="activityDescription[]"
+                          value=""
+                        />
+                      </td>
+                      <td><input type="text" name="flowRemarks[]" /></td>
+                      <td>
+                        <button
+                          type="button"
+                          class="btn btn-danger"
+                          onclick="deleteRow(this)"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 5: Committee Members -->
+          <div class="section">
+            <div class="section-header">Section 5: Committee Members</div>
+            <div class="section-content">
+              <button type="button" class="btn" onclick="addCommitteeRow()">
+                Add New Row
+              </button>
+              <div class="table-container">
+                <table id="committeeTable">
+                  <thead>
+                    <tr>
+                      <th>Student ID <span class="required">*</span></th>
+                      <th>Name <span class="required">*</span></th>
+                      <th>Position <span class="required">*</span></th>
+                      <th>Department <span class="required">*</span></th>
+                      <th>Phone <span class="required">*</span></th>
+                      <th>Job Scope <span class="required">*</span></th>
+                      <th>CoCu Claimer <span class="required">*</span></th>
+                      <th>CoCu Statement</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="committeeBody">
+                    <tr>
+                      <td>
+                        <input
+                          type="text"
+                          name="committeeMemberStudentId[]"
+                          required
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="text"
+                          name="committeeMemberName[]"
+                          required
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="text"
+                          name="committeeMemberPosition[]"
+                          required
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="text"
+                          name="committeeMemberDepartment[]"
+                          required
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="tel"
+                          name="committeeMemberPhone[]"
+                          required
+                        />
+                      </td>
+                      <td>
+                        <button
+                          type="button"
+                          class="btn btn-secondary"
+                          onclick="addJobScope(this)"
+                        >
+                          Add
+                        </button>
+                        <button
+                          type="button"
+                          class="btn"
+                          onclick="viewJobScope(this)"
+                        >
+                          View
+                        </button>
+                        <input type="hidden" name="jobScope[]" value="" />
+                      </td>
+                      <td>
+                        <select
+                          name="cocuClaimer[]"
+                          onchange="toggleCocuUpload(this)"
+                          required
+                        >
+                          <option value="">Select</option>
+                          <option value="Yes">Yes</option>
+                          <option value="No">No</option>
+                        </select>
+                      </td>
+                      <td>
+                        <input
+                          type="file"
+                          name="cocuStatement[]"
+                          accept=".pdf"
+                          disabled
+                        />
+                        <div class="file-info">PDF files only, max 2MB</div>
+                      </td>
+                      <td>
+                        <button
+                          type="button"
+                          class="btn btn-danger"
+                          onclick="deleteRow(this)"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 6: Budget -->
+          <div class="section">
+            <div class="section-header">Section 6: Budget</div>
+            <div class="section-content">
+              <button type="button" class="btn" onclick="addBudgetRow()">
+                Add New Row
+              </button>
+              <div class="table-container">
+                <table id="budgetTable">
+                  <thead>
+                    <tr>
+                      <th>Description <span class="required">*</span></th>
+                      <th>Amount <span class="required">*</span></th>
+                      <th>Income/Expense <span class="required">*</span></th>
+                      <th>Remarks</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="budgetBody">
+                    <tr>
+                      <td>
+                        <input
+                          type="text"
+                          name="budgetDescription[]"
+                          required
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          name="budgetAmount[]"
+                          step="0.01"
+                          onchange="calculateBudget()"
+                          required
+                        />
+                      </td>
+                      <td>
+                        <select
+                          name="budgetType[]"
+                          onchange="calculateBudget()"
+                          required
+                        >
+                          <option value="">Select</option>
+                          <option value="Income">Income</option>
+                          <option value="Expense">Expense</option>
+                        </select>
+                      </td>
+                      <td><input type="text" name="budgetRemarks[]" /></td>
+                      <td>
+                        <button
+                          type="button"
+                          class="btn btn-danger"
+                          onclick="deleteBudgetRow(this)"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="budget-summary">
+                <div class="budget-row">
+                  <span>Total Income:</span>
+                  <span id="totalIncome">RM 0.00</span>
+                </div>
+                <div class="budget-row">
+                  <span>Total Expense:</span>
+                  <span id="totalExpense">RM 0.00</span>
+                </div>
+                <div class="budget-row budget-total">
+                  <span>Surplus/Deficit:</span>
+                  <span id="surplusDeficit">RM 0.00</span>
+                </div>
+                <div class="form-group" style="margin-top: 15px">
+                  <label for="preparedBy"
+                    >Prepared By <span class="required">*</span></label
+                  >
+                  <input
+                    type="text"
+                    id="preparedBy"
+                    name="preparedBy"
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 7: Additional Information -->
+          <div class="section">
+            <div class="section-header">Section 7: Additional Information</div>
+            <div class="section-content">
+              <div class="form-row">
+                <div class="form-col">
+                  <label for="alternativeDate"
+                    >Alternative Date <span class="required">*</span></label
+                  >
+                  <input
+                    type="date"
+                    id="alternativeDate"
+                    name="alternativeDate"
+                    required
+                  />
+                </div>
+                <div class="form-col">
+                  <label for="alternativeVenue"
+                    >Alternative Venue <span class="required">*</span></label
+                  >
+                  <select
+                    id="alternativeVenue"
+                    name="alternativeVenue"
+                    required
+                  >
+                    <option value="">Select Alternative Venue</option>
+                    <option value="Auditorium">Auditorium</option>
+                    <option value="Conference Hall">Conference Hall</option>
+                    <option value="Sports Complex">Sports Complex</option>
+                    <option value="Library">Library</option>
+                    <option value="Cafeteria">Cafeteria</option>
+                    <option value="Outdoor Area">Outdoor Area</option>
+                    <option value="Classroom A">Classroom A</option>
+                    <option value="Classroom B">Classroom B</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="additionalDocument"
+                  >Additional Document (Optional)</label
+                >
+                <input
+                  type="file"
+                  id="additionalDocument"
+                  name="additionalDocument"
+                  accept=".pdf,.doc,.docx"
+                />
+                <div class="file-info">PDF, DOC, or DOCX files only</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Form Actions -->
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary">Back</button>
+            <button type="button" class="btn" onclick="previewForm()">
+              Preview
+            </button>
+            <button type="submit" class="btn">Submit Proposal</button>
+          </div>
+        </form>
       </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Modal for Activity Description -->
+    <div id="activityModal" class="modal">
+      <div class="modal-content">
+        <span class="close" onclick="closeModal('activityModal')">&times;</span>
+        <h3>Activity Description</h3>
+        <textarea
+          id="activityTextarea"
+          rows="6"
+          style="width: 100%; margin: 10px 0"
+        ></textarea>
+        <button type="button" class="btn" onclick="saveActivityDescription()">
+          Save
+        </button>
+      </div>
+    </div>
+
+    <!-- Modal for Job Scope -->
+    <div id="jobScopeModal" class="modal">
+      <div class="modal-content">
+        <span class="close" onclick="closeModal('jobScopeModal')">&times;</span>
+        <h3>Job Scope</h3>
+        <textarea
+          id="jobScopeTextarea"
+          rows="6"
+          style="width: 100%; margin: 10px 0"
+        ></textarea>
+        <button type="button" class="btn" onclick="saveJobScope()">Save</button>
+      </div>
+    </div>
+
     <script>
-      let isEditing = false;
-      let originalData = {};
-
-      // Store original data when entering edit mode
-      function storeOriginalData() {
-        originalData = {
-          studentName: document.getElementById("studentName").value,
-          email: document.getElementById("email").value,
-          password: document.getElementById("password").value,
-        };
-      }
-
-      // Toggle edit mode
-      function toggleEdit() {
-        isEditing = !isEditing;
-        const form = document.getElementById("profileForm");
-        const editBtn = document.getElementById("editBtn");
-        const cancelBtn = document.getElementById("cancelBtn");
-        const saveBtn = document.getElementById("saveBtn");
-
-        if (isEditing) {
-          // Store original data
-          storeOriginalData();
-
-          // Enable editable fields
-          document.getElementById("studentName").disabled = false;
-          document.getElementById("email").disabled = false;
-          document.getElementById("password").disabled = false;
-
-          // Update UI
-          form.classList.add("edit-mode");
-          editBtn.style.display = "none";
-          cancelBtn.style.display = "inline-block";
-          saveBtn.style.display = "inline-block";
-
-          showAlert(
-            "Edit mode enabled. You can now modify your Name, Email, and Password.",
-            "info"
-          );
-        }
-      }
-
-      // Cancel edit mode
-      function cancelEdit() {
-        isEditing = false;
-        const form = document.getElementById("profileForm");
-        const editBtn = document.getElementById("editBtn");
-        const cancelBtn = document.getElementById("cancelBtn");
-        const saveBtn = document.getElementById("saveBtn");
-
-        // Restore original data
-        document.getElementById("studentName").value = originalData.studentName;
-        document.getElementById("email").value = originalData.email;
-        document.getElementById("password").value = originalData.password;
-
-        // Disable editable fields
-        document.getElementById("studentName").disabled = true;
-        document.getElementById("email").disabled = true;
-        document.getElementById("password").disabled = true;
-
-        // Update UI
-        form.classList.remove("edit-mode");
-        editBtn.style.display = "inline-block";
-        cancelBtn.style.display = "none";
-        saveBtn.style.display = "none";
-
-        showAlert("Changes cancelled.", "warning");
-      }
-
-      // Toggle password visibility
-      function togglePassword() {
-        const passwordField = document.getElementById("password");
-        const toggleIcon = document.getElementById("passwordToggleIcon");
-
-        if (passwordField.type === "password") {
-          passwordField.type = "text";
-          toggleIcon.classList.remove("fa-eye");
-          toggleIcon.classList.add("fa-eye-slash");
-        } else {
-          passwordField.type = "password";
-          toggleIcon.classList.remove("fa-eye-slash");
-          toggleIcon.classList.add("fa-eye");
-        }
-      }
-
-      // Show alert messages
-      function showAlert(message, type) {
-        const alertContainer = document.getElementById("alertContainer");
-        const alertClass =
-          type === "success"
-            ? "alert-success"
-            : type === "danger"
-            ? "alert-danger"
-            : type === "warning"
-            ? "alert-warning"
-            : "alert-info";
-
-        const alertHtml = `
-                <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
-                    <i class="fas fa-info-circle me-2"></i>
-                    ${message}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            `;
-
-        alertContainer.innerHTML = alertHtml;
-
-        // Auto-dismiss after 5 seconds
-        setTimeout(() => {
-          const alert = alertContainer.querySelector(".alert");
-          if (alert) {
-            alert.classList.remove("show");
-            setTimeout(() => {
-              alertContainer.innerHTML = "";
-            }, 150);
-          }
-        }, 5000);
-      }
-
-      // Handle form submission
+      // Set minimum date to 14 days from today
+      const today = new Date();
+      const minDate = new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000);
+      const minDateString = minDate.toISOString().split("T")[0];
+      document.getElementById("eventDate").setAttribute("min", minDateString);
       document
-        .getElementById("profileForm")
+        .getElementById("alternativeDate")
+        .setAttribute("min", minDateString);
+
+      // Global variables for modal handling
+      let currentActivityRow = null;
+      let currentJobScopeRow = null;
+
+      // Drag and drop functionality for poster upload
+      const posterDropArea = document.getElementById("posterDropArea");
+      const posterInput = document.getElementById("eventPoster");
+
+      posterDropArea.addEventListener("click", () => posterInput.click());
+      posterDropArea.addEventListener("dragover", handleDragOver);
+      posterDropArea.addEventListener("drop", handleDrop);
+      posterInput.addEventListener("change", handleFileSelect);
+
+      function handleDragOver(e) {
+        e.preventDefault();
+        posterDropArea.classList.add("dragover");
+      }
+
+      function handleDrop(e) {
+        e.preventDefault();
+        posterDropArea.classList.remove("dragover");
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+          posterInput.files = files;
+          handleFileSelect();
+        }
+      }
+
+      function handleFileSelect() {
+        const file = posterInput.files[0];
+        if (file) {
+          // Validate file type
+          if (!file.type.match(/image\/(jpeg|jpg|png)/)) {
+            alert("Please select a JPEG or PNG image file.");
+            posterInput.value = "";
+            return;
+          }
+
+          // Validate file size (20MB)
+          if (file.size > 20 * 1024 * 1024) {
+            alert("File size must be less than 20MB.");
+            posterInput.value = "";
+            return;
+          }
+
+          // Show preview
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            const preview = document.getElementById("posterPreview");
+            preview.innerHTML = `
+                        <p><strong>Selected file:</strong> ${file.name}</p>
+                        <img src="${e.target.result}" class="preview-image" alt="Poster Preview">
+                    `;
+          };
+          reader.readAsDataURL(file);
+        }
+      }
+
+      // Event Flow functions
+      function addEventFlowRow() {
+        const tbody = document.getElementById("eventFlowBody");
+        const newRow = tbody.insertRow();
+        newRow.innerHTML = `
+                <td><input type="date" name="flowDate[]" required></td>
+                <td><input type="time" name="flowStartTime[]" required></td>
+                <td><input type="time" name="flowEndTime[]" required></td>
+                <td><input type="number" name="flowHours[]" step="0.5" required></td>
+                <td>
+                    <button type="button" class="btn btn-secondary" onclick="addActivityDescription(this)">Add</button>
+                    <button type="button" class="btn" onclick="viewActivityDescription(this)">View</button>
+                    <input type="hidden" name="activityDescription[]" value="">
+                </td>
+                <td><input type="text" name="flowRemarks[]"></td>
+                <td><button type="button" class="btn btn-danger" onclick="deleteRow(this)">Delete</button></td>
+            `;
+      }
+
+      function addActivityDescription(button) {
+        currentActivityRow = button.closest("tr");
+        document.getElementById("activityTextarea").value = "";
+        document.getElementById("activityModal").style.display = "block";
+      }
+
+      function viewActivityDescription(button) {
+        const row = button.closest("tr");
+        const hiddenInput = row.querySelector(
+          'input[name="activityDescription[]"]'
+        );
+        const description = hiddenInput.value;
+
+        if (description) {
+          alert(description);
+        } else {
+          alert("No activity description added yet.");
+        }
+      }
+
+      function saveActivityDescription() {
+        const description = document.getElementById("activityTextarea").value;
+        if (description.trim() && currentActivityRow) {
+          const hiddenInput = currentActivityRow.querySelector(
+            'input[name="activityDescription[]"]'
+          );
+          hiddenInput.value = description;
+          closeModal("activityModal");
+        }
+      }
+
+      // Committee functions
+      function addCommitteeRow() {
+        const tbody = document.getElementById("committeeBody");
+        const newRow = tbody.insertRow();
+        newRow.innerHTML = `
+                <td><input type="text" name="committeeMemberStudentId[]" required></td>
+                <td><input type="text" name="committeeMemberName[]" required></td>
+                <td><input type="text" name="committeeMemberPosition[]" required></td>
+                <td><input type="text" name="committeeMemberDepartment[]" required></td>
+                <td><input type="tel" name="committeeMemberPhone[]" required></td>
+                <td>
+                    <button type="button" class="btn btn-secondary" onclick="addJobScope(this)">Add</button>
+                    <button type="button" class="btn" onclick="viewJobScope(this)">View</button>
+                    <input type="hidden" name="jobScope[]" value="">
+                </td>
+                <td>
+                    <select name="cocuClaimer[]" onchange="toggleCocuUpload(this)" required>
+                        <option value="">Select</option>
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                    </select>
+                </td>
+                <td>
+                    <input type="file" name="cocuStatement[]" accept=".pdf" disabled>
+                    <div class="file-info">PDF files only, max 2MB</div>
+                </td>
+                <td><button type="button" class="btn btn-danger" onclick="deleteRow(this)">Delete</button></td>
+            `;
+      }
+
+      function addJobScope(button) {
+        currentJobScopeRow = button.closest("tr");
+        document.getElementById("jobScopeTextarea").value = "";
+        document.getElementById("jobScopeModal").style.display = "block";
+      }
+
+      function viewJobScope(button) {
+        const row = button.closest("tr");
+        const hiddenInput = row.querySelector('input[name="jobScope[]"]');
+        const jobScope = hiddenInput.value;
+
+        if (jobScope) {
+          alert(jobScope);
+        } else {
+          alert("No job scope added yet.");
+        }
+      }
+
+      function saveJobScope() {
+        const jobScope = document.getElementById("jobScopeTextarea").value;
+        if (jobScope.trim() && currentJobScopeRow) {
+          const hiddenInput = currentJobScopeRow.querySelector(
+            'input[name="jobScope[]"]'
+          );
+          hiddenInput.value = jobScope;
+          closeModal("jobScopeModal");
+        }
+      }
+
+      function toggleCocuUpload(select) {
+        const row = select.closest("tr");
+        const fileInput = row.querySelector('input[type="file"]');
+
+        if (select.value === "Yes") {
+          fileInput.disabled = false;
+          fileInput.setAttribute("required", "required");
+        } else {
+          fileInput.disabled = true;
+          fileInput.removeAttribute("required");
+          fileInput.value = "";
+        }
+      }
+
+      // Budget functions
+      function addBudgetRow() {
+        const tbody = document.getElementById("budgetBody");
+        const newRow = tbody.insertRow();
+        newRow.innerHTML = `
+                <td><input type="text" name="budgetDescription[]" required></td>
+                <td><input type="number" name="budgetAmount[]" step="0.01" onchange="calculateBudget()" required></td>
+                <td>
+                    <select name="budgetType[]" onchange="calculateBudget()" required>
+                        <option value="">Select</option>
+                        <option value="Income">Income</option>
+                        <option value="Expense">Expense</option>
+                    </select>
+                </td>
+                <td><input type="text" name="budgetRemarks[]"></td>
+                <td><button type="button" class="btn btn-danger" onclick="deleteBudgetRow(this)">Delete</button></td>
+            `;
+      }
+
+      function deleteBudgetRow(button) {
+        const row = button.closest("tr");
+        row.remove();
+        calculateBudget();
+      }
+
+      function calculateBudget() {
+        const amounts = document.querySelectorAll(
+          'input[name="budgetAmount[]"]'
+        );
+        const types = document.querySelectorAll('select[name="budgetType[]"]');
+
+        let totalIncome = 0;
+        let totalExpense = 0;
+
+        amounts.forEach((amount, index) => {
+          const value = parseFloat(amount.value) || 0;
+          const type = types[index].value;
+
+          if (type === "Income") {
+            totalIncome += value;
+          } else if (type === "Expense") {
+            totalExpense += value;
+          }
+        });
+
+        const surplus = totalIncome - totalExpense;
+
+        document.getElementById(
+          "totalIncome"
+        ).textContent = `RM ${totalIncome.toFixed(2)}`;
+        document.getElementById(
+          "totalExpense"
+        ).textContent = `RM ${totalExpense.toFixed(2)}`;
+        document.getElementById(
+          "surplusDeficit"
+        ).textContent = `RM ${surplus.toFixed(2)}`;
+
+        // Change color based on surplus/deficit
+        const surplusElement = document.getElementById("surplusDeficit");
+        if (surplus >= 0) {
+          surplusElement.style.color = "green";
+        } else {
+          surplusElement.style.color = "red";
+        }
+      }
+
+      // General functions
+      function deleteRow(button) {
+        const row = button.closest("tr");
+        const tbody = row.parentElement;
+
+        // Prevent deletion if it's the last row
+        if (tbody.children.length > 1) {
+          row.remove();
+        } else {
+          alert("Cannot delete the last row.");
+        }
+      }
+
+      function closeModal(modalId) {
+        document.getElementById(modalId).style.display = "none";
+      }
+
+      function previewForm() {
+        // Basic validation before preview
+        const form = document.getElementById("proposalForm");
+        if (!form.checkValidity()) {
+          alert("Please fill in all required fields before previewing.");
+          return;
+        }
+
+        // Here you would typically generate a preview
+        alert(
+          "Preview functionality would be implemented here. This would show a formatted view of all entered data."
+        );
+      }
+
+      // Form validation and submission
+      document
+        .getElementById("proposalForm")
         .addEventListener("submit", function (e) {
           e.preventDefault();
 
-          // Validate form
-          const name = document.getElementById("studentName").value.trim();
-          const email = document.getElementById("email").value.trim();
-          const password = document.getElementById("password").value.trim();
-
-          if (!name || !email || !password) {
-            showAlert("Please fill in all required fields.", "danger");
+          // Custom validation
+          if (!validateForm()) {
             return;
           }
 
-          // Email validation
-          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-          if (!emailRegex.test(email)) {
-            showAlert("Please enter a valid email address.", "danger");
-            return;
-          }
+          // If all validations pass
+          alert(
+            "Form submitted successfully! This would typically send the data to your PHP backend."
+          );
 
-          // Password validation
-          if (password.length < 6) {
-            showAlert("Password must be at least 6 characters long.", "danger");
-            return;
-          }
-
-          // Simulate save operation
-          showAlert("Profile updated successfully!", "success");
-
-          // Update header name
-          document.getElementById("profileName").textContent = name;
-          document.getElementById("navStudentName").textContent = name;
-
-          // Exit edit mode
-          isEditing = false;
-          const form = document.getElementById("profileForm");
-          const editBtn = document.getElementById("editBtn");
-          const cancelBtn = document.getElementById("cancelBtn");
-          const saveBtn = document.getElementById("saveBtn");
-
-          // Disable editable fields
-          document.getElementById("studentName").disabled = true;
-          document.getElementById("email").disabled = true;
-          document.getElementById("password").disabled = true;
-
-          // Update UI
-          form.classList.remove("edit-mode");
-          editBtn.style.display = "inline-block";
-          cancelBtn.style.display = "none";
-          saveBtn.style.display = "none";
-
-          // Here you would typically send the data to your PHP backend
-          // Example AJAX call:
-          /*
-            fetch('update_profile.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    name: name,
-                    email: email,
-                    password: password
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showAlert('Profile updated successfully!', 'success');
-                } else {
-                    showAlert('Error updating profile: ' + data.message, 'danger');
-                }
-            })
-            .catch(error => {
-                showAlert('Error updating profile. Please try again.', 'danger');
-            });
-            */
+          // Here you would typically send the form data to your PHP backend
+          // using fetch() or XMLHttpRequest
         });
 
-      // Initialize on page load
-      document.addEventListener("DOMContentLoaded", function () {
-        // You can load user data from PHP here
-        // Example: populate fields with data from $_SESSION or database
+      function validateForm() {
+        let isValid = true;
+        const errors = [];
+
+        // Validate date constraints
+        const eventDate = new Date(document.getElementById("eventDate").value);
+        const altDate = new Date(
+          document.getElementById("alternativeDate").value
+        );
+        const minDate = new Date();
+        minDate.setDate(minDate.getDate() + 14);
+
+        if (eventDate < minDate) {
+          errors.push("Event date must be at least 14 days from today.");
+          isValid = false;
+        }
+
+        if (altDate < minDate) {
+          errors.push("Alternative date must be at least 14 days from today.");
+          isValid = false;
+        }
+
+        // Validate time constraints
+        const startTime = document.getElementById("startTime").value;
+        const endTime = document.getElementById("endTime").value;
+
+        if (startTime && endTime && startTime >= endTime) {
+          errors.push("End time must be after start time.");
+          isValid = false;
+        }
+
+        // Validate poster upload
+        const posterFile = document.getElementById("eventPoster").files[0];
+        if (!posterFile) {
+          errors.push("Event poster is required.");
+          isValid = false;
+        }
+
+        // Validate event flow table
+        const flowDates = document.querySelectorAll('input[name="flowDate[]"]');
+        const activityDescriptions = document.querySelectorAll(
+          'input[name="activityDescription[]"]'
+        );
+
+        flowDates.forEach((input, index) => {
+          if (input.value && !activityDescriptions[index].value) {
+            errors.push(
+              `Activity description is required for event flow row ${
+                index + 1
+              }.`
+            );
+            isValid = false;
+          }
+        });
+
+        // Validate committee members
+        const memberIds = document.querySelectorAll(
+          'input[name="committeeMemberStudentId[]"]'
+        );
+        const jobScopes = document.querySelectorAll('input[name="jobScope[]"]');
+
+        memberIds.forEach((input, index) => {
+          if (input.value && !jobScopes[index].value) {
+            errors.push(
+              `Job scope is required for committee member row ${index + 1}.`
+            );
+            isValid = false;
+          }
+        });
+
+        // Validate CoCu statements
+        const cocuClaimers = document.querySelectorAll(
+          'select[name="cocuClaimer[]"]'
+        );
+        const cocuStatements = document.querySelectorAll(
+          'input[name="cocuStatement[]"]'
+        );
+
+        cocuClaimers.forEach((select, index) => {
+          if (select.value === "Yes" && !cocuStatements[index].files[0]) {
+            errors.push(
+              `CoCu statement is required for committee member row ${
+                index + 1
+              }.`
+            );
+            isValid = false;
+          }
+        });
+
+        // Validate PDF file sizes
+        cocuStatements.forEach((input, index) => {
+          if (input.files[0] && input.files[0].size > 2 * 1024 * 1024) {
+            errors.push(
+              `CoCu statement file size must be less than 2MB for row ${
+                index + 1
+              }.`
+            );
+            isValid = false;
+          }
+        });
+
+        // Validate budget
+        const budgetAmounts = document.querySelectorAll(
+          'input[name="budgetAmount[]"]'
+        );
+        const budgetTypes = document.querySelectorAll(
+          'select[name="budgetType[]"]'
+        );
+
+        let hasValidBudgetRow = false;
+        budgetAmounts.forEach((input, index) => {
+          if (input.value && budgetTypes[index].value) {
+            hasValidBudgetRow = true;
+          }
+        });
+
+        if (!hasValidBudgetRow) {
+          errors.push("At least one budget item is required.");
+          isValid = false;
+        }
+
+        // Show errors if any
+        if (errors.length > 0) {
+          alert("Please fix the following errors:\n\n" + errors.join("\n"));
+        }
+
+        return isValid;
+      }
+
+      // File validation for CoCu statements
+      document.addEventListener("change", function (e) {
+        if (e.target.name === "cocuStatement[]") {
+          const file = e.target.files[0];
+          if (file) {
+            if (file.type !== "application/pdf") {
+              alert("Please select a PDF file.");
+              e.target.value = "";
+              return;
+            }
+
+            if (file.size > 2 * 1024 * 1024) {
+              alert("File size must be less than 2MB.");
+              e.target.value = "";
+              return;
+            }
+          }
+        }
       });
+
+      // Close modals when clicking outside
+      window.addEventListener("click", function (e) {
+        const activityModal = document.getElementById("activityModal");
+        const jobScopeModal = document.getElementById("jobScopeModal");
+
+        if (e.target === activityModal) {
+          closeModal("activityModal");
+        }
+
+        if (e.target === jobScopeModal) {
+          closeModal("jobScopeModal");
+        }
+      });
+
+      // Initialize budget calculation
+      calculateBudget();
     </script>
   </body>
 </html>

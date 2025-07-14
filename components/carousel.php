@@ -29,7 +29,7 @@
         </div>
     <?php else: ?>
         <div class="carousel-item active">
-            <img src="https://via.placeholder.com/800x300/CCCCCC/000000?text=No+Upcoming+Event" class="d-block w-100" />
+            <!-- <img src="../assets/img/PlaceHolder.png" class="d-block w-100" />-- Placeholder image -->
             <div class="carousel-caption d-none d-md-block">
                 <h5>No Events Found</h5>
                 <p>You're all caught up!</p>
