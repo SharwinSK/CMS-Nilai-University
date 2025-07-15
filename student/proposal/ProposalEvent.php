@@ -1,3 +1,47 @@
+<?php
+session_start();
+include('../../db/dbconfig.php'); // adjust path as needed
+
+$mode = isset($_GET['mode']) ? $_GET['mode'] : 'create';
+
+$stu_id = $_SESSION['Stu_ID'];
+$student_result = $conn->query("SELECT Stu_Name FROM student WHERE Stu_ID =
+'$stu_id'");
+$student = $student_result->fetch_assoc();
+$club_result =
+    $conn->query("SELECT Club_ID, Club_Name FROM club");
+$venue_result =
+    $conn->query("SELECT Venue_ID, Venue_Name FROM venue ORDER BY Venue_Name");
+$venues = [];
+$venue_query = $conn->query("SELECT Venue_ID, Venue_Name FROM
+venue ORDER BY Venue_Name");
+while ($v = $venue_query->fetch_assoc()) {
+    $venues[] = $v;
+}
+$action = '';
+$submit_label = '';
+$is_edit = false;
+if (
+    $mode
+    === 'create'
+) {
+    $action = 'ProposalHandler.php?mode=create';
+    $submit_label =
+        'Submit Proposal';
+} elseif ($mode === 'edit') {
+    $action =
+        'ProposalHandler.php?mode=edit&id=' . $_GET['id'];
+    $submit_label = 'Update
+Proposal';
+    $is_edit = true;
+} elseif ($mode === 'modify') {
+    $action =
+        'ProposalHandler.php?mode=modify&id=' . $_GET['id'];
+    $submit_label = 'Resubmit
+Proposal';
+    $is_edit = true;
+} ?>
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -5,6 +49,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Proposal Form - Nilai University CMS</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         * {
             margin: 0;
@@ -410,7 +456,7 @@
         </div>
 
         <div class="form-container">
-            <form id="proposalForm">
+            <form method="POST" enctype="multipart/form-data" action="ProposalHandler.php?mode=create">
                 <!-- Section 1: Student Information -->
                 <div class="section">
                     <h2 class="section-title">Student Information</h2>
@@ -418,29 +464,20 @@
                         <div class="form-col">
                             <div class="form-group">
                                 <label for="studentName" class="required">Student Name</label>
-                                <input type="text" id="studentName" name="studentName" required />
+                                <input type="text" name="student_name" value="<?= $student['Stu_Name'] ?>" readonly />
                                 <div class="error-message">Please enter student name</div>
                             </div>
                         </div>
                         <div class="form-col">
                             <div class="form-group">
                                 <label for="club" class="required">Club</label>
-                                <select id="club" name="club" required>
-                                    <option value="">Select Club</option>
-                                    <option value="Computer Science Club">
-                                        Computer Science Club
-                                    </option>
-                                    <option value="Business Club">Business Club</option>
-                                    <option value="Engineering Society">
-                                        Engineering Society
-                                    </option>
-                                    <option value="Arts & Design Club">
-                                        Arts & Design Club
-                                    </option>
-                                    <option value="Sports Club">Sports Club</option>
-                                    <option value="Debate Society">Debate Society</option>
-                                    <option value="Music Club">Music Club</option>
-                                    <option value="Photography Club">Photography Club</option>
+                                <select name="club" class="form-select" required>
+                                    <option value="">-- Select Club --</option>
+                                    <?php while ($club = $club_result->fetch_assoc()): ?>
+                                        <option value="<?= $club['Club_ID'] ?>">
+                                            <?= $club['Club_Name'] ?>
+                                        </option>
+                                    <?php endwhile; ?>
                                 </select>
                                 <div class="error-message">Please select a club</div>
                             </div>
@@ -448,7 +485,7 @@
                         <div class="form-col">
                             <div class="form-group">
                                 <label for="studentId" class="required">Student ID</label>
-                                <input type="text" id="studentId" name="studentId" required />
+                                <input type="text" name="student_id" value="<?= $stu_id ?>" readonly />
                                 <div class="error-message">Please enter student ID</div>
                             </div>
                         </div>
@@ -545,15 +582,13 @@
                         <div class="form-col">
                             <div class="form-group">
                                 <label for="venue" class="required">Venue</label>
-                                <select id="venue" name="venue" required>
-                                    <option value="">Select Venue</option>
-                                    <option value="Main Hall">Main Hall</option>
-                                    <option value="Conference Room A">Conference Room A</option>
-                                    <option value="Conference Room B">Conference Room B</option>
-                                    <option value="Sports Complex">Sports Complex</option>
-                                    <option value="Library Hall">Library Hall</option>
-                                    <option value="Outdoor Field">Outdoor Field</option>
-                                    <option value="Auditorium">Auditorium</option>
+                                <select name="venue" class="form-select" required>
+                                    <option value="">-- Select Main Venue --</option>
+                                    <?php foreach ($venues as $v): ?>
+                                        <option value="<?= $v['Venue_ID'] ?>">
+                                            <?= $v['Venue_Name'] ?>
+                                        </option>
+                                    <?php endforeach; ?>
                                 </select>
                                 <div class="error-message">Please select venue</div>
                             </div>
@@ -612,9 +647,6 @@
                 <!-- Section 4: Event Flow -->
                 <div class="section">
                     <h2 class="section-title">Event Flow (Minutes of Meeting)</h2>
-                    <button type="button" class="btn btn-add" id="addEventFlowBtn">
-                        + Add New Row
-                    </button>
                     <div class="table-container">
                         <table id="eventFlowTable">
                             <thead>
@@ -632,6 +664,13 @@
                                 <!-- Rows will be added dynamically -->
                             </tbody>
                         </table>
+
+                        <button type="button" class="btn btn-add" id="addEventFlowBtn">
+                            + Add New Row
+                        </button>
+                    </div>
+                    <div id="hoursStatus" style="margin-top: 10px; font-weight: bold; color: #2d4f2b">
+                        🕒 40 hours remaining to reach minimum requirement
                     </div>
                 </div>
 
@@ -641,9 +680,7 @@
                     <div class="file-info">
                         Note: Shall upload PDF files only, maximum file size: 2MB
                     </div>
-                    <button type="button" class="btn btn-add" id="addCommitteeBtn">
-                        + Add New Row
-                    </button>
+
                     <div class="table-container">
                         <table id="committeeTable">
                             <thead>
@@ -663,15 +700,16 @@
                                 <!-- Rows will be added dynamically -->
                             </tbody>
                         </table>
+                        <button type="button" class="btn btn-add" id="addCommitteeBtn">
+                            + Add New Row
+                        </button>
                     </div>
                 </div>
 
                 <!-- Section 6: Budget -->
                 <div class="section">
                     <h2 class="section-title">Budget</h2>
-                    <button type="button" class="btn btn-add" id="addBudgetBtn">
-                        + Add New Row
-                    </button>
+
                     <div class="table-container">
                         <table id="budgetTable">
                             <thead>
@@ -687,6 +725,9 @@
                                 <!-- Rows will be added dynamically -->
                             </tbody>
                         </table>
+                        <button type="button" class="btn btn-add" id="addBudgetBtn">
+                            + Add New Row
+                        </button>
                     </div>
                     <div class="budget-summary">
                         <h4>Budget Summary</h4>
@@ -728,15 +769,13 @@
                         <div class="form-col">
                             <div class="form-group">
                                 <label for="alternativeVenue" class="required">Alternative Venue</label>
-                                <select id="alternativeVenue" name="alternativeVenue" required>
-                                    <option value="">Select Alternative Venue</option>
-                                    <option value="Main Hall">Main Hall</option>
-                                    <option value="Conference Room A">Conference Room A</option>
-                                    <option value="Conference Room B">Conference Room B</option>
-                                    <option value="Sports Complex">Sports Complex</option>
-                                    <option value="Library Hall">Library Hall</option>
-                                    <option value="Outdoor Field">Outdoor Field</option>
-                                    <option value="Auditorium">Auditorium</option>
+                                <select name="altVenue" class="form-select">
+                                    <option value="">-- Select Alternative Venue --</option>
+                                    <?php foreach ($venues as $v): ?>
+                                        <option value="<?= $v['Venue_ID'] ?>">
+                                            <?= $v['Venue_Name'] ?>
+                                        </option>
+                                    <?php endforeach; ?>
                                 </select>
                                 <div class="error-message">
                                     Please select alternative venue
@@ -816,6 +855,7 @@
             addEventFlowRow();
             addCommitteeRow();
             addBudgetRow();
+            updateRemainingHours(); // 👉 Add this to calculate hours immediately
         }
 
         function setupEventListeners() {
@@ -948,6 +988,7 @@
                 <td><button type="button" class="btn btn-danger btn-sm" onclick="deleteRow(this)">Delete</button></td>
             `;
 
+            updateRemainingHours();
             tbody.appendChild(row);
 
             // Calculate hours automatically
@@ -961,11 +1002,32 @@
                     const end = new Date(`2000-01-01T${endInput.value}`);
                     const diff = (end - start) / (1000 * 60 * 60);
                     hoursInput.value = diff > 0 ? diff.toFixed(1) : 0;
+                } else {
+                    hoursInput.value = 0;
                 }
+                updateRemainingHours();
             }
 
             startInput.addEventListener("change", calculateHours);
             endInput.addEventListener("change", calculateHours);
+        }
+
+        function updateRemainingHours() {
+            const totalHours = getTotalEventFlowHours();
+            const hoursStatus = document.getElementById("hoursStatus");
+            const remaining = 40 - totalHours;
+
+            if (totalHours >= 40) {
+                hoursStatus.textContent = `✅ Minimum requirement met: ${totalHours.toFixed(
+                    1
+                )} hours`;
+                hoursStatus.style.color = "#27ae60"; // green
+            } else {
+                hoursStatus.textContent = `🕒 ${remaining.toFixed(
+                    1
+                )} hours remaining to reach minimum requirement`;
+                hoursStatus.style.color = "#e67e22"; // orange
+            }
         }
 
         function addCommitteeRow() {
@@ -977,7 +1039,41 @@
                 <td><input type="text" name="committeeId[]" required></td>
                 <td><input type="text" name="committeeName[]" required></td>
                 <td><input type="text" name="committeePosition[]" required></td>
-                <td><input type="text" name="committeeDepartment[]" required></td>
+                <td>
+  <select class="form-select" name="committeeDepartment[]" required>
+    <option value="">Department</option>
+    <option value="Foundation in Business">Foundation in Business</option>
+    <option value="Foundation in Science">Foundation in Science</option>
+    <option value="DCS">Diploma in Computer Science</option>
+    <option value="DIA">Diploma in Accounting</option>
+    <option value="DAME">Diploma in Aircraft Maintenance Engineering</option>
+    <option value="DIT">Diploma in Information Technology</option>
+    <option value="DHM">Diploma in Hotel Management</option>
+    <option value="DCA">Diploma in Culinary Arts</option>
+    <option value="DBA">Diploma in Business Adminstration</option>
+    <option value="DIN">Diploma in Nursing</option>
+    <option value="BOF">Bachelor of Finance</option>
+    <option value="BAAF">Bachelor of Arts in Accounting & Finance</option>
+    <option value="BBAF">Bachelor of Business Adminstration in Finance</option>
+    <option value="BSB">Bachelor of Science Biotechonology</option>
+    <option value="BCSAI">Bachelor of Computer Science Artificial Intelligence</option>
+    <option value="BITC">Bachelor of Information Technology Cybersecurity</option>
+    <option value="BSE">Bachelor of Software Engineering</option>
+    <option value="BCSDS">Bachelor of Computer Science Data Science</option>
+    <option value="BIT">Bachelor of Information Technology</option>
+    <option value="BITIECC">Bachelor of Information Technology Internet Engineering and Cloud Computing</option>
+    <option value="BEM">Bachelor of Event Management</option>
+    <option value="BHMBM">Bachelor of Hospitality Management with Business Management</option>
+    <option value="BBAGL">Bachelor of Business Administration in Global Logistic</option>
+    <option value="BBADM">Bachelor of Business Administration in Digital Marketing</option>
+    <option value="BBAM">Bachelor of Business Administration in Marketing</option>
+    <option value="BBAMT">Bachelor of Business Administration in Management</option>
+    <option value="BBAIB">Bachelor of Business Administration in International Business</option>
+    <option value="BBAHRM">Bachelor of Business Administration in Human Resource Management</option>
+    <option value="BBA">Bachelor of Business Administration</option>
+    <option value="BSN">Bachelor of Science in Nursing</option>
+  </select>
+</td>
                 <td><input type="tel" name="committeePhone[]" required></td>
                 <td>
                     <div style="display: flex; gap: 5px;">
@@ -1109,7 +1205,19 @@
         function viewActivityDescription(rowId) {
             const description = document.getElementById("activity_" + rowId).value;
             if (description) {
-                alert("Activity Description:\n\n" + description);
+                Swal.fire({
+                    title: "Activity Description",
+                    text: description,
+                    icon: "info",
+                    confirmButtonText: "Close",
+                });
+            } else {
+                Swal.fire({
+                    title: "No Description",
+                    text: "No description has been added for this activity yet.",
+                    icon: "warning",
+                    confirmButtonText: "OK",
+                });
             }
         }
 
@@ -1128,7 +1236,19 @@
         function viewJobScope(rowId) {
             const jobScope = document.getElementById("jobScope_" + rowId).value;
             if (jobScope) {
-                alert("Job Scope:\n\n" + jobScope);
+                Swal.fire({
+                    title: "Job Scope Description",
+                    text: jobScope,
+                    icon: "info",
+                    confirmButtonText: "Close",
+                });
+            } else {
+                Swal.fire({
+                    title: "No Description",
+                    text: "No job scope has been added yet.",
+                    icon: "warning",
+                    confirmButtonText: "OK",
+                });
             }
         }
 
@@ -1264,6 +1384,12 @@
                 submitBtn.textContent = "Submitting...";
                 submitBtn.disabled = true;
 
+                const totalHours = getTotalEventFlowHours();
+                if (totalHours < 40) {
+                    alert("You must have at least 40 total event hours.");
+                    return false;
+                }
+
                 // Simulate form submission
                 setTimeout(() => {
                     alert("Proposal submitted successfully!");
@@ -1311,6 +1437,58 @@
                     console.log("Auto-saving form data...");
                 }, 5000);
             });
+
+        function getTotalEventFlowHours() {
+            const hourInputs = document.querySelectorAll(
+                'input[name="eventFlowHours[]"]'
+            );
+            let total = 0;
+            hourInputs.forEach((input) => {
+                total += parseFloat(input.value) || 0;
+            });
+            return total;
+        }
+
+        document
+            .getElementById("proposalForm")
+            .addEventListener("submit", function (e) {
+                e.preventDefault(); // Prevent auto-submit
+
+                const totalHours = calculateTotalHours(); // Use our own function
+                if (totalHours < 40) {
+                    Swal.fire({
+                        icon: "error",
+                        title: "Minimum 40 Hours Required",
+                        text: `You only have ${totalHours} hours. Minimum 40 hours needed.`,
+                    });
+                    return; // Stop here if not enough hours
+                }
+
+                // SweetAlert confirmation
+                Swal.fire({
+                    title: "Submit Proposal?",
+                    text: "Once submitted, you can only modify it if rejected.",
+                    icon: "question",
+                    showCancelButton: true,
+                    confirmButtonText: "Yes, Submit",
+                    cancelButtonText: "Cancel",
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        document.getElementById("proposalForm").submit(); // Proceed to submit
+                    }
+                });
+            });
+
+        function calculateTotalHours() {
+            let total = 0;
+            document.querySelectorAll(".hours-input").forEach((input) => {
+                const val = parseFloat(input.value);
+                if (!isNaN(val)) {
+                    total += val;
+                }
+            });
+            return total;
+        }
     </script>
 </body>
 

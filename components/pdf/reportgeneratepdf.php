@@ -1,7 +1,7 @@
 <?php
-require_once('TCPDF-main/tcpdf.php');
-require_once('fpdi/src/autoload.php');
-include('dbconfig.php');
+require_once('../../TCPDF-main/tcpdf.php');
+require_once('../../fpdi/src/autoload.php');
+include('../../db/dbconfig.php'); // Adjust path if needed
 session_start();
 
 use setasign\Fpdi\Tcpdf\Fpdi;

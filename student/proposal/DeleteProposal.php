@@ -1,42 +1,50 @@
 <?php
 session_start();
-include('dbconfig.php');
+include('../../db/dbconfig.php');
+
+header('Content-Type: application/json');
 
 if (!isset($_SESSION['Stu_ID'])) {
-    header("Location: StudentLogin.php");
+    echo json_encode(['success' => false, 'message' => 'Not logged in']);
     exit();
 }
 
-if (isset($_GET['event_id'])) {
-    $event_id = intval($_GET['event_id']); 
-    $stu_id = $_SESSION['Stu_ID']; 
+if (isset($_POST['event_id'])) {
+    $event_id = $_POST['event_id']; // no intval here
+    $stu_id = $_SESSION['Stu_ID'];
 
-    $check_query = "SELECT * FROM events WHERE Ev_ID = ? AND Stu_ID = ? AND 
-    (Ev_Status = 'Sent Back by Advisor' OR Ev_Status = 'Rejected by Coordinator')";
+    // Validate the event belongs to the student and is rejected
+    $check_query = "
+        SELECT * FROM events 
+        WHERE Ev_ID = ? AND Stu_ID = ? 
+        AND Status_ID IN (
+            SELECT Status_ID FROM eventstatus 
+            WHERE Status_Name = 'Rejected by Advisor' OR Status_Name = 'Rejected by Coordinator'
+        )
+    ";
     $stmt = $conn->prepare($check_query);
-    $stmt->bind_param("ii", $event_id, $stu_id);
+    $stmt->bind_param("ss", $event_id, $stu_id);
     $stmt->execute();
     $result = $stmt->get_result();
 
-    if ($result->num_rows > 0) {
+    if ($result && $result->num_rows > 0) {
+        // Proceed to delete
         $delete_query = "DELETE FROM events WHERE Ev_ID = ?";
         $delete_stmt = $conn->prepare($delete_query);
-        $delete_stmt->bind_param("i", $event_id);
+        $delete_stmt->bind_param("s", $event_id); // use 's' here
 
         if ($delete_stmt->execute()) {
-            $_SESSION['message'] = "Proposal deleted successfully.";
+            echo json_encode(['success' => true]);
         } else {
-            $_SESSION['message'] = "Error deleting the proposal.";
+            echo json_encode(['success' => false, 'message' => 'Failed to delete']);
         }
         $delete_stmt->close();
     } else {
-        $_SESSION['message'] = "Invalid request. Proposal cannot be deleted.";
+        echo json_encode(['success' => false, 'message' => 'Invalid or unauthorized delete']);
     }
+
     $stmt->close();
 } else {
-    $_SESSION['message'] = "Invalid request. Event ID missing.";
+    echo json_encode(['success' => false, 'message' => 'Missing event_id']);
 }
-
-header("Location: ProgressPage.php");
-exit();
 ?>

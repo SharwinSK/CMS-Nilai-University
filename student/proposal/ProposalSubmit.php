@@ -1,5 +1,5 @@
 <?php
-include('dbconfig.php');
+include('../../db/dbconfig.php'); // adjust path as needed
 //include('sendMailTemplates.php');
 session_start();
 
@@ -30,7 +30,7 @@ $event_id = $new_num . '/' . $year_suffix;
 $poster = null;
 
 if (!empty($_FILES["poster"]["name"])) {
-    $target_dir = "uploads/posters/";
+    $target_dir = "../../uploads/poster/";
     $target_file = $target_dir . basename($_FILES["poster"]["name"]);
 
     if (move_uploaded_file($_FILES["poster"]["tmp_name"], $target_file)) {
@@ -45,7 +45,7 @@ $additional_info_path = null;
 if (!empty($_FILES["ev_additional_info"]["name"])) {
     $file_name = $_FILES["ev_additional_info"]["name"];
     $file_tmp = $_FILES["ev_additional_info"]["tmp_name"];
-    $target_dir = "uploads/additional/";
+    $target_dir = "../../uploads/additional/";
     $unique_name = time() . '_' . basename($file_name);
     $target_path = $target_dir . $unique_name;
 
@@ -158,7 +158,7 @@ foreach ($_POST['student_name'] as $index => $name) {
         if (!empty($cocuupload) && !empty($tmpPath)) {
             $ext = pathinfo($cocuupload, PATHINFO_EXTENSION);
             $uniqueName = $id . '_cocu_' . time() . '.' . $ext;
-            $target_dir = "uploads/cocustatement/";
+            $target_dir = "../../uploads/cocustatement/";
             $target_file = $target_dir . $uniqueName;
 
             if (move_uploaded_file($tmpPath, $target_file)) {
@@ -251,7 +251,7 @@ $stmt->close();
 
 
 
-
+/*
 // Fetch advisor info
 $advisorQuery = "
     SELECT a.Adv_Name, a.Adv_Email 
@@ -281,7 +281,7 @@ if ($advisorData) {
     // Send email notification to advisor
     newProposalToAdvisor($studentName, $ev_name, $advisorName, $advisorEmail);
 }
-
+*/
 ?>
 
 <!DOCTYPE html>
@@ -371,7 +371,7 @@ if ($advisorData) {
         <h1>Thank You!</h1>
         <p>Your submission has been sent successfully.</p>
         <p><strong>Event ID: <?php echo $event_id; ?></strong></p>
-        <a href="StudentDashboard.php" class="btn btn-return">Return to Dashboard</a>
+        <a href="../StudentDashboard.php" class="btn btn-return">Return to Dashboard</a>
         <a href="generate_pdf.php?id=<?php echo $event_id; ?>" class="btn btn-primary">Export to PDF</a>
         <p class="mt-4 text-muted">
             <small>

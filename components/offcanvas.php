@@ -18,11 +18,12 @@
             <span>Profile</span>
         </a>
         <a class="sidebar-item <?= ($currentPage == 'proposal') ? 'active' : '' ?>"
-            href="../student/proposal/ProposalEvent.php">
+            href="../student/proposal/ProposalEvent.php?mode=create">
             <i class="fas fa-file-alt"></i>
             <span>Create Proposal</span>
         </a>
-        <a class="sidebar-item <?= ($currentPage == 'postmortem') ? 'active' : '' ?>" href="../student/Postmortem.php">
+        <a class="sidebar-item <?= ($currentPage == 'postmortem') ? 'active' : '' ?>"
+            href="../student/postevent/PostmortemView.php">
             <i class="fas fa-calendar-plus"></i>
             <span>Create Post Event</span>
         </a>

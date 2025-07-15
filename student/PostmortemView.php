@@ -1,6 +1,6 @@
 <?php
 session_start();
-include('dbconfig.php');
+include('../../db/dbconfig.php'); // adjust path as needed
 include('LogoutDesign.php');
 
 // Ensure the student is logged in
