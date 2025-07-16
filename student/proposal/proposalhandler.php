@@ -30,7 +30,9 @@ if (!empty($_FILES["eventPoster"]["name"])) {
     if (!is_dir($target_dir))
         mkdir($target_dir, 0777, true);
 
-    $target_file = $target_dir . basename($_FILES["eventPoster"]["name"]);
+    $original_name = basename($_FILES["eventPoster"]["name"]);
+    $safe_name = preg_replace("/[^a-zA-Z0-9\._-]/", "", $original_name);
+    $target_file = $target_dir . time() . '_' . $safe_name;
     if (move_uploaded_file($_FILES["eventPoster"]["tmp_name"], $target_file)) {
         $poster = $target_file;
     } else {
@@ -45,8 +47,11 @@ if (!empty($_FILES["additionalDocument"]["name"])) {
     if (!is_dir($target_dir))
         mkdir($target_dir, 0777, true);
 
-    $unique_name = time() . '_' . basename($_FILES["additionalDocument"]["name"]);
+    $original_name = basename($_FILES["additionalDocument"]["name"]);
+    $safe_name = preg_replace("/[^a-zA-Z0-9\._-]/", "", $original_name);
+    $unique_name = time() . '_' . $safe_name;
     $target_path = $target_dir . $unique_name;
+
 
     if (move_uploaded_file($_FILES["additionalDocument"]["tmp_name"], $target_path)) {
         $additional_info_path = $target_path;
@@ -135,7 +140,8 @@ foreach ($_POST['committeeName'] as $index => $name) {
         $tmp = $_FILES['cocuStatement']['tmp_name'][$fileIndex];
 
         if (!empty($filename) && !empty($tmp)) {
-            $ext = pathinfo($filename, PATHINFO_EXTENSION);
+            $safe_filename = preg_replace("/[^a-zA-Z0-9\._-]/", "", $filename);
+            $ext = pathinfo($safe_filename, PATHINFO_EXTENSION);
             $unique = $id . '_cocu_' . time() . '.' . $ext;
             $dest = $cocu_dir . $unique;
 

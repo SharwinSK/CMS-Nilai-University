@@ -23,7 +23,7 @@
             <span>Create Proposal</span>
         </a>
         <a class="sidebar-item <?= ($currentPage == 'postmortem') ? 'active' : '' ?>"
-            href="../student/postevent/PostmortemView.php">
+            href="../student/PostmortemView.php">
             <i class="fas fa-calendar-plus"></i>
             <span>Create Post Event</span>
         </a>
@@ -35,7 +35,7 @@
             <i class="fas fa-history"></i>
             <span>History</span>
         </a>
-        <a class="sidebar-item <?= ($currentPage == 'guide') ? 'active' : '' ?>" href="#">
+        <a class="sidebar-item <?= ($currentPage == 'guide') ? 'active' : '' ?>" href="../student/userguide.php">
             <i class="fas fa-question-circle"></i>
             <span>User Guide</span>
         </a>

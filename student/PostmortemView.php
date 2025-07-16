@@ -1,173 +1,478 @@
 <?php
 session_start();
-include('../../db/dbconfig.php'); // adjust path as needed
-include('LogoutDesign.php');
+include('../db/dbconfig.php');
+$currentPage = 'history'; // Set current page for active sidebar item
 
-// Ensure the student is logged in
 if (!isset($_SESSION['Stu_ID'])) {
-    header("Location: StudentLogin.php");
+    header("Location: ../studentlogin.php");
     exit();
 }
 
-// Fetch student ID from session
 $stu_id = $_SESSION['Stu_ID'];
-
-// Fetch events approved by the coordinator but without a submitted postmortem
-$approved_events_query = "
-    SELECT e.Ev_ID, e.Ev_Name, e.Ev_Date, c.Club_Name 
-    FROM events e
-    JOIN club c ON e.Club_ID = c.Club_ID
-    JOIN eventstatus es ON e.Status_ID = es.Status_ID
-    WHERE e.Stu_ID = '$stu_id' 
-      AND es.Status_Name = 'Approved by Coordinator'
-      AND NOT EXISTS (
-          SELECT 1 
-          FROM eventpostmortem ep
-          JOIN eventstatus eps ON ep.Status_ID = eps.Status_ID
-          WHERE ep.Ev_ID = e.Ev_ID 
-          AND eps.Status_Name IN ('Postmortem Pending Review', 'Postmortem Approved')
-      )
-";
-
-
-$approved_events_result = $conn->query($approved_events_query);
-$start_time = microtime(true);
+$student_name = $_SESSION['Stu_Name'];
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CMS GA Postmortem Report</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="styleMain.css">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Post Event View - Nilai University CMS</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
     <style>
-        .table thead th {
-            background-color: #54C392;
-            border-color: rgb(0, 0, 0);
-            text-align: center;
-
+        :root {
+            --primary-light: #d5fdff;
+            --primary-medium: #9de5ff;
+            --primary-dark: #aca8ff;
+            --primary-purple: #ac73ff;
         }
 
-        .table tbody td,
-        .table tbody tr {
-            background-color: #D2FF72;
-            text-align: center;
-            border-color: rgb(0, 0, 0);
-            /* Light gray border */
+        body {
+            background: linear-gradient(135deg,
+                    var(--primary-light) 0%,
+                    var(--primary-medium) 100%);
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
         }
 
+        .navbar {
+            background: linear-gradient(90deg,
+                    var(--primary-purple) 0%,
+                    var(--primary-dark) 100%);
+            box-shadow: 0 4px 15px rgba(172, 115, 255, 0.2);
+        }
 
-        .btn-create {
-            background-color: #32CD32;
+        .navbar-brand {
+            font-weight: bold;
+            color: white !important;
+            font-size: 1.3rem;
+        }
+
+        .navbar-nav .nav-link {
+            color: white !important;
+            font-weight: 500;
+        }
+
+        .dropdown-menu {
+            background: var(--primary-light);
+            border: none;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            right: 0;
+            left: auto;
+        }
+
+        .offcanvas {
+            background: linear-gradient(180deg,
+                    var(--primary-light) 0%,
+                    var(--primary-medium) 100%);
+            border-right: 3px solid var(--primary-purple);
+        }
+
+        .offcanvas-header {
+            background: var(--primary-purple);
             color: white;
-            border-radius: 8px;
-            transition: transform 0.2s, background-color 0.3s;
         }
 
-        .btn-create:hover {
-            background-color: #15B392;
-            transform: scale(1.05);
+        .offcanvas-body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-footer {
+            padding: 10px;
+        }
+
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            border-radius: 12px;
+            color: black;
+            text-decoration: none;
+            font-weight: 500;
+            transition: 0.3s;
+        }
+
+        .sidebar-item:hover {
+            background-color: var(--primary-purple);
+            color: white;
+        }
+
+        .sidebar-item.active {
+            background-color: var(--primary-purple);
+            color: white;
+        }
+
+        .main-content {
+            margin-top: 20px;
+            padding: 0 20px;
+        }
+
+        .page-header {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border-top: 5px solid var(--primary-purple);
+        }
+
+        .page-title {
+            color: var(--primary-purple);
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .page-subtitle {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .events-card {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border-top: 5px solid var(--primary-purple);
+        }
+
+        .table-responsive {
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .table {
+            margin-bottom: 0;
+        }
+
+        .table thead {
+            background: linear-gradient(90deg,
+                    var(--primary-purple) 0%,
+                    var(--primary-dark) 100%);
+            color: white;
+        }
+
+        .table thead th {
+            border: none;
+            padding: 15px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 0.85rem;
+        }
+
+        .table tbody tr {
+            transition: all 0.3s ease;
+        }
+
+        .table tbody tr:hover {
+            background-color: var(--primary-light);
+            transform: scale(1.01);
+        }
+
+        .table tbody td {
+            padding: 15px;
+            vertical-align: middle;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .btn-create-report {
+            background: linear-gradient(45deg,
+                    var(--primary-purple) 0%,
+                    var(--primary-dark) 100%);
+            border: none;
+            border-radius: 25px;
+            padding: 8px 20px;
+            color: white;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            font-size: 0.85rem;
+        }
+
+        .btn-create-report:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(172, 115, 255, 0.4);
+            color: white;
+        }
+
+        .event-id {
+            font-weight: bold;
+            color: var(--primary-purple);
+        }
+
+        .event-name {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .club-name {
+            color: #666;
+            font-style: italic;
+        }
+
+        .event-date {
+            color: #555;
+            font-size: 0.9rem;
+        }
+
+        .no-events {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .no-events i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            color: var(--primary-purple);
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 0 10px;
+            }
+
+            .page-header,
+            .events-card {
+                padding: 20px;
+                margin-bottom: 20px;
+            }
+
+            .table thead th,
+            .table tbody td {
+                padding: 10px 8px;
+                font-size: 0.8rem;
+            }
+
+            .btn-create-report {
+                padding: 6px 15px;
+                font-size: 0.75rem;
+            }
+
+            .page-title {
+                font-size: 1.5rem;
+            }
+        }
+
+        @media (max-width: 576px) {
+
+            .table thead th:nth-child(3),
+            .table tbody td:nth-child(3) {
+                display: none;
+            }
+
+            .table thead th,
+            .table tbody td {
+                padding: 8px 5px;
+                font-size: 0.75rem;
+            }
         }
     </style>
 </head>
 
 <body>
-    <!-- Top Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark">
-        <div class="container-fluid">
-            <button class="btn btn-outline-light me-2" data-bs-toggle="offcanvas" data-bs-target="#sidebar">
-                ☰
-            </button>
-            <a class="navbar-brand" href="StudentDashboard.php">
-                <img src="NU logo.png" alt="System Logo"> Report List
+    <!-- Sidebar -->
+    <div class="offcanvas offcanvas-start" tabindex="-1" id="sidebar">
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title">
+                <i class="fas fa-user-graduate me-2"></i>
+                Student Panel
+            </h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+        </div>
+        <div class="offcanvas-body">
+            <a class="sidebar-item" href="../student/StudentDashboard.php">
+                <i class="fas fa-home"></i>
+                <span>Home</span>
             </a>
-            <div class="dropdown ms-auto">
-                <button class="btn btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                    <?php echo $_SESSION['Stu_Name']; ?>
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end">
-                    <li><a class="dropdown-item" href="StudentProfile.php">Profile</a></li>
-                    <li>
-                        <hr class="dropdown-divider">
-                    </li>
-                    <li><a class="dropdown-item text-danger" href="#" data-bs-toggle="modal"
-                            data-bs-target="#logoutModal">Logout</a></li>
-                </ul>
+            <a class="sidebar-item" href="../student/StudentProfile.php">
+                <i class="fas fa-user"></i>
+                <span>Profile</span>
+            </a>
+            <a class="sidebar-item" href="../student/proposal/ProposalEvent.php">
+                <i class="fas fa-file-alt"></i>
+                <span>Create Proposal</span>
+            </a>
+            <a class="sidebar-item" href="../student/Postmortem.php">
+                <i class="fas fa-calendar-plus"></i>
+                <span>Create Post Event</span>
+            </a>
+            <a class="sidebar-item" href="../student/ProgressPage.php">
+                <i class="fas fa-chart-line"></i>
+                <span>Track Progress</span>
+            </a>
+            <a class="sidebar-item" href="../student/EventHistory.php">
+                <i class="fas fa-history"></i>
+                <span>History</span>
+            </a>
+            <a class="sidebar-item active" href="#">
+                <i class="fas fa-eye"></i>
+                <span>View Events</span>
+            </a>
+            <a class="sidebar-item" href="#">
+                <i class="fas fa-question-circle"></i>
+                <span>User Guide</span>
+            </a>
+            <a class="sidebar-item" href="#">
+                <i class="fas fa-phone"></i>
+                <span>Contact</span>
+            </a>
+            <div class="sidebar-footer text-center mt-auto">
+                <hr />
+                <small style="color: black; font-size: 0.8rem">
+                    CMS v1.0 © 2025 Nilai University
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+        <div class="container-fluid">
+            <button class="btn me-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar">
+                <i class="fas fa-bars text-white"></i>
+            </button>
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-university me-2"></i>
+                Nilai University CMS
+            </a>
+            <div class="navbar-nav ms-auto">
+                <div class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-user-circle me-2"></i>
+                        Sharwin
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li>
+                            <a class="dropdown-item" href="../student/profile/StudentProfile.php">
+                                <i class="fas fa-user me-2"></i>Profile
+                            </a>
+                        </li>
+                        <li>
+                            <hr class="dropdown-divider" />
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#logoutModal">
+                                <i class="fas fa-sign-out-alt me-2"></i>Log Out
+                            </a>
+                        </li>
+                    </ul>
+                </div>
             </div>
         </div>
     </nav>
 
-    <!-- Sidebar -->
-    <div class="offcanvas offcanvas-start" tabindex="-1" id="sidebar">
-        <div class="offcanvas-header">
-            <h5 class="offcanvas-title">Menu</h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
-        </div>
-        <div class="offcanvas-body d-flex flex-column">
-            <ul class="nav flex-column">
-                <li class="nav-item"> <a class="nav-link active" href="StudentDashboard.php">Dashboard</a></li>
-                <li class="nav-item"><a class="nav-link" href="StudentProfile.php">User Profile</a></li>
-                <li class="nav-item"><a class="nav-link" href="ProposalEvent.php">Create Proposal</a></li>
-                <li class="nav-item"><a class="nav-link" href="PostmortemView.php">Create Postmortem</a></li>
-                <li class="nav-item"><a class="nav-link" href="ProgressPage.php">Track Progress</a></li>
-                <li class="nav-item"><a class="nav-link" href="EventHistory.php">Event History</a></li>
-            </ul>
-        </div>
-    </div>
-
     <!-- Main Content -->
-    <div class="container mt-4">
-        <h2 class="text-center mb-4">Report List</h2>
-        <div class="table-responsive">
-            <table class="table table-hover table-bordered">
-                <thead class="table-success">
-                    <tr>
-                        <th>Event ID</th>
-                        <th>Event Name</th>
-                        <th>Club Name</th>
-                        <th>Event Date</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if ($approved_events_result->num_rows > 0): ?>
-                        <?php while ($event = $approved_events_result->fetch_assoc()): ?>
-                            <tr>
-                                <td><?php echo $event['Ev_ID']; ?></td>
-                                <td><?php echo $event['Ev_Name']; ?></td>
-                                <td><?php echo $event['Club_Name']; ?></td>
-                                <td><?php echo date('d M Y', strtotime($event['Ev_Date'])); ?></td>
-                                <td>
-                                    <a href="Postmortem.php?event_id=<?php echo $event['Ev_ID']; ?>" class="btn btn-create">
-                                        Create Report
-                                    </a>
-                                </td>
-                            </tr>
-                        <?php endwhile; ?>
-                    <?php else: ?>
+    <div class="container-fluid main-content">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h2 class="page-title">
+                <i class="fas fa-eye me-2"></i>
+                Post Event View
+            </h2>
+            <p class="page-subtitle">
+                View all completed events and create post-event reports
+            </p>
+        </div>
+
+        <!-- Events Table -->
+        <div class="events-card">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h5 class="mb-0">
+                    <i class="fas fa-calendar-check me-2 text-purple"></i>
+                    Completed Events
+                </h5>
+                <small class="text-muted">Total: 5 events</small>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
                         <tr>
-                            <td colspan="5" class="text-center text-muted">No approved events available for postmortem
-                                creation.</td>
+                            <th>Event ID</th>
+                            <th>Event Name</th>
+                            <th>Club Name</th>
+                            <th>Event Date</th>
+                            <th>Action</th>
                         </tr>
-                    <?php endif; ?>
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="event-id">EVT001</td>
+                            <td class="event-name">Tech Innovation Summit</td>
+                            <td class="club-name">Computer Science Club</td>
+                            <td class="event-date">2024-12-15</td>
+                            <td>
+                                <a href="#" class="btn-create-report">
+                                    <i class="fas fa-file-medical-alt"></i>
+                                    Create Report
+                                </a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="event-id">EVT002</td>
+                            <td class="event-name">Cultural Heritage Festival</td>
+                            <td class="club-name">Cultural Society</td>
+                            <td class="event-date">2024-12-10</td>
+                            <td>
+                                <a href="#" class="btn-create-report">
+                                    <i class="fas fa-file-medical-alt"></i>
+                                    Create Report
+                                </a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="event-id">EVT003</td>
+                            <td class="event-name">Business Networking Night</td>
+                            <td class="club-name">Business Club</td>
+                            <td class="event-date">2024-12-08</td>
+                            <td>
+                                <a href="#" class="btn-create-report">
+                                    <i class="fas fa-file-medical-alt"></i>
+                                    Create Report
+                                </a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="event-id">EVT004</td>
+                            <td class="event-name">Sports Tournament</td>
+                            <td class="club-name">Sports Club</td>
+                            <td class="event-date">2024-12-05</td>
+                            <td>
+                                <a href="#" class="btn-create-report">
+                                    <i class="fas fa-file-medical-alt"></i>
+                                    Create Report
+                                </a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="event-id">EVT005</td>
+                            <td class="event-name">Environmental Awareness Campaign</td>
+                            <td class="club-name">Green Club</td>
+                            <td class="event-date">2024-12-01</td>
+                            <td>
+                                <a href="#" class="btn-create-report">
+                                    <i class="fas fa-file-medical-alt"></i>
+                                    Create Report
+                                </a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Bootstrap JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
 </body>
-<?php
-// End time after processing the page
-$end_time = microtime(true);
-$page_load_time = round(($end_time - $start_time) * 1000, 2); // Convert to milliseconds
-
-echo "<p style='color: green; font-weight: bold; text-align: center;'>
-      Page Load Time: " . $page_load_time . " ms
-      </p>";
-?>
 
 </html>

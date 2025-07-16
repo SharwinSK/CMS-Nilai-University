@@ -13,9 +13,7 @@ $club_result =
 $venue_result =
     $conn->query("SELECT Venue_ID, Venue_Name FROM venue ORDER BY Venue_Name");
 $venues = [];
-$venue_query = $conn->query("SELECT Venue_ID, Venue_Name FROM
-venue ORDER BY Venue_Name");
-while ($v = $venue_query->fetch_assoc()) {
+while ($v = $venue_result->fetch_assoc()) {
     $venues[] = $v;
 }
 $action = '';
@@ -48,8 +46,7 @@ Proposal';
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Proposal Form - Nilai University CMS</title>
-
+    <title>Proposal Form </title>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         * {
@@ -449,6 +446,8 @@ Proposal';
 </head>
 
 <body>
+
+
     <div class="container">
         <div class="header">
             <h1>Proposal Form</h1>
@@ -456,7 +455,7 @@ Proposal';
         </div>
 
         <div class="form-container">
-            <form method="POST" enctype="multipart/form-data" action="ProposalHandler.php?mode=create">
+            <form method="POST" enctype="multipart/form-data" action="<?= $action ?>">
                 <!-- Section 1: Student Information -->
                 <div class="section">
                     <h2 class="section-title">Student Information</h2>
@@ -879,9 +878,6 @@ Proposal';
 
             // Form submission
             document
-                .getElementById("proposalForm")
-                .addEventListener("submit", handleSubmit);
-            document
                 .getElementById("previewBtn")
                 .addEventListener("click", handlePreview);
             document
@@ -941,31 +937,32 @@ Proposal';
 
         function handlePosterUpload(file) {
             if (file) {
-                // Validate file type
                 const allowedTypes = ["image/jpeg", "image/jpg", "image/png"];
-                if (!allowedTypes.includes(file.type)) {
-                    alert("Please upload only JPEG or PNG files.");
+                const allowedExtensions = [".jpg", ".jpeg", ".png"];
+                const extension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+
+                if (!allowedTypes.includes(file.type) || !allowedExtensions.includes(extension)) {
+                    Swal.fire("Invalid File", "Only JPG and PNG formats are allowed.", "error");
                     return;
                 }
 
-                // Validate file size (20MB)
                 if (file.size > 20 * 1024 * 1024) {
-                    alert("File size must be less than 20MB.");
+                    Swal.fire("File Too Large", "Max size is 20MB.", "error");
                     return;
                 }
 
-                // Show preview
                 const reader = new FileReader();
                 reader.onload = function (e) {
                     const preview = document.getElementById("posterPreview");
                     preview.innerHTML = `
-                        <img src="${e.target.result}" alt="Poster Preview" class="preview-image">
-                        <p>✅ Poster uploaded successfully</p>
-                    `;
+                <img src="${e.target.result}" alt="Poster Preview" class="preview-image">
+                <p>✅ Poster uploaded successfully</p>
+            `;
                 };
                 reader.readAsDataURL(file);
             }
         }
+
 
         function addEventFlowRow() {
             const tbody = document.getElementById("eventFlowBody");
@@ -976,7 +973,7 @@ Proposal';
                 <td><input type="date" name="eventFlowDate[]" required></td>
                 <td><input type="time" name="eventFlowStart[]" required></td>
                 <td><input type="time" name="eventFlowEnd[]" required></td>
-                <td><input type="number" name="eventFlowHours[]" step="0.5" min="0" readonly></td>
+                <td><input type="number" name="eventFlowHours[]" class="hours-input" step="0.5" min="0" readonly></td>
                 <td>
                     <div style="display: flex; gap: 5px;">
                         <button type="button" class="btn btn-secondary btn-sm" onclick="addActivityDescription('${rowId}')">Add</button>
@@ -1036,9 +1033,9 @@ Proposal';
             const rowId = "committee_" + Date.now();
 
             row.innerHTML = `
-                <td><input type="text" name="committeeId[]" required></td>
-                <td><input type="text" name="committeeName[]" required></td>
-                <td><input type="text" name="committeePosition[]" required></td>
+                <td><input type="text" class="form-control form-control-lg" style="min-width:150px;" name="committeeId[]" required></td>
+                <td><input type="text" class="form-control form-control-lg" style="min-width:150px;" name="committeeName[]" required></td>
+                <td><input type="text" class="form-control form-control-lg" style="min-width:150px;" name="committeePosition[]" required></td>
                 <td>
   <select class="form-select" name="committeeDepartment[]" required>
     <option value="">Department</option>
@@ -1374,36 +1371,7 @@ Proposal';
             return isValid;
         }
 
-        function handleSubmit(e) {
-            e.preventDefault();
 
-            if (validateForm()) {
-                // Show loading state
-                const submitBtn = document.getElementById("submitBtn");
-                const originalText = submitBtn.textContent;
-                submitBtn.textContent = "Submitting...";
-                submitBtn.disabled = true;
-
-                const totalHours = getTotalEventFlowHours();
-                if (totalHours < 40) {
-                    alert("You must have at least 40 total event hours.");
-                    return false;
-                }
-
-                // Simulate form submission
-                setTimeout(() => {
-                    alert("Proposal submitted successfully!");
-                    submitBtn.textContent = originalText;
-                    submitBtn.disabled = false;
-
-                    // In a real application, you would send the form data to the server
-                    // const formData = new FormData(e.target);
-                    // fetch('/submit-proposal', { method: 'POST', body: formData })
-                }, 2000);
-            } else {
-                alert("Please fill in all required fields correctly.");
-            }
-        }
 
         function handlePreview() {
             if (validateForm()) {
