@@ -1,354 +1,840 @@
 <?php
-session_start();
-if (!isset($_SESSION['Stu_ID'])) {
-    header("Location: StudentLogin.php");
-    exit();
+include('../../db/dbconfig.php'); // adjust path as needed
+$mode = $_GET['mode'] ?? 'create';
+$Ev_ID = $_GET['Ev_ID'] ?? '';
+
+
+$Status_ID = 7; // default editable
+$isDisabled = '';
+$eventName = $proposerName = $clubName = $objectives = '';
+$eventFlows = [];
+$meetings = [];
+$committeeMembers = [];
+$individualReports = [];
+
+$challenges = '';
+$recommendation = '';
+$conclusion = '';
+$budgetFileName = '';
+$uploadedPhotos = [];
+
+if ($mode === 'create') {
+    // Load from `events` table using Ev_ID
+    $sql = "SELECT e.Ev_ID, e.Ev_Name, e.Ev_Objectives, s.Stu_Name, c.Club_Name, e.Status_ID 
+            FROM events e
+            JOIN student s ON e.Stu_ID = s.Stu_ID
+            JOIN club c ON e.Club_ID = c.Club_ID
+            WHERE e.Ev_ID = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("s", $Ev_ID);
+    $stmt->execute();
+    $stmt->bind_result($Ev_ID, $eventName, $objectives, $proposerName, $clubName, $Status_ID);
+    $stmt->fetch();
+    $stmt->close();
+
+    // Get only COCU claimers from committee
+    $sql = "SELECT Com_ID, Com_Name, Com_Position FROM committee WHERE Ev_ID = ? AND Com_COCUClaimers = 1";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("s", $Ev_ID);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    while ($row = $result->fetch_assoc()) {
+        $committeeMembers[] = $row;
+    }
+    $stmt->close();
+
+} elseif ($mode === 'modify') {
+    // Load event + postmortem info
+    $sql = "SELECT e.Ev_Name, e.Ev_Objectives, s.Stu_Name, c.Club_Name, e.Status_ID,
+                   p.Challenges, p.Recommendation, p.Conclusion
+            FROM events e
+            JOIN student s ON e.Stu_ID = s.Stu_ID
+            JOIN club c ON e.Club_ID = c.Club_ID
+            JOIN eventpostmortem p ON e.Ev_ID = p.Ev_ID
+            WHERE e.Ev_ID = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("s", $Ev_ID);
+    $stmt->execute();
+    $stmt->bind_result(
+        $eventName,
+        $objectives,
+        $proposerName,
+        $clubName,
+        $Status_ID,
+        $challenge,
+        $recommendation,
+        $conclusion
+    );
+    $stmt->fetch();
+    $stmt->close();
+
+    // Load event flow rows
+    $sql = "SELECT Flow_Time, Flow_Desc FROM eventflows WHERE Ev_ID = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("s", $Ev_ID);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    while ($row = $result->fetch_assoc()) {
+        $eventFlows[] = $row;
+    }
+    $stmt->close();
+
+    // Load meetings
+    $sql = "SELECT Meeting_Date, Start_Time, End_Time, Location, Description 
+            FROM posteventmeeting WHERE Ev_ID = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("s", $Ev_ID);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    while ($row = $result->fetch_assoc()) {
+        $meetings[] = $row;
+    }
+    $stmt->close();
+
+    // Load committee with COCU claimers
+    $sql = "SELECT Com_ID, Com_Name, Com_Position FROM committee WHERE Ev_ID = ? AND Com_COCUClaimers = 1";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("s", $Ev_ID);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    while ($row = $result->fetch_assoc()) {
+        $committeeMembers[] = $row;
+    }
+    $stmt->close();
+
+    // Load individual report filenames (if any)
+    $sql = "SELECT Com_ID, File_Name FROM individualreport WHERE Ev_ID = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("s", $Ev_ID);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    while ($row = $result->fetch_assoc()) {
+        $individualReports[$row['Com_ID']] = $row['File_Name'];
+    }
+    $stmt->close();
 }
 
-include('dbconfig.php');
-
-if (!isset($_GET['event_id'])) {
-    die("Event ID is required to create a postmortem report.");
+// Disable form fields only in modify mode if not status 7
+if ($mode === 'modify' && $Status_ID != 7) {
+    $isDisabled = "disabled";
+} else {
+    $isDisabled = "";
 }
-
-$event_id = $_GET['event_id'];
-$stmt = $conn->prepare("SELECT e.Ev_Name, e.Ev_ProjectNature, e.Ev_Objectives, s.Stu_Name, c.Club_Name
-                               FROM events e LEFT JOIN Student s ON e.Stu_ID = s.Stu_ID
-                               LEFT JOIN Club c ON e.Club_ID = c.Club_ID
-                               WHERE e.Ev_ID = ?");
-$stmt->bind_param("i", $event_id);
-$stmt->execute();
-$result = $stmt->get_result();
-$event = $result->fetch_assoc();
-
-if (!$event) {
-    die("Event not found or unauthorized access.");
-}
-
-$committee_query = "SELECT Com_ID, Com_Name, Com_Position, Com_COCUClaimers FROM Committee WHERE Ev_ID = ?";
-
-$committee_stmt = $conn->prepare($committee_query);
-$committee_stmt->bind_param("i", $event_id);
-$committee_stmt->execute();
-$committee_result = $committee_stmt->get_result();
-
-
-
 
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Event Report</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body {
-            background-color: #f9f9f9;
-            font-family: Arial, sans-serif;
-        }
-
-        .container {
-            margin-top: 30px;
-            margin-bottom: 30px;
-        }
-
-        .card-header {
-            background-color: #15B392;
-            color: white;
-            text-align: center;
-        }
-
-        .btn-success {
-            background-color: #54C392;
-            border-color: #54C392;
-        }
-
-        .btn-success:hover {
-            background-color: #06D001;
-        }
-
-        .table th {
-            background-color: #f2f2f2;
-        }
-
-        .btn-secondary {
-            background-color: rgb(255, 0, 191);
-        }
-
-        .btn-secondary:hover {
-            background-color: rgb(253, 0, 0);
-        }
-
-        .btn-primary {
-            background-color: #54C392;
-
-        }
-
-        .btn-primary:hover {
-            background-color: #06D001;
-        }
-    </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Post Event Form</title>
+    <link href="postevnt.css" rel="stylesheet" />
 
 </head>
 
 <body>
     <div class="container">
-        <div class="card shadow">
-            <div class="card-header">
-                <h2>Event Report</h2>
-            </div>
-            <div class="card-body">
-                <form action="PostmortemSubmit.php" method="POST" enctype="multipart/form-data"
-                    onsubmit="return validateForm()">
-                    <input type="hidden" name="event_id" value="<?php echo $event_id; ?>">
-                    <!-- Event Information Section -->
-                    <h5>Event Information</h5>
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="showproposalname" class="form-label">Proposal Name</label>
-                            <input type="text" class="form-control" id="showproposalname" name="proposal_name"
-                                value="<?php echo $event['Stu_Name']; ?>" readonly>
+        <div class="header">
+            <h1>Post Event Report</h1>
+        </div>
+
+        <div class="form-container">
+            <form id="postEventForm">
+                <!-- Section 1: Event Information -->
+                <div class="section">
+                    <h2 class="section-title">1. Event Information</h2>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="proposerName">Proposer Name <span class="required">*</span></label>
+                            <input type="text" id="proposerName" name="proposerName"
+                                value="<?= htmlspecialchars($proposerName) ?>" readonly disabled />
                         </div>
-                        <div class="col-md-6">
-                            <label for="showeventname" class="form-label">Event Name</label>
-                            <input type="text" class="form-control" id="showeventname" name="event_name"
-                                value="<?php echo $event['Ev_Name']; ?>" readonly>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="showclubname" class="form-label">Club Name</label>
-                            <input type="text" class="form-control" id="showclubname" name="club_name"
-                                value="<?php echo $event['Club_Name']; ?>" readonly>
-                        </div>
-                        <div class="col-12">
-                            <label for="showEventObjectives" class="form-label">Event Objectives</label>
-                            <textarea class="form-control" id="showEventObjectives" name="event_objectives" rows="3"
-                                readonly><?php echo $event['Ev_Objectives']; ?></textarea>
+                        <div class="form-group">
+                            <label for="eventName">Event Name <span class="required">*</span></label>
+                            <input type="text" id="eventName" name="eventName"
+                                value="<?= htmlspecialchars($eventName) ?>" readonly disabled />
                         </div>
                     </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="clubName">Club Name <span class="required">*</span></label>
+                            <input type="text" id="clubName" name="clubName" value="<?= htmlspecialchars($clubName) ?>"
+                                readonly disabled />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="eventObjectives">Event Objectives</label>
+                        <textarea id="eventObjectives" name="eventObjectives" readonly
+                            disabled><?= htmlspecialchars($objectives) ?></textarea>
+                    </div>
+                </div>
 
-                    <!-- New Event Flow Section -->
-                    <div class="mb-3">
-                        <label class="form-label">Event Flow</label>
-                        <table class="table table-bordered" id="eventFlowTable">
+                <!-- Section 2: Event Flow -->
+                <div class="section">
+                    <h2 class="section-title">2. Event Flow (Event Day)</h2>
+                    <div class="table-container">
+                        <table id="eventFlowTable">
                             <thead>
                                 <tr>
                                     <th>Time</th>
                                     <th>Description</th>
-                                    <th style="width: 50px;">Action</th>
+                                    <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody>
+                                <?php if (!empty($eventFlows)): ?>
+                                    <?php foreach ($eventFlows as $row): ?>
+                                        <tr>
+                                            <td>
+                                                <input type="time" name="eventTime[]"
+                                                    value="<?= htmlspecialchars($row['Flow_Time']) ?>" <?= $isDisabled ?>
+                                                    required />
+                                            </td>
+                                            <td>
+                                                <input type="text" name="eventDescription[]"
+                                                    value="<?= htmlspecialchars($row['Flow_Desc']) ?>" pattern="[A-Za-z\s]+"
+                                                    title="Only alphabetic characters allowed" <?= $isDisabled ?> required />
+                                            </td>
+                                            <td>
+                                                <?php if (empty($isDisabled)): ?>
+                                                    <button type="button" class="btn btn-danger"
+                                                        onclick="removeEventFlowRow(this)">Delete</button>
+                                                <?php endif; ?>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <!-- Default empty row -->
+                                    <tr>
+                                        <td><input type="time" name="eventTime[]" required /></td>
+                                        <td><input type="text" name="eventDescription[]" pattern="[A-Za-z\s]+"
+                                                title="Only alphabetic characters allowed" required /></td>
+                                        <td><button type="button" class="btn btn-danger"
+                                                onclick="removeEventFlowRow(this)">Delete</button></td>
+                                    </tr>
+                                <?php endif; ?>
+
+                            </tbody>
+
+                        </table>
+                    </div>
+                    <button type="button" class="btn btn-secondary" onclick="addEventFlowRow()">
+                        Add Row
+                    </button>
+                </div>
+
+                <!-- Section 3: Meeting -->
+                <div class="section">
+                    <h2 class="section-title">3. Meeting</h2>
+                    <div class="table-container">
+                        <table id="meetingTable">
+                            <thead>
                                 <tr>
-                                    <td><input type="time" name="evflow_time[]" class="form-control" required></td>
-                                    <td><input type="text" name="evflow_desc[]" class="form-control" required></td>
-                                    <td><button type="button" class="btn btn-danger btn-sm"
-                                            onclick="removeRow(this)">✕</button></td>
+                                    <th>Date</th>
+                                    <th>Start Time</th>
+                                    <th>End Time</th>
+                                    <th>Location</th>
+                                    <th>Description</th>
+                                    <th>Action</th>
                                 </tr>
+                            </thead>
+                            <tbody>
+                                <?php if (!empty($meetings)): ?>
+                                    <?php foreach ($meetings as $meeting): ?>
+                                        <tr>
+                                            <td><input type="date" name="meetingDate[]"
+                                                    value="<?= htmlspecialchars($meeting['Meeting_Date']) ?>" <?= $isDisabled ?>>
+                                            </td>
+                                            <td><input type="time" name="meetingStartTime[]"
+                                                    value="<?= htmlspecialchars($meeting['Start_Time']) ?>" <?= $isDisabled ?>>
+                                            </td>
+                                            <td><input type="time" name="meetingEndTime[]"
+                                                    value="<?= htmlspecialchars($meeting['End_Time']) ?>" <?= $isDisabled ?>>
+                                            </td>
+                                            <td><input type="text" name="meetingLocation[]"
+                                                    value="<?= htmlspecialchars($meeting['Location']) ?>"
+                                                    pattern="[A-Za-z0-9\s]+" <?= $isDisabled ?>></td>
+                                            <td>
+                                                <?php if ($isDisabled): ?>
+                                                    <button type="button" class="btn btn-secondary"
+                                                        onclick="alert('<?= htmlspecialchars($meeting['Description']) ?>')">View</button>
+                                                <?php else: ?>
+                                                    <button type="button" class="btn btn-success" onclick="showAddModal(this)"
+                                                        data-description="<?= htmlspecialchars($meeting['Description']) ?>">Add</button>
+                                                    <button type="button" class="btn btn-secondary" onclick="showViewModal(this)"
+                                                        data-description="<?= htmlspecialchars($meeting['Description']) ?>">View</button>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td>
+                                                <?php if (!$isDisabled): ?>
+                                                    <button type="button" class="btn btn-danger"
+                                                        onclick="removeMeetingRow(this)">Delete</button>
+                                                <?php endif; ?>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <!-- Default empty row if no existing data -->
+                                    <tr>
+                                        <td><input type="date" name="meetingDate[]" <?= $isDisabled ?>></td>
+                                        <td><input type="time" name="meetingStartTime[]" <?= $isDisabled ?>></td>
+                                        <td><input type="time" name="meetingEndTime[]" <?= $isDisabled ?>></td>
+                                        <td><input type="text" name="meetingLocation[]" pattern="[A-Za-z0-9\s]+"
+                                                <?= $isDisabled ?>></td>
+                                        <td>
+                                            <?php if (!$isDisabled): ?>
+                                                <button type="button" class="btn btn-success"
+                                                    onclick="showAddModal(this)">Add</button>
+                                                <button type="button" class="btn btn-secondary"
+                                                    onclick="showViewModal(this)">View</button>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td>
+                                            <?php if (!$isDisabled): ?>
+                                                <button type="button" class="btn btn-danger"
+                                                    onclick="removeMeetingRow(this)">Delete</button>
+                                            <?php endif; ?>
+                                        </td>
+                                    </tr>
+                                <?php endif; ?>
+                            </tbody>
+
+                        </table>
+                    </div>
+                    <button type="button" class="btn btn-secondary" onclick="addMeetingRow()">
+                        Add Meeting
+                    </button>
+                </div>
+
+                <!-- Section 4: Upload -->
+                <div class="section">
+                    <h2 class="section-title">4. Upload</h2>
+                    <div class="form-group">
+                        <label for="eventPhotos">Upload Event Photos (Maximum 10 photos, JPG/PNG only)</label>
+                        <input type="file" id="eventPhotos" name="eventPhotos[]" accept=".jpg,.jpeg,.png" multiple
+                            <?= $isDisabled ?> />
+                        <div class="photo-preview" id="photoPreview">
+                            <?php if (!empty($uploadedPhotos)): ?>
+                                <?php foreach ($uploadedPhotos as $photo): ?>
+                                    <div class="photo-item">
+                                        <img src="uploads/event_photos/<?= htmlspecialchars($photo['Photo_File']) ?>"
+                                            alt="Event Photo" onclick="openModal(this)">
+                                        <?php if (!$isDisabled): ?>
+                                            <button class="remove-btn" onclick="removePhoto(this)">&times;</button>
+                                        <?php endif; ?>
+                                    </div>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="budgetStatement">Upload Budget Statement & Receipt (PDF only, max 5MB)</label>
+                        <input type="file" id="budgetStatement" name="budgetStatement" accept=".pdf" <?= $isDisabled ?> />
+                        <div class="file-preview show" id="budgetPreview">
+                            <span class="file-name"><?= htmlspecialchars($budgetFileName) ?></span>
+                            <?php if (!empty($budgetFileName)): ?>
+                                <a class="btn btn-secondary" target="_blank"
+                                    href="uploads/budget_statements/<?= $budgetFileName ?>">View</a>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+
+
+
+                <!-- Section 5: Challenges and Recommendations -->
+                <div class="section">
+                    <h2 class="section-title">5. Challenges and Recommendations</h2>
+
+                    <div class="form-group">
+                        <label for="challenges">Challenges and Difficulties</label>
+                        <textarea id="challenges" name="challenges" <?php echo $isDisabled; ?>><?php echo htmlspecialchars($challenges); ?></textarea>
+
+                    </div>
+
+                    <div class="form-group">
+                        <label for="recommendations">Recommendations</label>
+                        <textarea id="recommendations" name="recommendations" <?php echo $isDisabled; ?>><?= htmlspecialchars($recommendation) ?></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="conclusion">Conclusion</label>
+                        <textarea id="conclusion" name="conclusion" <?php echo $isDisabled; ?>><?= htmlspecialchars($conclusion) ?></textarea>
+                    </div>
+                </div>
+
+
+                <!-- Section 6: Individual Report -->
+                <div class="section">
+                    <h2 class="section-title">6. Individual Report (COCU Claimers)</h2>
+                    <div class="table-container">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Student ID</th>
+                                    <th>Position</th>
+                                    <th>Upload Report (PDF)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($committeeMembers as $row): ?>
+                                    <tr>
+                                        <td><input type="text" value="<?= htmlspecialchars($row['Com_Name']) ?>" readonly />
+                                        </td>
+                                        <td><input type="text" value="<?= htmlspecialchars($row['Com_ID']) ?>" readonly />
+                                        </td>
+                                        <td><input type="text" value="<?= htmlspecialchars($row['Com_Position']) ?>"
+                                                readonly /></td>
+                                        <td>
+                                            <input type="file" name="individualReport[<?= $row['Com_ID'] ?>]" accept=".pdf"
+                                                <?= $isDisabled ?> />
+                                            <?php if (!empty($individualReports[$row['Com_ID']])): ?>
+                                                <div class="file-preview show">
+                                                    <span
+                                                        class="file-name"><?= htmlspecialchars($individualReports[$row['Com_ID']]) ?></span>
+                                                    <button type="button" class="btn btn-secondary"
+                                                        onclick="window.open('uploads/individual/<?= $individualReports[$row['Com_ID']] ?>', '_blank')">View</button>
+                                                </div>
+                                            <?php endif; ?>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
                             </tbody>
                         </table>
-                        <button type="button" class="btn btn-success btn-sm" onclick="addRow()">Add Row</button>
+                    </div>
+                </div>
+
+
+
+                <!-- Navigation Buttons -->
+                <div class="navigation-buttons" style="
+              justify-content: space-between;
+              align-items: center;
+              gap: 10px;
+            ">
+                    <!-- Left side: Back button -->
+                    <div>
+                        <button type="button" class="btn btn-secondary" onclick="goBack()">
+                            Back
+                        </button>
                     </div>
 
-
-                    <!--uploads Statement-->
-                    <div class="mb-3">
-                        <label for="statementPdf" class="form-label">Upload Statement and Receipt </label>
-                        <input type="file" class="form-control" id="statementPdf" name="statement_pdf" accept=".pdf"
-                            required>
-                        <small class="text-danger" style="display: block; margin-bottom: 10px;">
-                            * Students shall upload PDF files only. Maximum file size: 5mb.
-                        </small>
+                    <!-- Right side: Preview + Next -->
+                    <div style="display: flex; gap: 10px">
+                        <button type="button" class="btn btn-secondary" onclick="previewForm()">
+                            Preview
+                        </button>
+                        <button type="submit" class="btn btn-success">Next</button>
                     </div>
+                </div>
+            </form>
+        </div>
+    </div>
 
-                    <!-- Uploads -->
-                    <div class="mb-3">
-                        <label for="repPhoto" class="form-label">Upload Event Photo</label>
-                        <input type="file" class="form-control" id="inputPhoto" name="event_photos[]" accept="image/*"
-                            multiple>
-                        <small class="text-danger" style="display: block; margin-bottom: 10px;">
-                            Maximum 10 Photos.
-                        </small>
-                        <!-- Post-Event Meeting Section -->
-                        <h5 class="mt-4">Post-Event Meeting</h5>
-                        <div class="table-responsive">
-                            <table class="table table-bordered" id="postMeetingTable">
-                                <thead>
-                                    <tr>
-                                        <th>Date</th>
-                                        <th>Start Time</th>
-                                        <th>End Time</th>
-                                        <th>Description</th>
-                                        <th>Location</th>
-                                        <th>Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="postMeetingTableBody">
-                                    <tr>
-                                        <td><input type="date" name="meeting_date[]" class="form-control" required></td>
-                                        <td><input type="time" name="start_time[]" class="form-control" required></td>
-                                        <td><input type="time" name="end_time[]" class="form-control" required></td>
-                                        <td><input type="text" name="meeting_description[]" class="form-control"
-                                                required></td>
-                                        <td><input type="text" name="meeting_location[]" class="form-control" required>
-                                        </td>
-                                        <td><button type="button" class="btn btn-danger btn-sm"
-                                                onclick="removeMeetingRow(this)">✕</button></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <button type="button" class="btn btn-success mb-3" onclick="addMeetingRow()">+ Add Meeting
-                            Row</button>
-
-
-                        <!-- Challenges, recommendations and Conclusion -->
-                        <div class="mb-3">
-                            <label for="inputChallenges" class="form-label">Challenges and Difficulties</label>
-                            <textarea class="form-control" id="inputChallenges" name="challenges" rows="4"></textarea>
-                        </div>
-                        <div class="mb-3">
-                            <label for="inputRecommendation" class="form-label mt-3">Recommendation</label>
-                            <textarea class="form-control" id="inputRecommendation" name="recommendation"
-                                rows="4"></textarea>
-                        </div>
-                        <div class="mb-3">
-                            <label for="inputConclusion" class="form-label mt-3">Conclusion</label>
-                            <textarea class="form-control" id="inputConclusion" name="conclusion" rows="4"></textarea>
-                        </div>
-                        <!-- Individual Reports -->
-                        <h5>Individual Reports</h5>
-                        <div class="table-responsive">
-                            <table class="table table-bordered">
-                                <thead>
-                                    <tr>
-                                        <th>Committee Name</th>
-                                        <th>Committee ID</th>
-                                        <th>Position</th>
-                                        <th>Upload Individual Report</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php while ($committee = $committee_result->fetch_assoc()): ?>
-                                        <?php if (isset($committee['Com_COCUClaimers']) && $committee['Com_COCUClaimers'] == '1'): ?>
-
-                                            <tr>
-                                                <td><?php echo htmlspecialchars($committee['Com_Name']); ?></td>
-                                                <td>
-                                                    <input type="text" class="form-control" name="committee_id[]"
-                                                        value="<?php echo $committee['Com_ID']; ?>" readonly>
-                                                </td>
-                                                <td><?php echo htmlspecialchars($committee['Com_Position']); ?></td>
-                                                <td>
-                                                    <input type="file" class="form-control"
-                                                        name="ir_file_<?php echo $committee['Com_ID']; ?>"
-                                                        accept=".pdf,.doc,.docx" required>
-                                                </td>
-                                            </tr>
-                                        <?php endif; ?>
-                                    <?php endwhile; ?>
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <!-- Submit Button -->
-                        <div class="text-center">
-                            <a href="StudentDashboard.php" class="btn btn-secondary mt-4">Back</a>
-                            <button type="submit" class="btn btn-primary mt-4">Submit Report</button>
-                        </div>
-                </form>
+    <!-- Modal for image preview -->
+    <div id="imageModal" class="modal">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <img class="modal-content" id="modalImage" />
+    </div>
+    <!-- Add Description Modal -->
+    <div id="addDescriptionModal" class="modal">
+        <div style="
+          background: white;
+          padding: 20px;
+          max-width: 600px;
+          margin: 100px auto;
+          border-radius: 10px;
+          position: relative;
+        ">
+            <span class="close" onclick="closeAddModal()">&times;</span>
+            <h3>Add Description</h3>
+            <textarea id="addDescriptionTextarea" style="width: 100%; height: 150px"></textarea>
+            <div style="margin-top: 15px; text-align: right">
+                <button class="btn btn-success" onclick="saveMeetingDescription()">
+                    Save
+                </button>
             </div>
         </div>
     </div>
+
+    <!-- View Description Modal -->
+    <div id="viewDescriptionModal" class="modal">
+        <div style="
+          background: white;
+          padding: 20px;
+          max-width: 600px;
+          margin: 100px auto;
+          border-radius: 10px;
+          position: relative;
+        ">
+            <span class="close" onclick="closeViewModal()">&times;</span>
+            <h3>Meeting Description</h3>
+            <div id="viewDescriptionText" style="
+            white-space: pre-wrap;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            color: #333;
+            margin-top: 10px;
+          "></div>
+        </div>
+    </div>
+
     <script>
-
-        document.querySelector("form").addEventListener("submit", function (e) {
-            let isValid = true;
-            const errorMessages = [];
-
-            const challenges = document.getElementById("inputChallenges").value.trim();
-            if (challenges === "") {
-                isValid = false;
-                errorMessages.push("Please fill in the Challenges field.");
-            }
-
-            const conclusion = document.getElementById("inputConclusion").value.trim();
-            if (conclusion === "") {
-                isValid = false;
-                errorMessages.push("Please fill in the Conclusion field.");
-            }
-            const recommendation = document.getElementById("inputRecommendation").value.trim();
-            if (recommendation === "") {
-                isValid = false;
-                errorMessages.push("Please fill in the Recommendation field.");
-            }
-
-
-            const eventPhotos = document.getElementById("inputPhoto").files.length;
-            if (eventPhotos === 0) {
-                isValid = false;
-                errorMessages.push("Please upload the  Event Photo.");
-            }
-
-            const indivReports = document.querySelectorAll("textarea[name^='indiv_']");
-            let indivReportFilled = true;
-            indivReports.forEach((input) => {
-                if (input.value.trim() === "") {
-                    indivReportFilled = false;
-                }
-            });
-            if (!indivReportFilled) {
-                isValid = false;
-                errorMessages.push("Please fill in the Individual Report .");
-            }
-
-            if (!isValid) {
-                e.preventDefault();
-                alert(errorMessages.join("\n"));
-            }
-        });
-        function addRow() {
-            const table = document.getElementById("eventFlowTable").getElementsByTagName("tbody")[0];
-            const newRow = table.insertRow();
-            newRow.innerHTML = `
-            <td><input type="time" name="evflow_time[]" class="form-control" required></td>
-            <td><input type="text" name="evflow_desc[]" class="form-control" required></td>
-            <td><button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">✕</button></td>
-        `;
+        // Event Flow Table Functions
+        function addEventFlowRow() {
+            const tableBody = document.querySelector("#eventFlowTable tbody");
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <td><input type="time" name="eventTime[]" required></td>
+                <td><input type="text" name="eventDescription[]" pattern="[A-Za-z\s]+" title="Only alphabetic characters allowed" required></td>
+                <td><button type="button" class="btn btn-danger" onclick="removeEventFlowRow(this)">Delete</button></td>
+            `;
+            tableBody.appendChild(row);
         }
 
-        function removeRow(btn) {
-            btn.closest("tr").remove();
+        function removeEventFlowRow(button) {
+            const row = button.closest("tr");
+            row.remove();
         }
+
+        // Meeting Functions
         function addMeetingRow() {
-            const tableBody = document.getElementById("postMeetingTableBody");
-            const newRow = document.createElement("tr");
+            const tableBody = document.querySelector("#meetingTable tbody");
+            const row = document.createElement("tr");
 
-            newRow.innerHTML = `
-        <td><input type="date" name="meeting_date[]" class="form-control" required></td>
-        <td><input type="time" name="start_time[]" class="form-control" required></td>
-        <td><input type="time" name="end_time[]" class="form-control" required></td>
-        <td><input type="text" name="meeting_description[]" class="form-control" required></td>
-        <td><input type="text" name="meeting_location[]" class="form-control" required></td>
-        <td><button type="button" class="btn btn-danger btn-sm" onclick="removeMeetingRow(this)">✕</button></td>
+            row.innerHTML = `
+        <td><input type="date" name="meetingDate[]" required></td>
+        <td><input type="time" name="meetingStartTime[]" required></td>
+        <td><input type="time" name="meetingEndTime[]" required></td>
+        <td><input type="text" name="meetingLocation[]" pattern="[A-Za-z0-9\\s]+" title="Only alphabetic characters and numbers allowed" required></td>
+        <td>
+            <button type="button" class="btn btn-success" onclick="showAddModal(this)" data-description="">Add</button>
+            <button type="button" class="btn btn-secondary" onclick="showViewModal(this)" data-description="">View</button>
+        </td>
+        <td>
+            <button type="button" class="btn btn-danger" onclick="removeMeetingRow(this)">Delete</button>
+        </td>
     `;
-            tableBody.appendChild(newRow);
+
+            tableBody.appendChild(row);
+        }
+
+
+        function addMeetingDescription(button) {
+            const row = button.closest("tr");
+            const description = row.querySelector(
+                'textarea[name="meetingDescription[]"]'
+            ).value;
+            const date = row.querySelector('input[name="meetingDate[]"]').value;
+            const startTime = row.querySelector(
+                'input[name="meetingStartTime[]"]'
+            ).value;
+            const endTime = row.querySelector(
+                'input[name="meetingEndTime[]"]'
+            ).value;
+            const location = row.querySelector(
+                'input[name="meetingLocation[]"]'
+            ).value;
+
+            if (!date || !startTime || !endTime || !location) {
+                alert(
+                    "Please fill in all required fields (Date, Start Time, End Time, Location) before adding."
+                );
+                return;
+            }
+
+            alert("Meeting information added successfully!");
+        }
+
+        function viewMeetingDescription(button) {
+            const row = button.closest("tr");
+            const description = row.querySelector(
+                'textarea[name="meetingDescription[]"]'
+            ).value;
+            const date = row.querySelector('input[name="meetingDate[]"]').value;
+            const startTime = row.querySelector(
+                'input[name="meetingStartTime[]"]'
+            ).value;
+            const endTime = row.querySelector(
+                'input[name="meetingEndTime[]"]'
+            ).value;
+            const location = row.querySelector(
+                'input[name="meetingLocation[]"]'
+            ).value;
+
+            const summary = `Date: ${date}\nStart Time: ${startTime}\nEnd Time: ${endTime}\nLocation: ${location}\nDescription: ${description}`;
+            alert(summary);
         }
 
         function removeMeetingRow(button) {
             const row = button.closest("tr");
-            const allRows = document.querySelectorAll("#postMeetingTableBody tr");
-            if (allRows.length > 1) {
-                row.remove();
-            } else {
-                alert("At least one meeting is required.");
+            row.remove();
+        }
+
+        // Photo Upload Functions
+        document
+            .getElementById("eventPhotos")
+            .addEventListener("change", function (e) {
+                const files = e.target.files;
+                const preview = document.getElementById("photoPreview");
+
+                if (files.length > 10) {
+                    alert("Maximum 10 photos allowed");
+                    e.target.value = "";
+                    return;
+                }
+
+                preview.innerHTML = "";
+
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    const reader = new FileReader();
+
+                    reader.onload = function (e) {
+                        const photoItem = document.createElement("div");
+                        photoItem.className = "photo-item";
+                        photoItem.innerHTML = `
+                        <img src="${e.target.result}" alt="Event Photo" onclick="openModal(this)">
+                        <button class="remove-btn" onclick="removePhoto(this, ${i})">&times;</button>
+                    `;
+                        preview.appendChild(photoItem);
+                    };
+
+                    reader.readAsDataURL(file);
+                }
+            });
+
+        function removePhoto(button, index) {
+            const photoItem = button.closest(".photo-item");
+            photoItem.remove();
+            // Note: In a real implementation, you'd need to update the file input
+        }
+
+        function openModal(img) {
+            const modal = document.getElementById("imageModal");
+            const modalImg = document.getElementById("modalImage");
+            modal.style.display = "block";
+            modalImg.src = img.src;
+        }
+
+        function closeModal() {
+            document.getElementById("imageModal").style.display = "none";
+        }
+
+        // PDF Upload Functions
+        document
+            .getElementById("budgetStatement")
+            .addEventListener("change", function (e) {
+                const file = e.target.files[0];
+                const preview = document.getElementById("budgetPreview");
+
+                if (file) {
+                    if (file.size > 5 * 1024 * 1024) {
+                        alert("File size must be less than 5MB");
+                        e.target.value = "";
+                        return;
+                    }
+
+                    preview.querySelector(".file-name").textContent = file.name;
+                    preview.classList.add("show");
+                }
+            });
+
+        function viewPDF(inputId) {
+            const input = document.getElementById(inputId);
+            const file = input.files[0];
+
+            if (file) {
+                const url = URL.createObjectURL(file);
+                window.open(url, "_blank");
             }
         }
 
+        // Individual Report Functions
+        function addIndividualReportRow() {
+            const tableBody = document.querySelector(
+                "#individualReportTable tbody"
+            );
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <td><input type="text" name="committeeName[]" required></td>
+                <td><input type="text" name="committeeId[]" required></td>
+                <td><input type="text" name="position[]" required></td>
+                <td>
+                    <input type="file" name="individualReport[]" accept=".pdf" style="margin-bottom: 5px;">
+                    <div class="file-preview">
+                        <span class="file-name"></span>
+                        <button type="button" class="btn btn-secondary" onclick="viewIndividualReport(this)" style="font-size: 12px; padding: 5px 10px;">View</button>
+                    </div>
+                </td>
+                <td><button type="button" class="btn btn-danger" onclick="removeIndividualReportRow(this)">Delete</button></td>
+            `;
+            tableBody.appendChild(row);
+
+            // Add event listener for the new file input
+            const fileInput = row.querySelector('input[type="file"]');
+            fileInput.addEventListener("change", function (e) {
+                const file = e.target.files[0];
+                const preview = this.parentNode.querySelector(".file-preview");
+
+                if (file) {
+                    preview.querySelector(".file-name").textContent = file.name;
+                    preview.style.display = "block";
+                }
+            });
+        }
+
+        function removeIndividualReportRow(button) {
+            const row = button.closest("tr");
+            row.remove();
+        }
+
+        function viewIndividualReport(button) {
+            const row = button.closest("tr");
+            const fileInput = row.querySelector('input[type="file"]');
+            const file = fileInput.files[0];
+
+            if (file) {
+                const url = URL.createObjectURL(file);
+                window.open(url, "_blank");
+            } else {
+                alert("No file uploaded for this committee member.");
+            }
+        }
+
+        // Navigation Functions
+        function goBack() {
+            if (
+                confirm(
+                    "Are you sure you want to go back? Unsaved changes will be lost."
+                )
+            ) {
+                window.history.back();
+            }
+        }
+
+        function previewForm() {
+            // This would open a preview modal or new window
+            alert("Preview functionality would be implemented here");
+        }
+
+
+
+        // Add event listener for individual report file inputs
+        document
+            .querySelectorAll('input[name="individualReport[]"]')
+            .forEach(function (input) {
+                input.addEventListener("change", function (e) {
+                    const file = e.target.files[0];
+                    const preview = this.parentNode.querySelector(".file-preview");
+
+                    if (file) {
+                        preview.querySelector(".file-name").textContent = file.name;
+                        preview.style.display = "block";
+                    }
+                });
+            });
+
+        // Input validation for alphabetic only fields
+        document.addEventListener("input", function (e) {
+            if (e.target.pattern === "[A-Za-z\\s]+") {
+                e.target.value = e.target.value.replace(/[^A-Za-z\s]/g, "");
+            }
+            if (e.target.pattern === "[A-Za-z0-9\\s]+") {
+                e.target.value = e.target.value.replace(/[^A-Za-z0-9\s]/g, "");
+            }
+        });
+
+        let currentAddButton = null;
+
+        function showAddModal(button) {
+            currentAddButton = button;
+            const existingDesc = button.getAttribute("data-description") || "";
+            document.getElementById("addDescriptionTextarea").value = existingDesc;
+            document.getElementById("addDescriptionModal").style.display = "block";
+        }
+
+        function saveMeetingDescription() {
+            if (currentAddButton) {
+                const newDesc = document.getElementById(
+                    "addDescriptionTextarea"
+                ).value;
+                const parentCell = currentAddButton.parentNode;
+                parentCell.querySelectorAll("button").forEach((btn) => {
+                    btn.setAttribute("data-description", newDesc);
+                });
+                closeAddModal();
+            }
+        }
+
+        function closeAddModal() {
+            document.getElementById("addDescriptionModal").style.display = "none";
+        }
+
+        function showViewModal(button) {
+            const desc =
+                button.getAttribute("data-description") || "No description provided.";
+            document.getElementById("viewDescriptionText").textContent = desc;
+            document.getElementById("viewDescriptionModal").style.display = "block";
+        }
+
+        function closeViewModal() {
+            document.getElementById("viewDescriptionModal").style.display = "none";
+        }
+
+        document.getElementById("postEventForm").addEventListener("submit", function (e) {
+            e.preventDefault();
+
+            Swal.fire({
+                title: "Submit Post Event Report?",
+                text: "You will not be able to modify it until reviewed.",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonText: "Yes, submit it!",
+                cancelButtonText: "Cancel"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const form = document.getElementById("postEventForm");
+                    const formData = new FormData(form);
+
+                    // Add Ev_ID manually
+                    formData.append("event_id", "<?= $Ev_ID ?>");
+
+                    fetch('PostmortemSubmit.php?mode=create', {
+                        method: 'POST',
+                        body: formData
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                Swal.fire({
+                                    title: "Postmortem Submitted",
+                                    text: "Redirecting to mark attendance...",
+                                    icon: "success",
+                                    confirmButtonText: "OK"
+                                }).then(() => {
+                                    window.location.href = `markAttendance.php?rep_id=${data.rep_id}&event_id=${data.event_id}`;
+                                });
+                            }
+                        })
+                        .catch(error => {
+                            console.error("Error:", error);
+                            Swal.fire("Error", "Something went wrong while submitting!", "error");
+                        });
+
+                }
+            });
+        });
+
     </script>
+    <!-- SweetAlert2 CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 </body>
 

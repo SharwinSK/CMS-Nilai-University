@@ -1,6 +1,6 @@
 <?php
 session_start();
-include('dbconfig.php');
+include('../../db/dbconfig.php'); // adjust path as needed
 
 if (!isset($_GET['rep_id']) || !isset($_GET['event_id'])) {
     die("Missing required parameters.");
