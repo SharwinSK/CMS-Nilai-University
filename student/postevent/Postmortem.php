@@ -142,7 +142,7 @@ if ($mode === 'modify' && $Status_ID != 7) {
         </div>
 
         <div class="form-container">
-            <form id="postEventForm">
+            <form id="postEventForm" method="POST" enctype="multipart/form-data">
                 <!-- Section 1: Event Information -->
                 <div class="section">
                     <h2 class="section-title">1. Event Information</h2>
@@ -803,10 +803,19 @@ if ($mode === 'modify' && $Status_ID != 7) {
                     const form = document.getElementById("postEventForm");
                     const formData = new FormData(form);
 
+                    document.querySelectorAll("#meetingTable tbody tr").forEach((row, i) => {
+                        const desc = row.querySelector("button[data-description]")?.getAttribute("data-description") || "";
+                        const hidden = document.createElement("input");
+                        hidden.type = "hidden";
+                        hidden.name = `meetingDescription[${i}]`;
+                        hidden.value = desc;
+                        document.getElementById("postEventForm").appendChild(hidden);
+                    });
+
                     // Add Ev_ID manually
                     formData.append("event_id", "<?= $Ev_ID ?>");
 
-                    fetch('PostmortemSubmit.php?mode=create', {
+                    fetch('storePostSession.php', {
                         method: 'POST',
                         body: formData
                     })
@@ -814,18 +823,19 @@ if ($mode === 'modify' && $Status_ID != 7) {
                         .then(data => {
                             if (data.success) {
                                 Swal.fire({
-                                    title: "Postmortem Submitted",
+                                    title: "Saved!",
                                     text: "Redirecting to mark attendance...",
-                                    icon: "success",
-                                    confirmButtonText: "OK"
+                                    icon: "success"
                                 }).then(() => {
-                                    window.location.href = `markAttendance.php?rep_id=${data.rep_id}&event_id=${data.event_id}`;
+                                    window.location.href = `markAttendance.php?Ev_ID=<?= $Ev_ID ?>`;
                                 });
+                            } else {
+                                Swal.fire("Error", "Failed to store data in session", "error");
                             }
                         })
                         .catch(error => {
                             console.error("Error:", error);
-                            Swal.fire("Error", "Something went wrong while submitting!", "error");
+                            Swal.fire("Error", "Something went wrong", "error");
                         });
 
                 }
