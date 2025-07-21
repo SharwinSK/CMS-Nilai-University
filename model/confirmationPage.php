@@ -5,6 +5,7 @@ $event_id = $_GET['event_id'] ?? 'Unknown';
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <title>Submission Confirmation</title>
@@ -18,28 +19,33 @@ $event_id = $_GET['event_id'] ?? 'Unknown';
       align-items: center;
       font-family: 'Segoe UI', sans-serif;
     }
+
     .card {
       padding: 40px;
       border-radius: 20px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
       background: white;
       text-align: center;
     }
+
     .btn {
       border-radius: 30px;
       margin: 10px;
       padding: 10px 25px;
     }
+
     .rep-info {
       font-size: 1.1rem;
       color: #555;
     }
+
     .checkmark {
       font-size: 60px;
       color: #28a745;
     }
   </style>
 </head>
+
 <body>
 
   <div class="card">
@@ -49,14 +55,16 @@ $event_id = $_GET['event_id'] ?? 'Unknown';
     <p class="rep-info">Event ID: <strong><?= htmlspecialchars($event_id) ?></strong></p>
 
     <div class="mt-4">
-      <a href="StudentDashboard.php" class="btn btn-primary">
+      <a href="../student/StudentDashboard.php" class="btn btn-primary">
         Return to Dashboard
       </a>
-      <a href="exportPostPDF.php?rep_id=<?= urlencode($rep_id) ?>" class="btn btn-success" target="_blank">
+      <a href="../components/pdf/reportgeneratepdf.php?rep_id=<?= urlencode($rep_id) ?>" class="btn btn-success"
+        target="_blank">
         Export PDF
       </a>
     </div>
   </div>
 
 </body>
+
 </html>

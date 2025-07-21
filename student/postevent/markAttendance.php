@@ -366,25 +366,33 @@ $meetings = is_array($meetings) ? $meetings : [];
 
 
         function markAllPresent() {
-            students.forEach((student) => {
-                meetings.forEach((_, i) => {
-                    attendanceData[student.Com_ID][i] = "Present";
-                });
-            });
-            createAttendanceTable();
-            Swal.fire({ icon: "success", title: "All Marked Present!", timer: 1500, showConfirmButton: false });
+            students.forEach(s => meetings.forEach((_, i) => {
+                attendanceData[s.Com_ID][i] = "Present";
+            }));
+            updateButtons();                          // ✅ refresh UI only
+            Swal.fire({ icon: "success", title: "All Present!", timer: 1200, showConfirmButton: false });
         }
 
         function markAllAbsent() {
-            students.forEach((student) => {
-                meetings.forEach((_, i) => {
-                    attendanceData[student.Com_ID][i] = "Absent";
-                });
-            });
-            createAttendanceTable();
-            Swal.fire({ icon: "info", title: "All Marked Absent!", timer: 1500, showConfirmButton: false });
+            students.forEach(s => meetings.forEach((_, i) => {
+                attendanceData[s.Com_ID][i] = "Absent";
+            }));
+            updateButtons();                          // ✅ refresh UI only
+            Swal.fire({ icon: "info", title: "All Absent!", timer: 1200, showConfirmButton: false });
         }
 
+        /* helper re‑paints buttons without rebuilding table */
+        function updateButtons() {
+            students.forEach((stu, r) => {
+                meetings.forEach((_, c) => {
+                    const btn = document.querySelectorAll("#attendanceBody tr")[r]
+                        .querySelectorAll("button")[c];
+                    const status = attendanceData[stu.Com_ID][c];
+                    btn.className = `btn btn-sm ${status === "Present" ? "btn-success" : "btn-danger"}`;
+                    btn.innerHTML = `<i class="fas ${status === "Present" ? "fa-check" : "fa-times"} me-1"></i>${status}`;
+                });
+            });
+        }
 
 
 
@@ -399,17 +407,40 @@ $meetings = is_array($meetings) ? $meetings : [];
             }).then((result) => {
                 if (result.isConfirmed) {
                     // Prepare data
-                    const payload = {
-                        attendance: attendanceData
-                    };
-
                     fetch('PostmortemSubmit.php?mode=create', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
                         },
-                        body: JSON.stringify(payload)
+                        body: JSON.stringify({ attendance: attendanceData })
                     })
+
+                        .then(response => {
+                            const contentType = response.headers.get("content-type");
+
+                            if (response.redirected) {
+                                window.location.href = response.url;
+                                return;
+                            }
+
+                            if (contentType && contentType.includes("application/json")) {
+                                return response.json();
+                            } else {
+                                return response.text().then(text => {
+                                    throw new Error("Invalid JSON: " + text);
+                                });
+                            }
+                        })
+                        .then(data => {
+                            if (data?.success === false) {
+                                Swal.fire("Error", data.error || "Something went wrong", "error");
+                            }
+                        })
+                        .catch(err => {
+                            Swal.fire("Error", err.message || "Unexpected error", "error");
+                        });
+
+
 
                 }
             });

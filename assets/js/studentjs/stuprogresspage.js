@@ -53,7 +53,7 @@ function deleteProposal(eventId) {
 
 function createPostmortem(eventId) {
   // Redirect to create postmortem page
-  window.location.href = `../student/Postmortem.php?event_id=${eventId}`;
+  window.location.href = `../student/postevent/Postmortem.php?event_id=${eventId}`;
 }
 
 function exportProposal(eventId) {
@@ -63,12 +63,12 @@ function exportProposal(eventId) {
 
 function editPostEvent(eventId) {
   // Redirect to edit post event page
-  window.location.href = `../student/postEvent/EditPostEvent.php?id=${eventId}`;
+  window.location.href = `../student/postevent/Postmortem.php?id=${eventId}`;
 }
 
 function modifyPostEvent(eventId) {
   // Redirect to modify post event page
-  window.location.href = `../student/postEvent/ModifyPostEvent.php?id=${eventId}`;
+  window.location.href = `../student/postevent/Postmortem.php?id=${eventId}`;
 }
 
 function exportPostEvent(eventId) {

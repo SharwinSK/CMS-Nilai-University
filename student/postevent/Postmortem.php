@@ -762,16 +762,28 @@ if ($mode === 'modify' && $Status_ID != 7) {
 
         function saveMeetingDescription() {
             if (currentAddButton) {
-                const newDesc = document.getElementById(
-                    "addDescriptionTextarea"
-                ).value;
+                const newDesc = document.getElementById("addDescriptionTextarea").value;
                 const parentCell = currentAddButton.parentNode;
+
                 parentCell.querySelectorAll("button").forEach((btn) => {
                     btn.setAttribute("data-description", newDesc);
                 });
+
+                // 🔥 Add a hidden field right now
+                const row = currentAddButton.closest("tr");
+                let hidden = row.querySelector("input[type=hidden][name^='meetingDescription']");
+                if (!hidden) {
+                    hidden = document.createElement("input");
+                    hidden.type = "hidden";
+                    hidden.name = `meetingDescription[${row.rowIndex - 1}]`;
+                    row.appendChild(hidden);
+                }
+                hidden.value = newDesc;
+
                 closeAddModal();
             }
         }
+
 
         function closeAddModal() {
             document.getElementById("addDescriptionModal").style.display = "none";
@@ -802,7 +814,6 @@ if ($mode === 'modify' && $Status_ID != 7) {
                 if (result.isConfirmed) {
                     const form = document.getElementById("postEventForm");
                     const formData = new FormData(form);
-
                     document.querySelectorAll("#meetingTable tbody tr").forEach((row, i) => {
                         const desc = row.querySelector("button[data-description]")?.getAttribute("data-description") || "";
                         const hidden = document.createElement("input");
@@ -811,6 +822,13 @@ if ($mode === 'modify' && $Status_ID != 7) {
                         hidden.value = desc;
                         document.getElementById("postEventForm").appendChild(hidden);
                     });
+
+                    // Debug
+                    const debugFormData = new FormData(document.getElementById("postEventForm"));
+                    for (let pair of debugFormData.entries()) {
+                        console.log(pair[0] + ': ' + pair[1]);
+                    }
+
 
                     // Add Ev_ID manually
                     formData.append("event_id", "<?= $Ev_ID ?>");
