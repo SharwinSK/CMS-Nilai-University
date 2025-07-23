@@ -8,7 +8,7 @@ if (!isset($_SESSION['Adv_ID'])) {
     header("Location: AdvisorLogin.php");
     exit();
 }
-
+$currentPage = 'profile';
 $adv_id = $_SESSION['Adv_ID'];
 $advisor = ['Adv_Name' => '', 'Adv_Email' => '', 'Club_ID' => ''];
 $club_name = '';
