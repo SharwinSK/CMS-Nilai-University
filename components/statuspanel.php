@@ -28,6 +28,8 @@
                 <button class="view-btn" onclick="viewNotification('<?= addslashes($row['Ev_Name']) ?>')">View</button>
             </div>
         <?php endwhile; ?>
+
+
     <?php else: ?>
         <p class="text-muted">No recent status updates.</p>
     <?php endif; ?>

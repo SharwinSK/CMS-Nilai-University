@@ -52,8 +52,7 @@ function deleteProposal(eventId) {
 }
 
 function createPostmortem(eventId) {
-  // Redirect to create postmortem page
-  window.location.href = `../student/postevent/Postmortem.php?event_id=${eventId}`;
+  window.location.href = `../student/postevent/PostEvent_Form.php?mode=create&event_id=${eventId}`;
 }
 
 function exportProposal(eventId) {
@@ -61,14 +60,12 @@ function exportProposal(eventId) {
   window.open(`../components/pdf/generate_pdf.php?id=${eventId}`, "_blank");
 }
 
-function editPostEvent(eventId) {
-  // Redirect to edit post event page
-  window.location.href = `../student/postevent/Postmortem.php?id=${eventId}`;
+function editPostEvent(repId) {
+  window.location.href = `../student/postevent/PostEventEdit_Form.php?mode=edit&rep_id=${repId}`;
 }
 
-function modifyPostEvent(eventId) {
-  // Redirect to modify post event page
-  window.location.href = `../student/postevent/Postmortem.php?id=${eventId}`;
+function modifyPostEvent(repId) {
+  window.location.href = `../student/postevent/PostEventEdit_Form.php?mode=modify&rep_id=${repId}`;
 }
 
 function exportPostEvent(eventId) {

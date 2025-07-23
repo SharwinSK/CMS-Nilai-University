@@ -1,10 +1,8 @@
 <?php
-include('../../db/dbconfig.php'); // adjust path as needed
-$mode = $_GET['mode'] ?? 'create';
+include('../../db/dbconfig.php');
 $Ev_ID = $_GET['Ev_ID'] ?? '';
 
-
-$Status_ID = 7; // default editable
+$Status_ID = 7;
 $isDisabled = '';
 $eventName = $proposerName = $clubName = $objectives = '';
 $eventFlows = [];
@@ -18,111 +16,30 @@ $conclusion = '';
 $budgetFileName = '';
 $uploadedPhotos = [];
 
-if ($mode === 'create') {
-    // Load from `events` table using Ev_ID
-    $sql = "SELECT e.Ev_ID, e.Ev_Name, e.Ev_Objectives, s.Stu_Name, c.Club_Name, e.Status_ID 
+// Load from events table
+$sql = "SELECT e.Ev_ID, e.Ev_Name, e.Ev_Objectives, s.Stu_Name, c.Club_Name, e.Status_ID 
             FROM events e
             JOIN student s ON e.Stu_ID = s.Stu_ID
             JOIN club c ON e.Club_ID = c.Club_ID
             WHERE e.Ev_ID = ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("s", $Ev_ID);
-    $stmt->execute();
-    $stmt->bind_result($Ev_ID, $eventName, $objectives, $proposerName, $clubName, $Status_ID);
-    $stmt->fetch();
-    $stmt->close();
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("s", $Ev_ID);
+$stmt->execute();
+$stmt->bind_result($Ev_ID, $eventName, $objectives, $proposerName, $clubName, $Status_ID);
+$stmt->fetch();
+$stmt->close();
 
-    // Get only COCU claimers from committee
-    $sql = "SELECT Com_ID, Com_Name, Com_Position FROM committee WHERE Ev_ID = ? AND Com_COCUClaimers = 1";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("s", $Ev_ID);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    while ($row = $result->fetch_assoc()) {
-        $committeeMembers[] = $row;
-    }
-    $stmt->close();
-
-} elseif ($mode === 'modify') {
-    // Load event + postmortem info
-    $sql = "SELECT e.Ev_Name, e.Ev_Objectives, s.Stu_Name, c.Club_Name, e.Status_ID,
-                   p.Challenges, p.Recommendation, p.Conclusion
-            FROM events e
-            JOIN student s ON e.Stu_ID = s.Stu_ID
-            JOIN club c ON e.Club_ID = c.Club_ID
-            JOIN eventpostmortem p ON e.Ev_ID = p.Ev_ID
-            WHERE e.Ev_ID = ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("s", $Ev_ID);
-    $stmt->execute();
-    $stmt->bind_result(
-        $eventName,
-        $objectives,
-        $proposerName,
-        $clubName,
-        $Status_ID,
-        $challenge,
-        $recommendation,
-        $conclusion
-    );
-    $stmt->fetch();
-    $stmt->close();
-
-    // Load event flow rows
-    $sql = "SELECT Flow_Time, Flow_Desc FROM eventflows WHERE Ev_ID = ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("s", $Ev_ID);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    while ($row = $result->fetch_assoc()) {
-        $eventFlows[] = $row;
-    }
-    $stmt->close();
-
-    // Load meetings
-    $sql = "SELECT Meeting_Date, Start_Time, End_Time, Location, Description 
-            FROM posteventmeeting WHERE Ev_ID = ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("s", $Ev_ID);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    while ($row = $result->fetch_assoc()) {
-        $meetings[] = $row;
-    }
-    $stmt->close();
-
-    // Load committee with COCU claimers
-    $sql = "SELECT Com_ID, Com_Name, Com_Position FROM committee WHERE Ev_ID = ? AND Com_COCUClaimers = 1";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("s", $Ev_ID);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    while ($row = $result->fetch_assoc()) {
-        $committeeMembers[] = $row;
-    }
-    $stmt->close();
-
-    // Load individual report filenames (if any)
-    $sql = "SELECT Com_ID, File_Name FROM individualreport WHERE Ev_ID = ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("s", $Ev_ID);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    while ($row = $result->fetch_assoc()) {
-        $individualReports[$row['Com_ID']] = $row['File_Name'];
-    }
-    $stmt->close();
+// Get COCU claimers from committee
+$sql = "SELECT Com_ID, Com_Name, Com_Position FROM committee WHERE Ev_ID = ? AND Com_COCUClaimers = 1";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("s", $Ev_ID);
+$stmt->execute();
+$result = $stmt->get_result();
+while ($row = $result->fetch_assoc()) {
+    $committeeMembers[] = $row;
 }
-
-// Disable form fields only in modify mode if not status 7
-if ($mode === 'modify' && $Status_ID != 7) {
-    $isDisabled = "disabled";
-} else {
-    $isDisabled = "";
-}
-
+$stmt->close();
 ?>
-
 
 <!DOCTYPE html>
 <html lang="en">

@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Advisor Profile - Nilai University CMS</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --primary-purple: #ac73ff;
+        --primary-dark: #6a4c93;
+        --primary-medium: #8e44ad;
+        --primary-light: #f8f9ff;
+        --success: #28a745;
+        --warning: #ffc107;
+        --danger: #dc3545;
+        --info: #17a2b8;
+      }
+
+      body {
+        background: linear-gradient(
+          135deg,
+          var(--primary-light) 0%,
+          var(--primary-medium) 100%
+        );
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        min-height: 100vh;
+      }
+
+      .navbar {
+        background: linear-gradient(
+          90deg,
+          var(--primary-purple) 0%,
+          var(--primary-dark) 100%
+        );
+        box-shadow: 0 4px 15px rgba(172, 115, 255, 0.2);
+      }
+
+      .navbar-brand {
+        font-weight: bold;
+        color: white !important;
+        font-size: 1.3rem;
+      }
+
+      .navbar-nav .nav-link {
+        color: white !important;
+        font-weight: 500;
+      }
+
+      .dropdown-menu {
+        background: var(--primary-light);
+        border: none;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        right: 0;
+        left: auto;
+      }
+
+      .offcanvas {
+        background: linear-gradient(
+          180deg,
+          var(--primary-light) 0%,
+          var(--primary-medium) 100%
+        );
+        border-right: 3px solid var(--primary-purple);
+      }
+
+      .offcanvas-header {
+        background: var(--primary-purple);
+        color: white;
+      }
+
+      .offcanvas-body {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .sidebar-footer {
+        padding: 10px;
+      }
+
+      .sidebar-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 16px;
+        border-radius: 12px;
+        color: black;
+        text-decoration: none;
+        font-weight: 500;
+        transition: 0.3s;
+      }
+
+      .sidebar-item:hover {
+        background-color: var(--primary-purple);
+        color: white;
+      }
+
+      .sidebar-item.active {
+        background-color: var(--primary-purple);
+        color: white;
+      }
+
+      .profile-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(172, 115, 255, 0.2);
+        border: 2px solid var(--primary-purple);
+        overflow: hidden;
+      }
+
+      .profile-header {
+        background: linear-gradient(
+          135deg,
+          var(--primary-purple),
+          var(--primary-dark)
+        );
+        color: white;
+        padding: 40px;
+        text-align: center;
+      }
+
+      .profile-avatar {
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        border: 4px solid white;
+        background: var(--primary-light);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+        font-size: 4rem;
+        color: var(--primary-dark);
+      }
+
+      .profile-body {
+        padding: 40px;
+      }
+
+      .info-item {
+        display: flex;
+        align-items: center;
+        padding: 20px 0;
+        border-bottom: 1px solid #f0f0f0;
+      }
+
+      .info-item:last-child {
+        border-bottom: none;
+      }
+
+      .info-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 12px;
+        background: var(--primary-light);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 20px;
+        color: var(--primary-dark);
+        font-size: 1.2rem;
+      }
+
+      .info-content {
+        flex-grow: 1;
+      }
+
+      .info-label {
+        font-size: 0.9rem;
+        color: #666;
+        margin-bottom: 3px;
+      }
+
+      .info-value {
+        font-weight: 600;
+        color: #333;
+        font-size: 1.2rem;
+      }
+
+      .btn-edit {
+        background: linear-gradient(
+          135deg,
+          var(--primary-purple),
+          var(--primary-dark)
+        );
+        border: none;
+        color: white;
+        padding: 12px 30px;
+        border-radius: 25px;
+        font-weight: 600;
+        transition: 0.3s;
+      }
+
+      .btn-edit:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(172, 115, 255, 0.3);
+        color: white;
+      }
+
+      .alert {
+        border: none;
+        border-radius: 15px;
+        padding: 15px 20px;
+      }
+
+      .alert-success {
+        background: rgba(40, 167, 69, 0.1);
+        color: var(--success);
+        border-left: 4px solid var(--success);
+      }
+
+      .alert-danger {
+        background: rgba(220, 53, 69, 0.1);
+        color: var(--danger);
+        border-left: 4px solid var(--danger);
+      }
+
+      .form-control {
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        padding: 12px 15px;
+        transition: 0.3s;
+      }
+
+      .form-control:focus {
+        border-color: var(--primary-purple);
+        box-shadow: 0 0 0 0.2rem rgba(172, 115, 255, 0.25);
+      }
+
+      .modal-content {
+        border: none;
+        border-radius: 20px;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+      }
+
+      .modal-header {
+        background: linear-gradient(
+          135deg,
+          var(--primary-purple),
+          var(--primary-dark)
+        );
+        color: white;
+        border-radius: 20px 20px 0 0;
+      }
+
+      .btn-close {
+        filter: brightness(0) invert(1);
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Sidebar -->
+    <div class="offcanvas offcanvas-start" tabindex="-1" id="sidebar">
+      <div class="offcanvas-header">
+        <h5 class="offcanvas-title">
+          <i class="fas fa-chalkboard-teacher me-2"></i>
+          Advisor Panel
+        </h5>
+        <button
+          type="button"
+          class="btn-close btn-close-white"
+          data-bs-dismiss="offcanvas"
+        ></button>
+      </div>
+      <div class="offcanvas-body">
+        <a class="sidebar-item" href="../advisor/AdvisorDashboard.php">
+          <i class="fas fa-home"></i>
+          <span>Dashboard</span>
+        </a>
+        <a class="sidebar-item active" href="../advisor/AdvisorProfile.php">
+          <i class="fas fa-user"></i>
+          <span>Profile</span>
+        </a>
+        <a class="sidebar-item" href="../advisor/AdvisorProgressView.php">
+          <i class="fas fa-tasks"></i>
+          <span>Event Ongoing</span>
+        </a>
+        <a class="sidebar-item" href="../advisor/AdvisorEvHistory.php">
+          <i class="fas fa-history"></i>
+          <span>History</span>
+        </a>
+        <a class="sidebar-item" href="../advisor/AdvisorContact.php">
+          <i class="fas fa-envelope"></i>
+          <span>Contact Us</span>
+        </a>
+
+        <div class="sidebar-footer text-center mt-auto">
+          <hr />
+          <small style="color: black; font-size: 0.8rem">
+            CMS v1.0 © 2025 Nilai University
+          </small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+      <div class="container-fluid">
+        <button
+          class="btn me-3"
+          type="button"
+          data-bs-toggle="offcanvas"
+          data-bs-target="#sidebar"
+        >
+          <i class="fas fa-bars text-white"></i>
+        </button>
+        <a class="navbar-brand" href="../advisor/AdvisorDashboard.php">
+          <i class="fas fa-university me-2"></i>
+          Nilai University CMS
+        </a>
+        <div class="navbar-nav ms-auto">
+          <div class="nav-item dropdown">
+            <a
+              class="nav-link dropdown-toggle"
+              href="#"
+              role="button"
+              data-bs-toggle="dropdown"
+            >
+              <i class="fas fa-user-circle me-2"></i>
+              Dr. Sarah Johnson
+            </a>
+            <ul class="dropdown-menu">
+              <li>
+                <a class="dropdown-item" href="#"
+                  ><i class="fas fa-user me-2"></i>Profile</a
+                >
+              </li>
+              <li>
+                <hr class="dropdown-divider" />
+              </li>
+              <li>
+                <a
+                  class="dropdown-item"
+                  href="#"
+                  data-bs-toggle="modal"
+                  data-bs-target="#logoutModal"
+                >
+                  <i class="fas fa-sign-out-alt me-2"></i>Log Out
+                </a>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container-fluid p-4">
+      <div class="row justify-content-center">
+        <div class="col-lg-10 col-xl-8">
+          <!-- Page Header -->
+          <div class="mb-4">
+            <h2 class="fw-bold text-white">
+              <i class="fas fa-user me-2"></i>
+              Advisor Profile
+            </h2>
+            <p class="text-white-50 mb-0">Manage your profile information</p>
+          </div>
+
+          <!-- Profile Card -->
+          <div class="profile-card">
+            <!-- Profile Header -->
+            <div class="profile-header">
+              <div class="profile-avatar">
+                <i class="fas fa-user"></i>
+              </div>
+              <h3 class="mb-2">Dr. Sarah Johnson</h3>
+              <p class="mb-0 opacity-75">Academic Advisor</p>
+            </div>
+
+            <!-- Profile Body -->
+            <div class="profile-body">
+              <!-- Name -->
+              <div class="info-item">
+                <div class="info-icon">
+                  <i class="fas fa-user"></i>
+                </div>
+                <div class="info-content">
+                  <div class="info-label">Full Name</div>
+                  <div class="info-value" id="displayName">
+                    Dr. Sarah Johnson
+                  </div>
+                </div>
+              </div>
+
+              <!-- Staff ID -->
+              <div class="info-item">
+                <div class="info-icon">
+                  <i class="fas fa-id-badge"></i>
+                </div>
+                <div class="info-content">
+                  <div class="info-label">Staff ID</div>
+                  <div class="info-value">ADV-2024-001</div>
+                </div>
+              </div>
+
+              <!-- Email -->
+              <div class="info-item">
+                <div class="info-icon">
+                  <i class="fas fa-envelope"></i>
+                </div>
+                <div class="info-content">
+                  <div class="info-label">Email Address</div>
+                  <div class="info-value" id="displayEmail">
+                    sarah.johnson@nilai.edu.my
+                  </div>
+                </div>
+              </div>
+
+              <!-- Club Assigned -->
+              <div class="info-item">
+                <div class="info-icon">
+                  <i class="fas fa-users"></i>
+                </div>
+                <div class="info-content">
+                  <div class="info-label">Club Assigned</div>
+                  <div class="info-value">Computer Science Society</div>
+                </div>
+              </div>
+
+              <!-- Edit Button -->
+              <div class="text-center mt-4">
+                <button
+                  type="button"
+                  class="btn btn-edit"
+                  data-bs-toggle="modal"
+                  data-bs-target="#editProfileModal"
+                >
+                  <i class="fas fa-edit me-2"></i>
+                  Edit Profile
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Profile Modal -->
+    <div class="modal fade" id="editProfileModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">
+              <i class="fas fa-edit me-2"></i>
+              Edit Profile Information
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="name" class="form-label">
+                <i class="fas fa-user me-2"></i>Full Name
+              </label>
+              <input
+                type="text"
+                class="form-control"
+                id="name"
+                value="Dr. Sarah Johnson"
+                required
+              />
+            </div>
+            <div class="mb-3">
+              <label for="email" class="form-label">
+                <i class="fas fa-envelope me-2"></i>Email Address
+              </label>
+              <input
+                type="email"
+                class="form-control"
+                id="email"
+                value="sarah.johnson@nilai.edu.my"
+                required
+              />
+            </div>
+            <div class="alert alert-info">
+              <i class="fas fa-info-circle me-2"></i>
+              Note: Staff ID and Club Assignment cannot be modified.
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              <i class="fas fa-times me-2"></i>Cancel
+            </button>
+            <button type="button" class="btn btn-edit" onclick="saveProfile()">
+              <i class="fas fa-save me-2"></i>Save Changes
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Success Alert (Hidden by default) -->
+    <div
+      class="alert alert-success alert-dismissible fade"
+      role="alert"
+      id="successAlert"
+      style="
+        position: fixed;
+        top: 100px;
+        right: 20px;
+        z-index: 1050;
+        display: none;
+      "
+    >
+      <i class="fas fa-check-circle me-2"></i>
+      Profile updated successfully!
+      <button type="button" class="btn-close" onclick="hideAlert()"></button>
+    </div>
+
+    <!-- Logout Modal -->
+    <div class="modal fade" id="logoutModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">
+              <i class="fas fa-sign-out-alt me-2"></i>
+              Confirm Logout
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <p>Are you sure you want to log out?</p>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Cancel
+            </button>
+            <a href="../logout.php" class="btn btn-danger">
+              <i class="fas fa-sign-out-alt me-2"></i>Log Out
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+      function saveProfile() {
+        // Get values from form
+        const name = document.getElementById("name").value;
+        const email = document.getElementById("email").value;
+
+        // Basic validation
+        if (!name.trim() || !email.trim()) {
+          alert("Name and email are required.");
+          return;
+        }
+
+        if (!isValidEmail(email)) {
+          alert("Please enter a valid email address.");
+          return;
+        }
+
+        // Update display values
+        document.getElementById("displayName").textContent = name;
+        document.getElementById("displayEmail").textContent = email;
+
+        // Update navbar name
+        document.querySelector(".nav-link.dropdown-toggle").innerHTML =
+          '<i class="fas fa-user-circle me-2"></i>' + name;
+
+        // Close modal
+        const modal = bootstrap.Modal.getInstance(
+          document.getElementById("editProfileModal")
+        );
+        modal.hide();
+
+        // Show success alert
+        showSuccessAlert();
+      }
+
+      function isValidEmail(email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+      }
+
+      function showSuccessAlert() {
+        const alert = document.getElementById("successAlert");
+        alert.style.display = "block";
+        alert.classList.add("show");
+
+        // Auto hide after 3 seconds
+        setTimeout(() => {
+          hideAlert();
+        }, 3000);
+      }
+
+      function hideAlert() {
+        const alert = document.getElementById("successAlert");
+        alert.classList.remove("show");
+        setTimeout(() => {
+          alert.style.display = "none";
+        }, 150);
+      }
+    </script>
+  </body>
+</html>

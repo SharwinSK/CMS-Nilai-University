@@ -108,14 +108,12 @@ function createProposal() {
 }
 
 function createPostEvent() {
-  window.location.href = "../student/postevent/Postmortem.php";
+  window.location.href = "../student/PostmortemView.php";
 }
 
 function viewNotification(eventName) {
   alert(`Viewing details for: ${eventName}`);
 }
-
-document.addEventListener("DOMContentLoaded", initCalendar);
 
 // Close floating menu on outside click
 document.addEventListener("click", function (event) {

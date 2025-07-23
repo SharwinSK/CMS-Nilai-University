@@ -1,8 +1,10 @@
 <?php
 session_start();
-include('dbconfig.php');
-include('LogoutDesign.php');
+$currentPage = 'dashboard';
+include('../db/dbconfig.php'); // Adjust if needed
 
+
+// Security check
 if (!isset($_SESSION['Adv_ID'])) {
     header("Location: AdvisorLogin.php");
     exit();
@@ -11,26 +13,26 @@ if (!isset($_SESSION['Adv_ID'])) {
 $advisor_id = $_SESSION['Adv_ID'];
 $club_id = $_SESSION['Club_ID'];
 
+// Get advisor name
 $stmt = $conn->prepare("SELECT Adv_Name FROM advisor WHERE Adv_ID = ?");
 $stmt->bind_param('s', $advisor_id);
 $stmt->execute();
 $result = $stmt->get_result();
 $advisor_name = $result->fetch_assoc()['Adv_Name'] ?? 'Unknown Advisor';
 
-$query = "
-    SELECT c.Club_Name
-    FROM advisor a
-    INNER JOIN club c ON a.Club_ID = c.Club_ID
-    WHERE a.Adv_ID = ?
+// Get carousel posters (Approved by Coordinator + Postmortem not done)
+$carousel_query = "
+    SELECT DISTINCT e.Ev_ID, e.Ev_Poster 
+    FROM events e
+    JOIN eventstatus es ON e.Status_ID = es.Status_ID
+    LEFT JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID
+    LEFT JOIN eventstatus eps ON ep.Status_ID = eps.Status_ID
+    WHERE es.Status_Name = 'Approved by Coordinator' 
+      AND (ep.Status_ID IS NULL OR eps.Status_Name != 'Postmortem Approved')
 ";
+$carousel_result = $conn->query($carousel_query);
 
-$stmt = $conn->prepare($query);
-$stmt->bind_param('s', $advisor_id);
-$stmt->execute();
-$result = $stmt->get_result();
-
-$club_name = $result->fetch_assoc()['Club_Name'] ?? 'Unknown Club';
-
+// Get pending proposals for advisor's club
 $pending_proposals_query = "
     SELECT e.Ev_ID, e.Ev_Name, e.created_at, s.Stu_Name
     FROM events e
@@ -41,197 +43,187 @@ $pending_proposals_query = "
 ";
 
 
-
 $stmt = $conn->prepare($pending_proposals_query);
 $stmt->bind_param('i', $club_id);
 $stmt->execute();
 $pending_proposals = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
-$carousel_query = "
-    SELECT DISTINCT e.Ev_ID, e.Ev_Poster 
+
+// Calendar events: get event name + date for advisor's club
+$calendar_query = "
+    SELECT e.Ev_ID, e.Ev_Name, e.Ev_Date, c.Club_Name
     FROM events e
-    JOIN eventstatus es ON e.Status_ID = es.Status_ID
-    LEFT JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID
-    LEFT JOIN eventstatus eps ON ep.Status_ID = eps.Status_ID
-    WHERE es.Status_Name = 'Approved by Coordinator' 
-      AND (ep.Status_ID IS NULL OR eps.Status_Name != 'Postmortem Approved')
+    JOIN club c ON e.Club_ID = c.Club_ID
+    WHERE e.Club_ID = ?
 ";
 
-$carousel_result = $conn->query($carousel_query);
-$start_time = microtime(true);
+
+$stmt = $conn->prepare($calendar_query);
+$stmt->bind_param('i', $club_id);
+$stmt->execute();
+$calendar_result = $stmt->get_result();
+
+$calendar_events = [];
+while ($row = $calendar_result->fetch_assoc()) {
+    $dateKey = $row['Ev_Date']; // YYYY-MM-DD
+    if (!isset($calendar_events[$dateKey])) {
+        $calendar_events[$dateKey] = [];
+    }
+    $calendar_events[$dateKey][] = [
+        'name' => $row['Ev_Name'],
+        'club' => $row['Club_Name']
+    ];
+}
 ?>
+
+<?php include('../components/Advoffcanvas.php'); ?>
+<?php include('../components/Advheader.php'); ?>
 
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ADVISOR CMS</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="styleMain.css">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Advisor Dashboard</title>
 
-    <style>
-        body {
-            padding-top: 70px;
-        }
+    <!-- Bootstrap CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet" />
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+    <!-- Chart.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <link href="../assets/css/advisor.css?v=<?= time() ?>" rel="stylesheet" />
 
-        .list-group-item {
-            border-color: black;
-            background-color: #D2FF72;
-            border-radius: 8px;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        .list-group-item:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-        }
-
-        .text-primary {
-            font-weight: bold;
-        }
-
-        .btn-outline-primary {
-            font-weight: bold;
-            border: 2px solid #32CD32;
-            color: rgb(122, 50, 205);
-            transition: background-color 0.3s ease, color 0.3s ease, transform 0.3s ease;
-        }
-
-        .btn-outline-primary:hover {
-            background-color: #73EC8B;
-            color: rgb(122, 50, 205);
-            transform: scale(1.05);
-        }
-
-        canvas {
-            margin-top: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            border-radius: 8px;
-            background: #fff;
-        }
-    </style>
 </head>
 
 <body>
-    <!-- Top Navigation Bar -->
-    <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
-        <div class="container-fluid">
-            <button class="btn btn-outline-light me-2" data-bs-toggle="offcanvas" data-bs-target="#sidebar">
-                ☰
-            </button>
-            <a class="navbar-brand" href="AdvisorDashboard.php">
-                <img src="NU logo.png" alt="Logo">
-                ADVISOR CMS
-            </a>
-            <div class="dropdown ms-auto">
-                <button class="btn btn-outline-light dropdown-toggle" type="button" id="dropdownMenuButton1"
-                    data-bs-toggle="dropdown">
-                    <?php echo $advisor_name; ?>
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end">
-                    <li><a class="dropdown-item" href="AdvisorProfile.php">Profile</a></li>
-                    <li>
-                        <hr class="dropdown-divider">
-                    </li>
-                    <li><a class="dropdown-item text-danger" href="#" data-bs-toggle="modal"
-                            data-bs-target="#logoutModal">Logout</a></li>
+    <?php include('../model/LogoutDesign.php'); ?>
+    <!-- Main Content -->
+    <div class="container-fluid main-content">
+        <div class="row">
+            <!-- Left Column -->
+            <div class="col-lg-8">
+                <!-- Poster Carousel -->
+                <div class="dashboard-card carousel-container">
+                    <?php include('../components/carousel.php'); ?>
+                </div>
+                <!-- Graph Panel -->
+                <div class="dashboard-card">
+                    <h4 class="section-title">
+                        <i class="fas fa-chart-bar me-2"></i> Event Summary Chart
+                    </h4>
+                    <!-- Filter Section -->
+                    <div class="filter-section">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <label class="form-label">Year</label>
+                                <select class="form-select" id="yearFilter">
+                                    <option value="2025">2025</option>
+                                    <option value="2024">2024</option>
+                                    <option value="2023">2023</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Month</label>
+                                <select class="form-select" id="monthFilter">
+                                    <option value="all">All Months</option>
+                                    <option value="1">January</option>
+                                    <option value="2">February</option>
+                                    <option value="3">March</option>
+                                    <option value="4">April</option>
+                                    <option value="5">May</option>
+                                    <option value="6">June</option>
+                                    <option value="7" selected>July</option>
+                                    <option value="8">August</option>
+                                    <option value="9">September</option>
+                                    <option value="10">October</option>
+                                    <option value="11">November</option>
+                                    <option value="12">December</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Event Type</label>
+                                <select class="form-select" id="eventTypeFilter">
+                                    <option value="all">All Types</option>
+                                    <option value="academic">Academic</option>
+                                    <option value="cultural">Cultural</option>
+                                    <option value="sports">Sports</option>
+                                    <option value="technology">Technology</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="eventChart"></canvas>
+                    </div>
+                </div>
+            </div>
 
+            <!-- Right Column -->
+            <div class="col-lg-4">
+                <!-- Status Panel -->
+                <div class="dashboard-card">
+                    <div class="notification-panel">
+                        <h4 class="section-title">
+                            <i class="fas fa-bell me-2"></i>
+                            *Notification//check with advisor*
+                        </h4>
+                        <?php include('../components/Advnotifypanel.php'); ?>
+                    </div>
+                </div>
+                <!-- Calendar -->
+                <div class="calendar-container">
+                    <h4 class="section-title">
+                        <i class="fas fa-calendar-alt me-2"></i>
+                        Event Calendar
+                    </h4>
+                    <div class="calendar-header">
+                        <div id="prevMonthBtn" class="calendar-nav-btn">
+                            <i class="fas fa-chevron-left"></i>
+                        </div>
+                        <h5 class="calendar-month-title" id="currentMonth">July 2025</h5>
+                        <div id="nextMonthBtn" class="calendar-nav-btn">
+                            <i class="fas fa-chevron-right"></i>
+                        </div>
+                    </div>
 
-                </ul>
+                    <div class="calendar-wrapper">
+                        <div class="calendar-grid">
+                            <div class="calendar-day-header">Sun</div>
+                            <div class="calendar-day-header">Mon</div>
+                            <div class="calendar-day-header">Tue</div>
+                            <div class="calendar-day-header">Wed</div>
+                            <div class="calendar-day-header">Thu</div>
+                            <div class="calendar-day-header">Fri</div>
+                            <div class="calendar-day-header">Sat</div>
+                        </div>
+                        <div id="calendarDays" class="calendar-grid"></div>
+                    </div>
+                </div>
             </div>
         </div>
-    </nav>
-
-    <!--Side Navigation-->
-    <div class="offcanvas offcanvas-start" tabindex="-1" id="sidebar">
-        <div class="offcanvas-header">
-            <h5 class="offcanvas-title">Menu</h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
-        </div>
-        <div class="offcanvas-body d-flex flex-column">
-            <ul class="nav flex-column">
-                <li class="nav-item"> <a class="nav-link active" href="AdvisorDashboard.php">Dashboard</a></li>
-                <li class="nav-item"><a class="nav-link" href="AdvisorProfile.php">Profile</a></li>
-                <li class="nav-item"><a class="nav-link" href="AdvisorProgressView.php">Event Progress</a></li>
-                <li class="nav-item"><a class="nav-link" href="AdvisorEvHistory.php">Event History</a></li>
-
-            </ul>
+    </div>
+    <!-- Event Modal -->
+    <div class="modal fade" id="eventModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">Events on this Day</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="eventModalBody">
+                    <!-- Events will be injected here -->
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Event Poster -->
-    <div id="main-content">
-        <div class="container mt-4">
-            <div id="eventCarousel" class="carousel slide" data-bs-ride="carousel">
-                <div class="carousel-inner">
-                    <?php if ($carousel_result->num_rows > 0): ?>
-                        <?php $isActive = true; ?>
-                        <?php while ($event = $carousel_result->fetch_assoc()): ?>
-                            <div class="carousel-item <?php echo $isActive ? 'active' : ''; ?>">
-                                <img src="<?php echo $event['Ev_Poster']; ?>" class="carousel-img">
-                            </div>
-                            <?php $isActive = false; ?>
-                        <?php endwhile; ?>
-                    <?php else: ?>
-                        <div class="carousel-item active">
-                            <img src="PlaceHolder.png" class="carousel-img" alt="No Events">
-                        </div>
-                    <?php endif; ?>
-                </div>
-                <button class="carousel-control-prev" type="button" data-bs-target="#eventCarousel"
-                    data-bs-slide="prev">
-                    <span class="carousel-control-prev-icon"></span>
-                </button>
-                <button class="carousel-control-next" type="button" data-bs-target="#eventCarousel"
-                    data-bs-slide="next">
-                    <span class="carousel-control-next-icon"></span>
-                </button>
-            </div>
-            <!--Pending Proposal-->
-            <div class="container mt-5">
-                <h3 class="mb-4">Event Proposals</h3>
-                <?php if (!empty($pending_proposals)): ?>
-                    <div class="list-group">
-                        <?php foreach ($pending_proposals as $proposal): ?>
-                            <div
-                                class="list-group-item d-flex justify-content-between align-items-center shadow-sm mb-3 p-3 rounded">
-                                <div>
-                                    <h5 class="mb-1 text-primary"><?php echo $proposal['Ev_Name']; ?></h5>
-                                    <p class="mb-0">
-                                        <strong>Student:</strong> <?php echo $proposal['Stu_Name']; ?><br>
-                                        <strong>Submitted:</strong>
-                                        <?php echo date('d M Y', strtotime($proposal['created_at'])); ?>
-                                    </p>
-                                </div>
-                                <div>
-                                    <a href="AdvisorDecision.php?event_id=<?php echo $proposal['Ev_ID']; ?>"
-                                        class="btn btn-outline-primary btn-sm">
-                                        View
-                                    </a>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
-                <?php else: ?>
-                    <p class="text-muted">No pending proposals found.</p>
-                <?php endif; ?>
-            </div>
-            <!-- Bootstrap JS -->
-            <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-            <?php
-            // End time after processing the page
-            $end_time = microtime(true);
-            $page_load_time = round(($end_time - $start_time) * 1000, 2); // Convert to milliseconds
-            
-            echo "<p style='color: green; font-weight: bold; text-align: center;'>
-      Page Load Time: " . $page_load_time . " ms
-      </p>";
-            ?>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>const events = <?php echo json_encode($calendar_events); ?>;</script>
+    <script src="../assets/js/advisorjs/advdashboard.js?v=<?= time(); ?>"></script>
 </body>
 
 </html>

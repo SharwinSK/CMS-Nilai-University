@@ -39,7 +39,7 @@ $total_approved = $approved_events_result->num_rows;
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Post Event View - Nilai University CMS</title>
+    <title>Post Event</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
     <link href="../assets/css/student.css?v=<?= time() ?>" rel="stylesheet" />
@@ -57,9 +57,6 @@ $total_approved = $approved_events_result->num_rows;
                 <i class="fas fa-eye me-2"></i>
                 Post Event View
             </h2>
-            <p class="page-subtitle">
-                View all completed events and create post-event reports
-            </p>
         </div>
 
         <!-- Events Table -->
@@ -93,7 +90,7 @@ $total_approved = $approved_events_result->num_rows;
                                     <td class="club-name"><?php echo $event['Club_Name']; ?></td>
                                     <td class="event-date"><?php echo date('Y-m-d', strtotime($event['Ev_Date'])); ?></td>
                                     <td>
-                                        <a href="../student/postevent/Postmortem.php?Ev_ID=<?= $event['Ev_ID']; ?>&mode=create"
+                                        <a href="../student/postevent/PostEvent_Form.php?Ev_ID=<?= $event['Ev_ID']; ?>&mode=create"
                                             class="btn-create-report">
                                             <i class="fas fa-file-medical-alt"></i>
                                             Create Report
@@ -105,7 +102,7 @@ $total_approved = $approved_events_result->num_rows;
                             <tr>
                                 <td colspan="5" class="no-events">
                                     <i class="fas fa-info-circle"></i><br />
-                                    No approved events available for postmortem creation.
+                                    No approved events available for Post Event creation.
                                 </td>
                             </tr>
                         <?php endif; ?>

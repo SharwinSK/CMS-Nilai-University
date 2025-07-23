@@ -18,10 +18,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $redirectUrl = '../index.php';
                 break;
             case 'coordinator':
-                $redirectUrl = 'CoordinatorLogin.php';
+                $redirectUrl = '../auth/coordinatorLogin.php';
                 break;
             case 'advisor':
-                $redirectUrl = 'AdvisorLogin.php';
+                $redirectUrl = '../auth/advisorLogin.php';
                 break;
             default:
                 $redirectUrl = '../auth/studentlogin.php';

@@ -160,15 +160,21 @@ while ($row = $calendar_event_result->fetch_assoc()) {
             </div>
         </div>
         <!-- Attach Components -->
-        <div class="row">
-            <div class="col-lg-8">
-                <?php include('../components/carousel.php'); ?> <!-- Event Carousel -->
-                <?php include('../components/calendar.php'); ?><!-- Event Calendar -->
+        <div class="row align-items-stretch">
+            <div class="col-lg-8 d-flex flex-column">
+                <?php include('../components/carousel.php'); ?>
+                <div class="calendar-wrapper-stretch flex-grow-1 d-flex flex-column">
+                    <?php include('../components/calendar.php'); ?>
+                </div>
             </div>
-            <div class="col-lg-4">
-                <?php include('../components/statuspanel.php'); ?> <!-- Status Panel -->
+            <div class="col-lg-4 d-flex flex-column">
+                <div class="status-wrapper-stretch flex-grow-1 d-flex flex-column">
+                    <?php include('../components/statuspanel.php'); ?>
+                </div>
             </div>
         </div>
+
+
     </div>
 
     <!-- Floating Action Button -->
@@ -208,11 +214,21 @@ while ($row = $calendar_event_result->fetch_assoc()) {
 
     <script>
         const calendarEvents = <?php echo json_encode($events_by_date); ?>;
-        const events = calendarEvents; // Ensure this is defined globally
+        const events = calendarEvents;
+
         document.addEventListener("DOMContentLoaded", () => {
-            updateCalendarDisplay(); // Directly call update on load
+            updateCalendarDisplay();
+
+            const prevBtn = document.getElementById("prevMonthBtn");
+            const nextBtn = document.getElementById("nextMonthBtn");
+
+            if (prevBtn && nextBtn) {
+                prevBtn.addEventListener("click", previousMonth);
+                nextBtn.addEventListener("click", nextMonth);
+            }
         });
     </script>
+
 </body>
 
 </html>

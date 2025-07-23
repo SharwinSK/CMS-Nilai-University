@@ -5,14 +5,15 @@
         Event Calendar
     </h4>
     <div class="calendar-header">
-        <div class="calendar-nav-btn" onclick="previousMonth()">
+        <div id="prevMonthBtn" class="calendar-nav-btn">
             <i class="fas fa-chevron-left"></i>
         </div>
         <h5 class="calendar-month-title" id="currentMonth">July 2025</h5>
-        <div class="calendar-nav-btn" onclick="nextMonth()">
+        <div id="nextMonthBtn" class="calendar-nav-btn">
             <i class="fas fa-chevron-right"></i>
         </div>
     </div>
+
     <div class="calendar-wrapper">
         <div class="calendar-grid">
             <div class="calendar-day-header">Sun</div>

@@ -115,13 +115,11 @@ $postmortem_result = $postmortem_stmt->get_result();
     <div class="content-wrapper">
         <div class="container-fluid">
             <!-- Page Title -->
-            <div class="row">
-                <div class="col-12">
-                    <h1 class="page-title">
-                        <i class="fas fa-sync-alt me-2"></i>
-                        Event Track Progress
-                    </h1>
-                </div>
+            <div class="page-header">
+                <h2 class="page-title">
+                    <i class="fa-solid fa-bars-progress"></i>
+                    Post Event View
+                </h2>
             </div>
 
             <!-- Proposal Section -->
@@ -198,7 +196,7 @@ $postmortem_result = $postmortem_stmt->get_result();
                                                 echo '<button class="action-btn btn-delete" onclick="deleteProposal(\'' . $proposal['Ev_ID'] . '\')"><i class="fas fa-trash"></i> Delete</button>';
                                             } elseif ($status === 'Approved by Coordinator') {
                                                 echo '<button class="action-btn btn-view" onclick="viewProposal(\'' . $proposal['Ev_ID'] . '\')"><i class="fas fa-eye"></i> View</button>';
-                                                echo '<button class="action-btn btn-postmortem" onclick="createPostmortem(\'' . $proposal['Ev_ID'] . '\')"><i class="fas fa-plus"></i> Create Postmortem</button>';
+                                                echo '<button class="action-btn btn-postmortem" onclick="createPostmortem(\'' . $proposal['Ev_ID'] . '\')"><i class="fas fa-plus"></i> Post Event</button>';
                                             } else {
                                                 echo '<span class="text-muted">N/A</span>';
                                             }

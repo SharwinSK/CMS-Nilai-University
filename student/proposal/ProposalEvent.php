@@ -507,13 +507,13 @@ Proposal';
                                 <label for="eventNature" class="required">Event Nature</label>
                                 <select id="eventNature" name="eventNature" required>
                                     <option value="">Select Category</option>
-                                    <option value="Category A">
+                                    <option value="Category A: Games/Sports & Martial Arts">
                                         Category A: Games/Sports & Martial Arts
                                     </option>
-                                    <option value="Category B">
+                                    <option value="Category B: Club/Societies/Uniformed Units">
                                         Category B: Club/Societies/Uniformed Units
                                     </option>
-                                    <option value="Category C">
+                                    <option value="Category C: Community Service">
                                         Category C: Community Service
                                     </option>
                                 </select>

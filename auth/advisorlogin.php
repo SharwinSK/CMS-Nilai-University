@@ -17,7 +17,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $_SESSION['Adv_ID'] = $user['Adv_ID'];
                 $_SESSION['Club_ID'] = $user['Club_ID'];
                 $_SESSION['user_type'] = 'advisor';
-                header("Location: AdvisorDashboard.php");
+                header("Location: ../advisor/AdvisorDashboard.php");
                 exit();
             }
         }
