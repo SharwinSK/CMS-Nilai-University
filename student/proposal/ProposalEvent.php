@@ -567,17 +567,39 @@ Proposal';
                         <div class="form-col">
                             <div class="form-group">
                                 <label for="startTime" class="required">Start Time</label>
-                                <input type="time" id="startTime" name="startTime" required />
-                                <div class="error-message">Please enter start time</div>
+                                <select id="startTime" name="startTime" class="form-select" required>
+                                    <option value="">-- Select Start Time --</option>
+                                    <?php
+                                    for ($h = 8; $h <= 22; $h++) {
+                                        $timeValue = str_pad($h, 2, '0', STR_PAD_LEFT) . ":00";
+                                        $labelHour = ($h == 12) ? 12 : ($h % 12);
+                                        $ampm = ($h < 12) ? "AM" : "PM";
+                                        echo "<option value='$timeValue'>$labelHour:00 $ampm</option>";
+                                    }
+                                    ?>
+                                </select>
+                                <div class="error-message">Please select start time</div>
                             </div>
                         </div>
+
                         <div class="form-col">
                             <div class="form-group">
                                 <label for="endTime" class="required">End Time</label>
-                                <input type="time" id="endTime" name="endTime" required />
-                                <div class="error-message">Please enter end time</div>
+                                <select id="endTime" name="endTime" class="form-select" required>
+                                    <option value="">-- Select End Time --</option>
+                                    <?php
+                                    for ($h = 8; $h <= 22; $h++) {
+                                        $timeValue = str_pad($h, 2, '0', STR_PAD_LEFT) . ":00";
+                                        $labelHour = ($h == 12) ? 12 : ($h % 12);
+                                        $ampm = ($h < 12) ? "AM" : "PM";
+                                        echo "<option value='$timeValue'>$labelHour:00 $ampm</option>";
+                                    }
+                                    ?>
+                                </select>
+                                <div class="error-message">Please select end time</div>
                             </div>
                         </div>
+
                         <div class="form-col">
                             <div class="form-group">
                                 <label for="venue" class="required">Venue</label>
@@ -699,9 +721,15 @@ Proposal';
                                 <!-- Rows will be added dynamically -->
                             </tbody>
                         </table>
+
                         <button type="button" class="btn btn-add" id="addCommitteeBtn">
                             + Add New Row
                         </button>
+                        <div style="margin-bottom: 10px;">
+                            <a href="../../samples/Committee_Sample.pdf" download class="btn btn-secondary">
+                                📥 Download Sample Format
+                            </a>
+                        </div>
                     </div>
                 </div>
 
@@ -1037,7 +1065,7 @@ Proposal';
                 <td><input type="text" class="form-control form-control-lg" style="min-width:150px;" name="committeeName[]" required></td>
                 <td><input type="text" class="form-control form-control-lg" style="min-width:150px;" name="committeePosition[]" required></td>
                 <td>
-  <select class="form-select" name="committeeDepartment[]" required>
+            <select class="form-select" name="committeeDepartment[]" required>
     <option value="">Department</option>
     <option value="Foundation in Business">Foundation in Business</option>
     <option value="Foundation in Science">Foundation in Science</option>

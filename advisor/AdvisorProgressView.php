@@ -1,7 +1,6 @@
 <?php
 session_start();
-include('dbconfig.php');
-include('LogoutDesign.php');
+include('../db/dbconfig.php');
 
 if (!isset($_SESSION['Adv_ID'])) {
     header("Location: AdvisorLogin.php");
@@ -11,279 +10,317 @@ if (!isset($_SESSION['Adv_ID'])) {
 $advisor_id = $_SESSION['Adv_ID'];
 $club_id = $_SESSION['Club_ID'];
 
+// Fetch advisor name
 $stmt = $conn->prepare("SELECT Adv_Name FROM advisor WHERE Adv_ID = ?");
 $stmt->bind_param('s', $advisor_id);
 $stmt->execute();
 $result = $stmt->get_result();
-$advisor_name = $result->fetch_assoc()['Adv_Name'];
+$advisor_name = $result->fetch_assoc()['Adv_Name'] ?? 'Advisor';
 
+// Fetch ongoing events (exclude postmortem approved = 8)
 $query = "
 SELECT 
-    e.Ev_ID, e.Ev_Name, s.Stu_Name, es.Status_Name AS Ev_Status, 
-    es_post.Status_Name AS Rep_PostStatus, e.Ev_Objectives, e.Ev_Intro, 
-    e.Ev_Details, e.Ev_Pax, e.Ev_Date,
-    e.Ev_StartTime, e.Ev_EndTime, pic.PIC_Name
+    e.Ev_ID, e.Ev_Name, s.Stu_Name, c.Club_Name, e.Ev_Date,
+    es.Status_Name AS Ev_Status, ep.Status_ID AS Post_Status_ID
 FROM events e
-LEFT JOIN student s ON e.Stu_ID = s.Stu_ID
-LEFT JOIN eventpostmortem p ON e.Ev_ID = p.Ev_ID
-LEFT JOIN eventstatus es_post ON p.Status_ID = es_post.Status_ID
-LEFT JOIN personincharge pic ON e.Ev_ID = pic.Ev_ID
+JOIN student s ON e.Stu_ID = s.Stu_ID
+JOIN club c ON e.Club_ID = c.Club_ID
+LEFT JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID
 LEFT JOIN eventstatus es ON e.Status_ID = es.Status_ID
-WHERE e.Club_ID = ? 
-  AND es.Status_Name IN ('Approved by Advisor (Pending Coordinator Review)', 'Approved by Coordinator')
-  AND (p.Status_ID IS NULL OR es_post.Status_Name != 'Postmortem Approved')
-
+WHERE e.Club_ID = ?
+  AND es.Status_Name IN (
+        'Approved by Advisor (Pending Coordinator Review)',
+        'Rejected by Coordinator',
+        'Approved by Coordinator'
+    )
+  AND (
+        ep.Status_ID IS NULL 
+        OR ep.Status_ID != 8
+    )
+ORDER BY e.Ev_Date DESC
 ";
 
-
-
 $stmt = $conn->prepare($query);
-$stmt->bind_param('i', $club_id);
+$stmt->bind_param("i", $club_id);
 $stmt->execute();
-$proposals = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-$start_time = microtime(true);
+$events = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+
+$total = count($events);
+$underReview = $ongoing = $rejected = $finished = 0;
+
+foreach ($events as $e) {
+    if ($e['Post_Status_ID'] == 6)
+        $finished++;
+    elseif ($e['Ev_Status'] === 'Approved by Advisor (Pending Coordinator Review)')
+        $underReview++;
+    elseif ($e['Ev_Status'] === 'Rejected by Coordinator')
+        $rejected++;
+    elseif ($e['Ev_Status'] === 'Approved by Coordinator')
+        $ongoing++;
+}
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CMS GA Progress</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="styleMain.css">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Event Progress - Nilai University CMS</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+    <link href="../assets/css/advisor.css?v=<?= time() ?>" rel="stylesheet" />
+
     <style>
-        .btn-view {
-            background-color: #32CD32;
-            color: white;
-            border-radius: 5px;
-            transition: background-color 0.3s ease-in-out, transform 0.3s ease-in-out;
+        .main-content {
+            padding: 30px;
+            margin-top: 20px;
         }
 
-        .btn-view:hover {
-            background-color: #15B392;
-            transform: scale(1.05);
-            color: white;
+        .page-header {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(172, 115, 255, 0.2);
         }
 
-        .table th,
-        .table td {
-            text-align: center;
-            vertical-align: middle;
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 30px;
         }
 
-        .table th {
-            background-color: #54C392;
-            /* Green header */
-            color: white;
-            text-align: center;
-
+        .header-left {
+            flex: 1;
         }
 
-        .table td,
-        .table tr {
-            background-color: #D2FF72;
-            text-align: center;
-            border-color: rgb(0, 0, 0);
-        }
-
-        .modal-content {
-            border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        .modal-header {
-            background-color: #15B392;
-            color: white;
-            font-weight: bold;
-        }
-
-        .modal-body p {
-            margin-bottom: 10px;
-            color: #640D5F;
-            font-size: 16px;
-        }
-
-        .modal-body span {
-            font-weight: bold;
-            color: black;
+        .header-right {
+            flex-shrink: 0;
         }
     </style>
 </head>
 
 <body>
-    <!-- Top Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark">
-        <div class="container-fluid">
-            <button class="btn btn-outline-light me-2" data-bs-toggle="offcanvas" data-bs-target="#sidebar">
-                ☰
-            </button>
-            <a class="navbar-brand" href="AdvisorDashboard.php">
-                <img src="NU logo.png" alt="Logo">
-                Progress
-            </a>
-            <div class="dropdown ms-auto">
-                <button class="btn btn-outline-light dropdown-toggle" type="button" id="dropdownMenuButton1"
-                    data-bs-toggle="dropdown">
-                    <?php echo $advisor_name; ?>
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end">
-                    <li><a class="dropdown-item" href="AdvisorProfile.php">Profile</a></li>
-                    <li>
-                        <hr class="dropdown-divider">
-                    </li>
-                    <li><a class="dropdown-item text-danger" href="#" data-bs-toggle="modal"
-                            data-bs-target="#logoutModal">Logout</a></li>
-                </ul>
-            </div>
-        </div>
-    </nav>
-    <!--Side Navigation-->
-    <div class="offcanvas offcanvas-start" tabindex="-1" id="sidebar">
-        <div class="offcanvas-header">
-            <h5 class="offcanvas-title">Menu</h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
-        </div>
-        <div class="offcanvas-body d-flex flex-column">
-            <ul class="nav flex-column">
-                <li class="nav-item"> <a class="nav-link active" href="AdvisorDashboard.php">Dashboard</a></li>
-                <li class="nav-item"><a class="nav-link" href="AdvisorProfile.php">Profile</a></li>
-                <li class="nav-item"><a class="nav-link" href="AdvisorProgressView.php">Event Progress</a></li>
-                <li class="nav-item"><a class="nav-link" href="AdvisorEvHistory.php">Event History</a></li>
+    <?php include('../components/Advoffcanvas.php'); ?>
+    <?php include('../components/Advheader.php'); ?>
+    <?php include('../model/LogoutDesign.php'); ?>
 
-            </ul>
-
-        </div>
-    </div>
 
     <!-- Main Content -->
-    <div class="container mt-4">
-        <h1 class="text-center mb-4">Event Progress</h1>
-        <div class="table-responsive">
-            <table class="table table-bordered table-hover">
-                <thead class="table-dark">
-                    <tr>
-                        <th>Event ID</th>
-                        <th>Event Name</th>
-                        <th>Student Name</th>
-                        <th>Status</th>
-                        <th>Report Status</th>
-                        <th>Actions</th>
-                        <th>Export</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if (count($proposals) > 0): ?>
-                        <?php foreach ($proposals as $proposal): ?>
-                            <tr>
-                                <td><?php echo $proposal['Ev_ID']; ?></td>
-                                <td><?php echo $proposal['Ev_Name']; ?></td>
-                                <td><?php echo $proposal['Stu_Name']; ?></td>
-                                <td>
-                                    <?php
-                                    if ($proposal['Ev_Status'] === 'Approved by Coordinator') {
-                                        echo '<span class="badge bg-success">Approved</span>';
-                                    } else {
-                                        echo '<span class="badge bg-warning">In Progress</span>';
-                                    }
-                                    ?>
-                                </td>
-                                <td>
-                                    <?php
-                                    if ($proposal['Rep_PostStatus'] === 'Pending Coordinator Review') {
-                                        echo '<span class="badge bg-warning">Pending Report Review</span>';
-                                    } else {
-                                        echo '<span class="badge bg-secondary">N/A</span>';
-                                    }
-                                    ?>
-                                </td>
-                                <td>
-                                    <button class="btn btn-primary btn-sm btn-view" data-bs-toggle="modal"
-                                        data-bs-target="#eventDetailsModal"
-                                        data-event-name="<?php echo $proposal['Ev_Name']; ?>"
-                                        data-event-objectives="<?php echo $proposal['Ev_Objectives']; ?>"
-                                        data-event-intro="<?php echo $proposal['Ev_Intro']; ?>"
-                                        data-event-details="<?php echo $proposal['Ev_Details']; ?>"
-                                        data-event-pax="<?php echo $proposal['Ev_Pax']; ?>"
-                                        data-event-date="<?php echo $proposal['Ev_Date']; ?>"
-                                        data-event-starttime="<?php echo $proposal['Ev_StartTime']; ?>"
-                                        data-event-endtime="<?php echo $proposal['Ev_EndTime']; ?>"
-                                        data-pic-name="<?php echo $proposal['PIC_Name']; ?>">
-                                        View
-                                    </button>
-                                </td>
-                                <td>
-                                    <a href="generate_pdf.php?id=<?php echo $proposal['Ev_ID']; ?>"
-                                        class="btn btn-warning btn-sm">Export</a>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    <?php else: ?>
+    <div class="main-content">
+
+        <!-- Page Header with Event Summary -->
+        <div class="page-header">
+            <div class="header-content">
+                <div class="header-left">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-tasks me-3" style="font-size: 2.5rem; color: var(--primary-purple)"></i>
+                        <div>
+                            <h1 class="page-title">🚧 Event Progress</h1>
+                            <p class="page-subtitle">
+                                Monitor and manage ongoing student events
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <div class="summary-section">
+                        <div class="event-count">
+                            <span class="count-number"><?= $total ?></span>
+                            <span class="count-label">Events in Progress</span>
+                        </div>
+                        <div class="status-indicators">
+                            <span class="status-dot dot-under-review"></span>
+                            <span class="status-text"><?= $underReview ?> Under Review</span> <span
+                                class="status-dot dot-ongoing"></span>
+                            <span class="status-text"><?= $ongoing ?> Ongoing</span>
+                            <span class="status-dot dot-rejected"></span>
+                            <span class="status-text"><?= $rejected ?> Rejected</span>
+                            <span class="status-dot dot-finished"></span>
+                            <span class="status-text"><?= $finished ?> Finished</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Events Container -->
+        <div class="events-container">
+            <!-- Search and Filter -->
+            <div class="search-filter">
+                <div class="row">
+                    <div class="col-md-8">
+                        <input type="text" class="form-control search-input" id="searchEvents"
+                            placeholder="🔍 Search events by name, student, or club..." />
+                    </div>
+                    <div class="col-md-4">
+                        <select class="form-select search-input" id="statusFilter">
+                            <option value="">All Status</option>
+                            <option value="Under Review">Under Review</option>
+                            <option value="Ongoing">Ongoing</option>
+                            <option value="Rejected">Rejected</option>
+                            <option value="Finished">Finished</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Events Table -->
+            <div class="table-responsive">
+                <table class="table" id="eventsTable">
+                    <thead>
                         <tr>
-                            <td colspan="6" class="text-center text-muted">No events to display</td>
+                            <th>Event ID</th>
+                            <th>Event Name</th>
+                            <th>Student</th>
+                            <th>Club</th>
+                            <th>Event Date</th>
+                            <th>Status</th>
+                            <th>Actions</th>
                         </tr>
-                    <?php endif; ?>
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody id="eventsTableBody">
+                        <?php if (count($events) > 0): ?>
+                            <?php foreach ($events as $event): ?>
+                                <?php
+                                $statusLabel = 'Unknown';
+                                $statusClass = 'unknown';
+                                $showButtons = true;
+
+                                if ($event['Post_Status_ID'] == 6) {
+                                    $statusLabel = 'Event Finish';
+                                    $statusClass = 'finish';
+                                    $showButtons = false;
+                                } elseif ($event['Ev_Status'] === 'Approved by Advisor (Pending Coordinator Review)') {
+                                    $statusLabel = 'Under Review';
+                                    $statusClass = 'under-review';
+                                } elseif ($event['Ev_Status'] === 'Rejected by Coordinator') {
+                                    $statusLabel = 'Rejected';
+                                    $statusClass = 'rejected';
+                                } elseif ($event['Ev_Status'] === 'Approved by Coordinator') {
+                                    $statusLabel = 'Ongoing';
+                                    $statusClass = 'ongoing';
+                                }
+                                ?>
+                                <tr>
+                                    <td><strong><?= $event['Ev_ID'] ?></strong></td>
+                                    <td><?= htmlspecialchars($event['Ev_Name']) ?></td>
+                                    <td><?= htmlspecialchars($event['Stu_Name']) ?></td>
+                                    <td><?= htmlspecialchars($event['Club_Name']) ?></td>
+                                    <td><?= date("d M Y", strtotime($event['Ev_Date'])) ?></td>
+                                    <td><span class="status-badge status-<?= $statusClass ?>"><?= $statusLabel ?></span></td>
+                                    <td>
+                                        <?php if ($showButtons): ?>
+                                            <a href="previewModal.php?Ev_ID=<?= $event['Ev_ID'] ?>&mode=view"
+                                                class="btn-action btn-view">
+                                                <i class="fas fa-eye me-1"></i>View
+                                            </a>
+                                            <a href="../components/pdf/generate_pdf.php?id=<?= $event['Ev_ID'] ?>"
+                                                class="btn-action btn-export">
+                                                <i class="fas fa-file-pdf me-1"></i>Export
+                                            </a>
+                                        <?php else: ?>
+                                            <span class="text-muted">-</span>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <tr>
+                                <td colspan="7" class="text-center text-muted">No ongoing events available.</td>
+                            </tr>
+                        <?php endif; ?>
+                    </tbody>
+
+                </table>
+            </div>
+
+            <!-- Empty State (initially hidden) -->
+            <div class="empty-state" id="emptyState" style="display: none">
+                <i class="fas fa-calendar-times"></i>
+                <h4>No Ongoing Events Found</h4>
+                <p>
+                    There are currently no ongoing events matching your search criteria.
+                </p>
+            </div>
         </div>
     </div>
 
-    <!-- Modal -->
-    <div class="modal fade" id="eventDetailsModal" tabindex="-1" aria-labelledby="eventDetailsLabel" aria-hidden="true">
-        <div class="modal-dialog">
+    <!-- View Details Modal -->
+    <div class="modal fade" id="viewDetailsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="eventDetailsLabel">Event Details</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="modal-header" style="background: var(--primary-purple); color: white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-eye me-2"></i>Event Details
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body">
-                    <p><strong>Event Name:</strong> <span id="modalEventName"></span></p>
-                    <p><strong>Objectives:</strong> <span id="modalEventObjectives"></span></p>
-                    <p><strong>Introduction:</strong> <span id="modalEventIntro"></span></p>
-                    <p><strong>Details:</strong> <span id="modalEventDetails"></span></p>
-                    <p><strong>Estimated Pax:</strong> <span id="modalEventPax"></span></p>
-                    <p><strong>Venue:</strong> <span id="modalEventVenue"></span></p>
-                    <p><strong>Date:</strong> <span id="modalEventDate"></span></p>
-                    <p><strong>Start Time:</strong> <span id="modalEventStartTime"></span></p>
-                    <p><strong>End Time:</strong> <span id="modalEventEndTime"></span></p>
-                    <p><strong>Person in Charge:</strong> <span id="modalPICName"></span></p>
+                <div class="modal-body" id="eventDetailsContent">
+                    <!-- Event details will be loaded here -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        Close
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+
     <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            const eventModal = document.getElementById("eventDetailsModal");
 
-            eventModal.addEventListener("show.bs.modal", (event) => {
-                const button = event.relatedTarget;
 
-                // Retrieve data attributes
-                document.getElementById("modalEventName").textContent = button.getAttribute("data-event-name");
-                document.getElementById("modalEventObjectives").textContent = button.getAttribute("data-event-objectives");
-                document.getElementById("modalEventIntro").textContent = button.getAttribute("data-event-intro");
-                document.getElementById("modalEventDetails").textContent = button.getAttribute("data-event-details");
-                document.getElementById("modalEventPax").textContent = button.getAttribute("data-event-pax");
-                document.getElementById("modalEventVenue").textContent = button.getAttribute("data-event-venue");
-                document.getElementById("modalEventDate").textContent = button.getAttribute("data-event-date");
-                document.getElementById("modalEventStartTime").textContent = button.getAttribute("data-event-starttime");
-                document.getElementById("modalEventEndTime").textContent = button.getAttribute("data-event-endtime");
-                document.getElementById("modalPICName").textContent = button.getAttribute("data-pic-name");
+        function formatDate(dateString) {
+            const options = { year: "numeric", month: "short", day: "numeric" };
+            return new Date(dateString).toLocaleDateString("en-US", options);
+        }
+
+
+        function filterEvents() {
+            const searchTerm = document.getElementById("searchEvents").value.toLowerCase();
+            const statusFilter = document.getElementById("statusFilter").value.toLowerCase();
+            const rows = document.querySelectorAll("#eventsTableBody tr");
+
+            let visibleCount = 0;
+
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                const status = row.querySelector(".status-badge")?.textContent.toLowerCase() || "";
+
+                const matchesSearch = text.includes(searchTerm);
+                const matchesStatus = !statusFilter || status === statusFilter;
+
+                if (matchesSearch && matchesStatus) {
+                    row.style.display = "";
+                    visibleCount++;
+                } else {
+                    row.style.display = "none";
+                }
             });
-        });
+
+            // Show/hide empty state
+            const emptyState = document.getElementById("emptyState");
+            if (visibleCount === 0) {
+                emptyState.style.display = "block";
+            } else {
+                emptyState.style.display = "none";
+            }
+        }
+
+        // Event listeners
+        document.getElementById("searchEvents").addEventListener("input", filterEvents);
+        document.getElementById("statusFilter").addEventListener("change", filterEvents);
+
+
     </script>
-    <?php
-    // End time after processing the page
-    $end_time = microtime(true);
-    $page_load_time = round(($end_time - $start_time) * 1000, 2); // Convert to milliseconds
-    
-    echo "<p style='color: green; font-weight: bold; text-align: center;'>
-      Page Load Time: " . $page_load_time . " ms
-      </p>";
-    ?>
 </body>
 
 </html>

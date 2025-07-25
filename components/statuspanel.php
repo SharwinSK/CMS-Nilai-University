@@ -25,7 +25,7 @@
                     <span class="status-badge <?= $badgeClass ?>"><?= $status ?></span>
 
                 </div>
-                <button class="view-btn" onclick="viewNotification('<?= addslashes($row['Ev_Name']) ?>')">View</button>
+                <button class="view-btn" onclick="window.location.href='../student/progresspage.php'">View</button>
             </div>
         <?php endwhile; ?>
 

@@ -41,6 +41,7 @@ $offset = ($current_page - 1) * $results_per_page;
 <body>
     <?php include('../components/header.php'); ?>
     <?php include('../components/offcanvas.php'); ?>
+    <?php include('../model/LogoutDesign.php'); ?>
     <!-- Main Content -->
     <div class="container-fluid mt-4">
         <!-- Page Header -->
