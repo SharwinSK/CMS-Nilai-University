@@ -274,25 +274,21 @@
             font-weight: 500;
         }
 
-        .badge-seminar {
+        .badge-CSR {
             background: #e3f2fd;
             color: #1976d2;
         }
 
-        .badge-workshop {
+        .badge-SDG {
             background: #f3e5f5;
             color: #7b1fa2;
         }
 
-        .badge-conference {
+        .badge-USG {
             background: #e8f5e8;
             color: #388e3c;
         }
 
-        .badge-competition {
-            background: #fff3e0;
-            color: #f57c00;
-        }
 
         .results-info-section {
             background: white;
