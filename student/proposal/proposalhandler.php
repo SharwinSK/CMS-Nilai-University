@@ -221,7 +221,7 @@ $stmt->close();
         <h2 class="mt-3 text-success">Proposal Submitted!</h2>
         <p>Your event has been submitted successfully.</p>
         <p><strong>Event ID: <?= $event_id ?></strong></p>
-        <a href="../dashboard/StudentDashboard.php" class="btn btn-success">Back to Dashboard</a>
+        <a href="../StudentDashboard.php" class="btn btn-success">Back to Dashboard</a>
     </div>
 </body>
 

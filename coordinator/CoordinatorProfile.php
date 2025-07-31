@@ -1,50 +1,65 @@
 <?php
 session_start();
-include('dbconfig.php');
-include('LogoutDesign.php');
+include('../db/dbconfig.php');
+$currentPage = 'profile';
 
+
+// If this is a fetch() POST request → handle AJAX update
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    header('Content-Type: application/json');
+
+    if (!isset($_SESSION['Coor_ID'])) {
+        echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+        exit();
+    }
+
+    // Read raw body and decode
+    $rawData = file_get_contents('php://input');
+    $data = json_decode($rawData, true);
+
+    if (!$data) {
+        echo json_encode(['success' => false, 'message' => 'Invalid JSON']);
+        exit();
+    }
+
+    $name = trim($data['name'] ?? '');
+    $email = trim($data['email'] ?? '');
+    $phone = trim($data['phone'] ?? '');
+
+    if ($name === '' || $email === '' || $phone === '') {
+        echo json_encode(['success' => false, 'message' => 'All fields are required']);
+        exit();
+    }
+
+    $coordinator_id = $_SESSION['Coor_ID'];
+
+    $stmt = $conn->prepare("UPDATE coordinator SET Coor_Name = ?, Coor_Email = ?, Coor_PhnNum = ? WHERE Coor_ID = ?");
+    $stmt->bind_param("ssss", $name, $email, $phone, $coordinator_id);
+
+    if ($stmt->execute()) {
+        echo json_encode(['success' => true]);
+    } else {
+        echo json_encode(['success' => false, 'message' => $stmt->error]);
+    }
+
+    exit();
+}
+
+// === PAGE LOAD (GET) ===
 if (!isset($_SESSION['Coor_ID'])) {
     header("Location: CoordinatorLogin.php");
     exit();
 }
 
 $coordinator_id = $_SESSION['Coor_ID'];
-$query = $conn->prepare("SELECT Coor_Name, Coor_Email, Coor_PhnNum FROM coordinator WHERE Coor_ID = ?");
-$query->bind_param("s", $coordinator_id);
-$query->execute();
-$result = $query->get_result();
-
-if ($result && $result->num_rows > 0) {
-    $coordinator = $result->fetch_assoc();
-} else {
-    die("Coordinator not found.");
-}
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $name = $_POST['Coor_Name'];
-    $email = $_POST['Coor_Email'];
-    $phone = $_POST['Coor_Phone'];
-
-    $update_query = $conn->prepare("
-        UPDATE coordinator 
-        SET Coor_Name = ?, Coor_Email = ?, Coor_PhnNum = ? 
-        WHERE Coor_ID = ?
-    ");
-    $update_query->bind_param("ssss", $name, $email, $phone, $coordinator_id);
-    if ($update_query->execute()) {
-        $success_message = "Profile updated successfully!";
-
-        $query = $conn->prepare("SELECT Coor_Name, Coor_Email, Coor_PhnNum FROM coordinator WHERE Coor_ID = ?");
-        $query->bind_param("s", $coordinator_id);
-        $query->execute();
-        $result = $query->get_result();
-        $coordinator = $result->fetch_assoc();
-    } else {
-        $error_message = "Failed to update profile. Please try again.";
-    }
-}
-$start_time = microtime(true);
+$stmt = $conn->prepare("SELECT Coor_Name, Coor_Email, Coor_PhnNum FROM coordinator WHERE Coor_ID = ?");
+$stmt->bind_param("s", $coordinator_id);
+$stmt->execute();
+$result = $stmt->get_result();
+$coordinator = $result->fetch_assoc();
+$coordinator_name = $coordinator['Coor_Name'];
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -52,152 +67,338 @@ $start_time = microtime(true);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CMS GA Profile</title>
-    <!-- Include Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="styleMain.css">
-    <style>
-        body {
-            padding: 70px;
-        }
+    <title>Coordinator Profile - Nilai University CMS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="../assets/css/coordinator.css?v=<?= time() ?>" rel="stylesheet" />
 
-        .form-label {
-            font-weight: bold;
-            color: #6c63ff;
-        }
-
-        .form-control {
-            border: 1px solid #6c63ff;
-            border-radius: 8px;
-        }
-
-        .btn-update {
-            background-color: #6c63ff;
-            color: white;
-            border-radius: 8px;
-            padding: 10px;
-            font-size: 16px;
-        }
-
-        .btn-update:hover {
-            background-color: #574b90;
-        }
-
-        .card {
-            transition: transform 0.3s, box-shadow 0.3s;
-        }
-
-        .card:hover {
-            transform: scale(1.05);
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
-        }
-    </style>
 </head>
 
 <body>
-    <!-- Top Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
-        <div class="container-fluid">
-            <button class="btn btn-outline-light me-2" data-bs-toggle="offcanvas" data-bs-target="#sidebar">
-                ☰
-            </button>
-            <a class="navbar-brand" href="CoordinatorDashboard.php">
-                <img src="NU logo.png" alt="Logo">
-                Profile
-            </a>
-            <div class="dropdown ms-auto">
-                <button class="btn btn-outline-light dropdown-toggle" type="button" id="dropdownMenuButton1"
-                    data-bs-toggle="dropdown">
-                    <?php echo $coordinator['Coor_Name']; ?>
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end">
-                    <li><a class="dropdown-item" href="CoordinatorProfile.php">Profile</a></li>
-                    <li>
-                        <hr class="dropdown-divider">
+    <?php include('../model/LogoutDesign.php'); ?>
+    <?php include('../components/Cordoffcanvas.php'); ?>
+    <?php include('../components/Cordheader.php'); ?>
+    <!-- Main Content -->
+    <div class="profile-container">
+        <div class="profile-card">
+            <!-- Profile Header -->
+            <div class="profile-header">
+                <div class="profile-avatar">
+                    <i class="fas fa-user"></i>
+                </div>
+
+                <p class="profile-role">Event Coordinator</p>
+            </div>
+
+            <!-- Profile Body -->
+            <div class="profile-body">
+                <ul class="profile-info-list">
+                    <!-- Full Name -->
+                    <li class="profile-info-item">
+                        <div class="info-icon">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="info-content">
+                            <div class="info-label">👨‍💼 Full Name</div>
+                            <div class="info-value" id="display-name">
+                                <?php echo htmlspecialchars($coordinator['Coor_Name']); ?>
+                            </div>
+                        </div>
                     </li>
-                    <li><a class="dropdown-item text-danger" href="#" data-bs-toggle="modal"
-                            data-bs-target="#logoutModal">Logout</a></li>
+
+                    <!-- Coordinator ID -->
+                    <li class="profile-info-item">
+                        <div class="info-icon">
+                            <i class="fas fa-id-badge"></i>
+                        </div>
+                        <div class="info-content">
+                            <div class="info-label">🆔 Coordinator ID</div>
+                            <div class="info-value" id="display-id"><?php echo htmlspecialchars($coordinator_id); ?>
+                            </div>
+                        </div>
+                    </li>
+
+                    <!-- Email Address -->
+                    <li class="profile-info-item">
+                        <div class="info-icon">
+                            <i class="fas fa-envelope"></i>
+                        </div>
+                        <div class="info-content">
+                            <div class="info-label">📧 Email Address</div>
+                            <div class="info-value" id="display-email">
+                                <?php echo htmlspecialchars($coordinator['Coor_Email']); ?>
+                            </div>
+                        </div>
+                    </li>
+
+                    <!-- Phone Number -->
+                    <li class="profile-info-item">
+                        <div class="info-icon">
+                            <i class="fas fa-mobile-alt"></i>
+                        </div>
+                        <div class="info-content">
+                            <div class="info-label">📱 Phone Number</div>
+                            <div class="info-value" id="display-phone">
+                                <?php echo htmlspecialchars($coordinator['Coor_PhnNum']); ?>
+                            </div>
+                        </div>
+                    </li>
                 </ul>
-            </div>
-        </div>
-    </nav>
 
-    <!-- Sidebar -->
-    <div class="offcanvas offcanvas-start" tabindex="-1" id="sidebar">
-        <div class="offcanvas-header">
-            <h5 class="offcanvas-title">Menu</h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
-        </div>
-        <div class="offcanvas-body d-flex flex-column">
-            <ul class="nav flex-column">
-                <li class="nav-item"><a class="nav-link active" href="CoordinatorDashboard.php">Dashboard</a></li>
-                <li class="nav-item"><a class="nav-link" href="CoordinatorProfile.php">Profile</a></li>
-                <li class="nav-item"><a class="nav-link" href="CoordinatorView.php">Proposals & Postmortems</a></li>
-                <li class="nav-item"><a class="nav-link" href="CoordinatorProgressView.php">Event Ongoing</a></li>
-                <li class="nav-item"><a class="nav-link" href="CoordinatorEventHistory.php">Event History</a></li>
-
-            </ul>
-        </div>
-    </div>
-    <!-- Main Content Area -->
-    <div class="container mt-4">
-        <div class="card shadow-sm">
-            <div class="card-body">
-                <h5 class="card-title text-center">Coordinator Profile</h5>
-                <p class="text-center text-muted">View and update your profile details</p>
-                <form action="CoordinatorProfile.php" method="post">
-                    <div class="row">
-                        <!-- Name -->
-                        <div class="col-md-6 mb-3">
-                            <label for="Coor_Name" class="form-label">Name</label>
-                            <input type="text" class="form-control" id="Coor_Name" name="Coor_Name"
-                                value="<?php echo $coordinator['Coor_Name']; ?>" placeholder="Enter your name" required>
-                        </div>
-                        <!-- Coordinator ID (Read-only) -->
-                        <div class="col-md-6 mb-3">
-                            <label for="Coor_ID" class="form-label">Coordinator ID</label>
-                            <input type="text" class="form-control" id="Coor_ID" name="Coor_ID"
-                                value="<?php echo $coordinator_id; ?>" readonly>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <!-- Email -->
-                        <div class="col-md-6 mb-3">
-                            <label for="Coor_Email" class="form-label">Email</label>
-                            <input type="email" class="form-control" id="Coor_Email" name="Coor_Email"
-                                value="<?php echo $coordinator['Coor_Email']; ?>" placeholder="Enter your email"
-                                required>
-                        </div>
-                        <!-- Phone Number -->
-                        <div class="col-md-6 mb-3">
-                            <label for="Coor_Phone" class="form-label">Phone Number</label>
-                            <input type="text" class="form-control" id="Coor_Phone" name="Coor_Phone"
-                                value="<?php echo $coordinator['Coor_PhnNum']; ?>" placeholder="Enter your phone number"
-                                required>
-                        </div>
-                    </div>
-                    <!-- Update Button -->
-                    <div class="text-center">
-                        <button type="submit" class="btn btn-update">Update Profile</button>
-                    </div>
-                </form>
+                <!-- Edit Profile Button -->
+                <button class="edit-profile-btn" onclick="openEditProfileModal()">
+                    <i class="fas fa-edit me-2"></i>
+                    Edit Profile
+                </button>
             </div>
         </div>
     </div>
 
+    <!-- Edit Profile Modal -->
+    <div class="modal fade" id="editModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-edit me-2"></i>
+                        Edit Profile Information
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editForm">
+                        <!-- Name Field -->
+                        <div class="mb-4">
+                            <label for="editName" class="form-label">
+                                <i class="fas fa-user me-2 text-primary"></i>
+                                👨‍💼 Full Name
+                            </label>
+                            <input type="text" class="form-control" id="editName"
+                                value="<?php echo htmlspecialchars($coordinator['Coor_Name']); ?>" required />
+                            <div class="invalid-feedback" id="nameFeedback"></div>
+                        </div>
+
+                        <!-- Email Field -->
+                        <div class="mb-4">
+                            <label for="editEmail" class="form-label">
+                                <i class="fas fa-envelope me-2 text-primary"></i>
+                                📧 Email Address
+                            </label>
+                            <input type="email" class="form-control" id="editEmail"
+                                value="<?php echo htmlspecialchars($coordinator['Coor_Email']); ?>" required />
+                            <div class="invalid-feedback" id="emailFeedback"></div>
+                        </div>
+
+                        <!-- Phone Field -->
+                        <div class="mb-4">
+                            <label for="editPhone" class="form-label">
+                                <i class="fas fa-mobile-alt me-2 text-primary"></i>
+                                📱 Phone Number
+                            </label>
+                            <input type="tel" class="form-control" id="editPhone"
+                                value="<?php echo htmlspecialchars($coordinator['Coor_PhnNum']); ?>" required />
+                            <div class="invalid-feedback" id="phoneFeedback"></div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i> Cancel
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="saveAllChanges()">
+                        <i class="fas fa-save me-1"></i> Save All Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Toast -->
+    <div class="position-fixed top-0 end-0 p-3" style="z-index: 1100">
+        <div id="successToast" class="toast align-items-center text-white bg-success border-0" role="alert">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <i class="fas fa-check-circle me-2"></i>
+                    Profile updated successfully!
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function openEditProfileModal() {
+            const modal = new bootstrap.Modal(document.getElementById('editModal'));
+
+            // Populate the form with current values
+            document.getElementById('editName').value = document.getElementById('display-name').textContent;
+            document.getElementById('editEmail').value = document.getElementById('display-email').textContent;
+            document.getElementById('editPhone').value = document.getElementById('display-phone').textContent;
+
+            // Clear any previous validation states
+            clearValidationErrors();
+
+            modal.show();
+
+            // Focus on first input after modal is shown
+            setTimeout(() => document.getElementById('editName').focus(), 500);
+        }
+
+        function saveAllChanges() {
+            const nameInput = document.getElementById('editName');
+            const emailInput = document.getElementById('editEmail');
+            const phoneInput = document.getElementById('editPhone');
+            const saveButton = document.querySelector('.btn-primary');
+
+            const nameValue = nameInput.value.trim();
+            const emailValue = emailInput.value.trim();
+            const phoneValue = phoneInput.value.trim();
+
+            // Clear previous validation errors
+            clearValidationErrors();
+
+            let hasErrors = false;
+
+            // Validate all fields
+            if (!nameValue) {
+                showFieldValidationError('editName', 'nameFeedback', 'Full name is required.');
+                hasErrors = true;
+            }
+
+            if (!emailValue) {
+                showFieldValidationError('editEmail', 'emailFeedback', 'Email address is required.');
+                hasErrors = true;
+            } else if (!isValidEmail(emailValue)) {
+                showFieldValidationError('editEmail', 'emailFeedback', 'Please enter a valid email address.');
+                hasErrors = true;
+            }
+
+            if (!phoneValue) {
+                showFieldValidationError('editPhone', 'phoneFeedback', 'Phone number is required.');
+                hasErrors = true;
+            } else if (!isValidPhone(phoneValue)) {
+                showFieldValidationError('editPhone', 'phoneFeedback', 'Please enter a valid phone number.');
+                hasErrors = true;
+            }
+
+            if (hasErrors) {
+                return;
+            }
+
+            // Show loading state
+            saveButton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Saving Changes...';
+            saveButton.disabled = true;
+
+            // Simulate API call delay
+            setTimeout(() => {
+                // Update all display elements
+                document.getElementById('display-name').textContent = nameValue;
+                document.getElementById('display-email').textContent = emailValue;
+                document.getElementById('display-phone').textContent = phoneValue;
+
+                // Update header name and navigation
+
+                document.querySelectorAll('.nav-link.dropdown-toggle').forEach(link => {
+                    // Remove existing text nodes after the icon
+                    const nodes = [...link.childNodes].filter(n => n.nodeType === Node.TEXT_NODE);
+                    nodes.forEach(n => link.removeChild(n));
+
+                    // Append the updated name as a text node
+                    link.appendChild(document.createTextNode(' ' + nameValue));
+                });
 
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <?php
-    // End time after processing the page
-    $end_time = microtime(true);
-    $page_load_time = round(($end_time - $start_time) * 1000, 2); // Convert to milliseconds
-    
-    echo "<p style='color: green; font-weight: bold; text-align: center;'>
-      Page Load Time: " . $page_load_time . " ms
-      </p>";
-    ?>
+                // Add success animation to all updated items
+                const nameItem = document.getElementById('display-name').closest('.profile-info-item');
+                const emailItem = document.getElementById('display-email').closest('.profile-info-item');
+                const phoneItem = document.getElementById('display-phone').closest('.profile-info-item');
+
+                [nameItem, emailItem, phoneItem].forEach(item => {
+                    item.classList.add('success-animation');
+                    setTimeout(() => {
+                        item.classList.remove('success-animation');
+                    }, 600);
+                });
+
+                // Reset button state
+                saveButton.innerHTML = '<i class="fas fa-save me-1"></i> Save All Changes';
+                saveButton.disabled = false;
+
+                // Close modal and show success toast
+                bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
+                showSuccessToast();
+
+                // Here you would make the actual API call
+                updateAllProfileData(nameValue, emailValue, phoneValue);
+
+            }, 1500);
+        }
+
+        function clearValidationErrors() {
+            const inputs = ['editName', 'editEmail', 'editPhone'];
+            inputs.forEach(inputId => {
+                document.getElementById(inputId).classList.remove('is-invalid');
+            });
+        }
+
+        function showFieldValidationError(inputId, feedbackId, message) {
+            const input = document.getElementById(inputId);
+            const feedback = document.getElementById(feedbackId);
+
+            input.classList.add('is-invalid');
+            feedback.textContent = message;
+        }
+
+        function isValidEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
+        }
+
+        function isValidPhone(phone) {
+            const phoneRegex = /^[\+\-\s\(\)\d]{7,20}$/;
+            return phoneRegex.test(phone);
+        }
+
+        function showSuccessToast() {
+            const toast = new bootstrap.Toast(document.getElementById('successToast'));
+            toast.show();
+        }
+
+        // Handle form submission with Enter key
+        document.getElementById('editForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            saveAllChanges();
+        });
+
+        function updateAllProfileData(name, email, phone) {
+            fetch('CoordinatorProfile.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    name: name,
+                    email: email,
+                    phone: phone,
+                }),
+            })
+                .then((response) => response.json())
+                .then((data) => {
+                    if (data.success) {
+                        showSuccessToast();
+                    } else {
+                        alert('Update failed: ' + data.message);
+                    }
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                    alert('Error while updating profile.');
+                });
+        }
+
+    </script>
 </body>
 
 </html>

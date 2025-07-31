@@ -16,7 +16,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             if (password_verify($passwordInput, $user['Coor_PSW'])) {
                 $_SESSION['Coor_ID'] = $user['Coor_ID'];
                 $_SESSION['user_type'] = 'coordinator';
-                header("Location: CoordinatorDashboard.php");
+                header("Location: ../coordinator/CoordinatorDashboard.php");
                 exit();
             }
         }

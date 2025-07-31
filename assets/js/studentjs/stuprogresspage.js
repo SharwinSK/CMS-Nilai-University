@@ -16,13 +16,11 @@ function showFeedback(type, feedbackText, eventId) {
 }
 
 function editProposal(eventId) {
-  // Redirect to edit proposal page
-  window.location.href = `../student/proposal/EditProposal.php?id=${eventId}`;
+  window.location.href = `../student/proposal/editModifyForm.php?mode=edit&id=${eventId}`;
 }
 
 function modifyProposal(eventId) {
-  // Redirect to modify proposal page
-  window.location.href = `../student/proposal/ModifyProposal.php?id=${eventId}`;
+  window.location.href = `../student/proposal/editModifyForm.php?mode=modify&id=${eventId}`;
 }
 
 function deleteProposal(eventId) {

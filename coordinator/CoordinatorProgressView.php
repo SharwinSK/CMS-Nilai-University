@@ -1,6 +1,6 @@
 <?php
 session_start();
-include('dbconfig.php');
+include('../db/dbconfig.php'); // Adjust if needed
 include('LogoutDesign.php');
 
 if (!isset($_SESSION['Coor_ID'])) {

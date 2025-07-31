@@ -4,7 +4,7 @@
         <button class="btn me-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar">
             <i class="fas fa-bars text-white"></i>
         </button>
-        <a class="navbar-brand" href="../advisor/AdvisorDashboard.php">
+        <a class="navbar-brand" href="../coordinator/CoordinatorDashboard.php">
             <i class="fas fa-university me-2"></i>
             Nilai University CMS
         </a>
@@ -12,12 +12,11 @@
             <div class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                     <i class="fas fa-user-circle me-2"></i>
-                    <?php echo $advisor_name; ?>
-
+                    <?php echo $coordinator_name; ?>
                 </a>
                 <ul class="dropdown-menu">
                     <li>
-                        <a class="dropdown-item" href="../advisor/AdvisorProfile.php"><i
+                        <a class="dropdown-item" href="../coordinator/CoordinatorProfile.php"><i
                                 class="fas fa-user me-2"></i>Profile</a>
                     </li>
                     <li>

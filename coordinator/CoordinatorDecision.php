@@ -1,5 +1,5 @@
 <?php
-include('dbconfig.php');
+include('../db/dbconfig.php'); // Adjust if needed
 //include('sendMailTemplates.php');
 
 session_start();

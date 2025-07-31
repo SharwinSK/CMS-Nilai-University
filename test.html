@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Easy Attendance Tracker</title>
+    <title>Ongoing Events - Nilai University CMS</title>
     <link
       href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css"
       rel="stylesheet"
@@ -13,808 +13,965 @@
       rel="stylesheet"
     />
     <link
-      href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert2/11.7.12/sweetalert2.min.css"
+      href="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.13.6/css/dataTables.bootstrap5.min.css"
       rel="stylesheet"
     />
     <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
+      :root {
+        --primary-color: #0abab5;
+        --secondary-color: #56dfcf;
+        --tertiary-color: #adeed9;
+        --accent-color: #ffedf3;
+        --dark-bg: #2c3e50;
+        --text-dark: #333;
       }
 
       body {
-        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-        background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+        background: linear-gradient(
+          135deg,
+          var(--tertiary-color) 0%,
+          var(--accent-color) 100%
+        );
         min-height: 100vh;
-        padding: 15px;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
       }
 
-      .container {
-        max-width: 1200px;
-        margin: 0 auto;
+      /* Navigation Styles */
+      .navbar {
+        background: linear-gradient(
+          135deg,
+          var(--primary-color) 0%,
+          var(--secondary-color) 100%
+        );
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        backdrop-filter: blur(10px);
       }
 
-      .header {
+      .navbar-brand {
+        font-weight: bold;
+        color: white !important;
+      }
+
+      /* Offcanvas Styles */
+      .offcanvas {
+        background: linear-gradient(
+          180deg,
+          var(--primary-color) 0%,
+          var(--secondary-color) 100%
+        );
+        border-right: 3px solid var(--tertiary-color);
+      }
+
+      .offcanvas-title {
+        color: white;
+        font-weight: bold;
+      }
+
+      .sidebar-item {
+        display: flex;
+        align-items: center;
+        padding: 12px 20px;
+        color: white;
+        text-decoration: none;
+        margin: 5px 0;
+        border-radius: 10px;
+        transition: all 0.3s ease;
+        border-left: 4px solid transparent;
+      }
+
+      .sidebar-item:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+        border-left-color: var(--accent-color);
+        transform: translateX(5px);
+      }
+
+      .sidebar-item.active {
+        background: rgba(255, 255, 255, 0.2);
+        border-left-color: var(--accent-color);
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .sidebar-item i {
+        width: 20px;
+        margin-right: 15px;
+      }
+
+      .sidebar-footer {
+        padding: 10px;
+        margin-top: auto;
         text-align: center;
-        margin-bottom: 25px;
         color: white;
       }
 
-      .header h1 {
-        font-size: 2.2rem;
-        font-weight: 600;
-        margin-bottom: 8px;
+      /* Main Content Styles */
+      .main-content {
+        margin-left: 0;
+        padding: 20px;
+        min-height: calc(100vh - 76px);
       }
 
-      .header p {
-        font-size: 1rem;
+      .content-card {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 15px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        padding: 30px;
+        margin-bottom: 20px;
+      }
+
+      .page-header {
+        background: linear-gradient(
+          135deg,
+          var(--primary-color),
+          var(--secondary-color)
+        );
+        color: white;
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 25px;
+        box-shadow: 0 4px 20px rgba(10, 186, 181, 0.3);
+      }
+
+      .page-header h1 {
+        margin: 0;
+        font-weight: 600;
+      }
+
+      .page-header p {
+        margin: 5px 0 0 0;
         opacity: 0.9;
       }
 
-      .main-container {
-        background: white;
-        border-radius: 15px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-        overflow: hidden;
-      }
-
-      .top-section {
-        background: #f8f9fa;
+      /* Filter Section */
+      .filter-section {
+        background: linear-gradient(
+          135deg,
+          rgba(10, 186, 181, 0.1),
+          rgba(86, 223, 207, 0.1)
+        );
+        border-radius: 12px;
         padding: 20px;
-        border-bottom: 1px solid #dee2e6;
+        margin-bottom: 25px;
+        border: 1px solid rgba(10, 186, 181, 0.2);
       }
 
-      .meeting-control {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 20px;
-        flex-wrap: wrap;
-      }
-
-      .meeting-navigation {
-        display: flex;
-        align-items: center;
-        gap: 15px;
-      }
-
-      .nav-btn {
-        width: 40px;
-        height: 40px;
-        border: none;
-        border-radius: 50%;
-        background: #0984e3;
-        color: white;
-        font-size: 1.2rem;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .nav-btn:hover {
-        background: #0770c2;
-        transform: scale(1.1);
-      }
-
-      .nav-btn:disabled {
-        background: #6c757d;
-        cursor: not-allowed;
-        transform: none;
-      }
-
-      .meeting-display {
-        background: #0984e3;
-        color: white;
-        padding: 12px 25px;
-        border-radius: 25px;
-        font-size: 1.1rem;
+      .filter-title {
+        color: var(--primary-color);
         font-weight: 600;
-        min-width: 150px;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+      }
+
+      .filter-title i {
+        margin-right: 10px;
+      }
+
+      /* Button Styles */
+      .btn-primary {
+        background: linear-gradient(
+          135deg,
+          var(--primary-color),
+          var(--secondary-color)
+        );
+        border: none;
+        border-radius: 10px;
+        padding: 10px 20px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+      }
+
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(10, 186, 181, 0.4);
+      }
+
+      .btn-success {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        border: none;
+        border-radius: 10px;
+        padding: 10px 20px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+      }
+
+      .btn-success:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
+      }
+
+      .btn-info {
+        background: linear-gradient(135deg, #17a2b8, #6cc3d0);
+        border: none;
+        border-radius: 8px;
+        padding: 8px 15px;
+        font-size: 0.875rem;
+        transition: all 0.3s ease;
+      }
+
+      .btn-info:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 3px 10px rgba(23, 162, 184, 0.4);
+      }
+
+      /* Table Styles */
+      .table-container {
+        border-radius: 12px;
+        overflow: hidden;
+        background: white;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      }
+
+      .table {
+        margin: 0;
+      }
+
+      .table thead th {
+        background: linear-gradient(
+          135deg,
+          var(--primary-color),
+          var(--secondary-color)
+        );
+        color: white;
+        font-weight: 600;
+        border: none;
+        padding: 15px;
         text-align: center;
       }
 
-      .quick-actions {
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-        justify-content: center;
-        margin-top: 15px;
+      .table tbody td {
+        padding: 12px 15px;
+        vertical-align: middle;
+        border-color: rgba(0, 0, 0, 0.05);
+        text-align: center;
       }
 
-      .quick-btn {
-        padding: 8px 16px;
-        border: none;
+      .table tbody tr:hover {
+        background-color: rgba(10, 186, 181, 0.05);
+      }
+
+      /* Event Type Badge */
+      .event-type-badge {
+        padding: 6px 12px;
         border-radius: 20px;
-        font-size: 0.9rem;
-        cursor: pointer;
-        transition: all 0.3s ease;
+        font-size: 0.8rem;
+        font-weight: 500;
+        text-transform: uppercase;
+      }
+
+      .academic {
+        background: linear-gradient(45deg, #007bff, #66b3ff);
+        color: white;
+      }
+      .cultural {
+        background: linear-gradient(45deg, #e83e8c, #ff69b4);
+        color: white;
+      }
+      .sports {
+        background: linear-gradient(45deg, #28a745, #5cb85c);
+        color: white;
+      }
+      .workshop {
+        background: linear-gradient(45deg, #fd7e14, #ffad66);
+        color: white;
+      }
+      .seminar {
+        background: linear-gradient(45deg, #6f42c1, #9966cc);
+        color: white;
+      }
+
+      /* Status Badge */
+      .status-badge {
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
         font-weight: 500;
       }
 
-      .btn-mark-all-present {
-        background: #00b894;
+      .status-ongoing {
+        background: linear-gradient(45deg, #28a745, #5cb85c);
         color: white;
       }
 
-      .btn-mark-all-absent {
-        background: #e17055;
-        color: white;
-      }
-
-      .btn-clear-all {
-        background: #6c757d;
-        color: white;
-      }
-
-      .quick-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-      }
-
-      .stats-section {
-        padding: 20px;
-        background: #f8f9fa;
-        border-bottom: 1px solid #dee2e6;
-      }
-
-      .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-        gap: 15px;
-        text-align: center;
-      }
-
-      .stat-card {
-        background: white;
-        padding: 15px;
+      /* Form Controls */
+      .form-control,
+      .form-select {
         border-radius: 10px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        transition: transform 0.3s ease;
-      }
-
-      .stat-card:hover {
-        transform: translateY(-3px);
-      }
-
-      .stat-number {
-        font-size: 1.8rem;
-        font-weight: 700;
-        margin-bottom: 5px;
-      }
-
-      .stat-label {
-        font-size: 0.85rem;
-        color: #6c757d;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-      }
-
-      .present-stat {
-        color: #00b894;
-      }
-      .absent-stat {
-        color: #e17055;
-      }
-      .unmarked-stat {
-        color: #6c757d;
-      }
-      .total-stat {
-        color: #0984e3;
-      }
-
-      .attendance-section {
-        padding: 20px;
-      }
-
-      .student-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 15px;
-      }
-
-      .student-card {
-        background: white;
-        border: 2px solid #f1f3f4;
-        border-radius: 12px;
-        padding: 20px;
+        border: 2px solid rgba(10, 186, 181, 0.2);
+        padding: 10px 15px;
         transition: all 0.3s ease;
-        position: relative;
       }
 
-      .student-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+      .form-control:focus,
+      .form-select:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.2rem rgba(10, 186, 181, 0.25);
       }
 
-      .student-card.present {
-        border-color: #00b894;
-        background: #f0fff4;
+      /* DataTables Custom Styles */
+      .dataTables_wrapper .dataTables_length,
+      .dataTables_wrapper .dataTables_filter,
+      .dataTables_wrapper .dataTables_info,
+      .dataTables_wrapper .dataTables_paginate {
+        color: var(--text-dark);
       }
 
-      .student-card.absent {
-        border-color: #e17055;
-        background: #fff5f5;
-      }
-
-      .student-header {
-        display: flex;
-        align-items: center;
-        gap: 15px;
-        margin-bottom: 15px;
-      }
-
-      .student-avatar {
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-weight: 600;
-        font-size: 1.3rem;
-      }
-
-      .student-info h5 {
-        margin: 0;
-        font-size: 1.1rem;
-        font-weight: 600;
-        color: #2d3748;
-      }
-
-      .student-info p {
-        margin: 0;
-        font-size: 0.9rem;
-        color: #718096;
-      }
-
-      .attendance-controls {
-        display: flex;
-        gap: 10px;
-        justify-content: center;
-      }
-
-      .attendance-btn {
-        flex: 1;
-        padding: 12px;
-        border: none;
+      .dataTables_wrapper .dataTables_paginate .paginate_button {
         border-radius: 8px;
-        font-size: 1rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
+        margin: 0 2px;
       }
 
-      .btn-present {
-        background: #ddd6fe;
-        color: #5b21b6;
-        border: 2px solid transparent;
+      .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+        background: var(--primary-color) !important;
+        border-color: var(--primary-color) !important;
       }
 
-      .btn-present:hover {
-        background: #c4b5fd;
-      }
-
-      .btn-present.active {
-        background: #00b894;
-        color: white;
-        border-color: #00b894;
-      }
-
-      .btn-absent {
-        background: #fecaca;
-        color: #b91c1c;
-        border: 2px solid transparent;
-      }
-
-      .btn-absent:hover {
-        background: #fca5a5;
-      }
-
-      .btn-absent.active {
-        background: #e17055;
-        color: white;
-        border-color: #e17055;
-      }
-
-      .status-indicator {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        background: #e5e7eb;
-      }
-
-      .status-indicator.present {
-        background: #00b894;
-      }
-
-      .status-indicator.absent {
-        background: #e17055;
-      }
-
-      .bottom-actions {
-        padding: 20px;
-        background: #f8f9fa;
-        border-top: 1px solid #dee2e6;
-        display: flex;
-        justify-content: center;
-        gap: 15px;
-        flex-wrap: wrap;
-      }
-
-      .action-btn {
-        padding: 12px 25px;
-        border: none;
-        border-radius: 25px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        font-size: 1rem;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-
-      .btn-save {
-        background: #00b894;
-        color: white;
-      }
-
-      .btn-save:hover {
-        background: #00a085;
-        transform: translateY(-2px);
-      }
-
-      .btn-export {
-        background: #0984e3;
-        color: white;
-      }
-
-      .btn-export:hover {
-        background: #0770c2;
-        transform: translateY(-2px);
-      }
-
+      /* Responsive */
       @media (max-width: 768px) {
-        .student-grid {
-          grid-template-columns: 1fr;
+        .main-content {
+          padding: 15px;
         }
 
-        .meeting-control {
-          flex-direction: column;
-          gap: 15px;
-        }
-
-        .stats-grid {
-          grid-template-columns: repeat(2, 1fr);
-        }
-
-        .header h1 {
-          font-size: 1.8rem;
-        }
-      }
-
-      @media (max-width: 480px) {
-        body {
-          padding: 10px;
-        }
-
-        .stats-grid {
-          grid-template-columns: 1fr;
-        }
-
-        .attendance-controls {
-          flex-direction: column;
+        .content-card {
+          padding: 20px;
         }
       }
     </style>
   </head>
   <body>
-    <div class="container">
-      <div class="header">
-        <h1><i class="fas fa-clipboard-check"></i> Easy Attendance</h1>
-        <p>Simple and fast attendance tracking</p>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+      <div class="container-fluid">
+        <button
+          class="btn me-3"
+          type="button"
+          data-bs-toggle="offcanvas"
+          data-bs-target="#sidebar"
+        >
+          <i class="fas fa-bars text-white"></i>
+        </button>
+        <a class="navbar-brand" href="#">
+          <i class="fas fa-university me-2"></i>
+          Nilai University CMS
+        </a>
+        <div class="navbar-nav ms-auto">
+          <div class="nav-item dropdown">
+            <a
+              class="nav-link dropdown-toggle"
+              href="#"
+              role="button"
+              data-bs-toggle="dropdown"
+            >
+              <i class="fas fa-user-circle me-2"></i>
+              Coordinator Name
+            </a>
+            <ul class="dropdown-menu">
+              <li>
+                <a
+                  class="dropdown-item"
+                  href="../coordinator/CoordinatorProfile.php"
+                >
+                  <i class="fas fa-user me-2"></i>Profile
+                </a>
+              </li>
+              <li><hr class="dropdown-divider" /></li>
+              <li>
+                <a
+                  class="dropdown-item"
+                  href="#"
+                  data-bs-toggle="modal"
+                  data-bs-target="#logoutModal"
+                >
+                  <i class="fas fa-sign-out-alt me-2"></i>Log Out
+                </a>
+              </li>
+            </ul>
+          </div>
+        </div>
       </div>
+    </nav>
 
-      <div class="main-container">
-        <!-- Top Section -->
-        <div class="top-section">
-          <div class="meeting-control">
-            <div class="meeting-navigation">
-              <button class="nav-btn" id="prevBtn" onclick="changeMeeting(-1)">
-                <i class="fas fa-chevron-left"></i>
-              </button>
-              <div class="meeting-display">
-                <span id="currentMeetingDisplay">Meeting 1</span>
-              </div>
-              <button class="nav-btn" id="nextBtn" onclick="changeMeeting(1)">
-                <i class="fas fa-chevron-right"></i>
-              </button>
-            </div>
-          </div>
-
-          <div class="quick-actions">
-            <button
-              class="quick-btn btn-mark-all-present"
-              onclick="markAllStudents(true)"
-            >
-              <i class="fas fa-check-circle"></i> Mark All Present
-            </button>
-            <button
-              class="quick-btn btn-mark-all-absent"
-              onclick="markAllStudents(false)"
-            >
-              <i class="fas fa-times-circle"></i> Mark All Absent
-            </button>
-            <button class="quick-btn btn-clear-all" onclick="clearAllMarks()">
-              <i class="fas fa-eraser"></i> Clear All
-            </button>
-          </div>
+    <!-- Sidebar -->
+    <div class="offcanvas offcanvas-start" tabindex="-1" id="sidebar">
+      <div class="offcanvas-header">
+        <h5 class="offcanvas-title">
+          <i class="fas fa-user-tie me-2"></i>
+          Coordinator Panel
+        </h5>
+        <button
+          type="button"
+          class="btn-close btn-close-white"
+          data-bs-dismiss="offcanvas"
+        ></button>
+      </div>
+      <div class="offcanvas-body d-flex flex-column">
+        <div class="sidebar-content">
+          <a
+            class="sidebar-item"
+            href="../coordinator/CoordinatorDashboard.php"
+          >
+            <i class="fas fa-home"></i>
+            <span>Dashboard</span>
+          </a>
+          <a class="sidebar-item" href="../coordinator/CoordinatorProfile.php">
+            <i class="fas fa-user"></i>
+            <span>Profile</span>
+          </a>
+          <a
+            class="sidebar-item active"
+            href="../coordinator/CoordinatorProgressView.php"
+          >
+            <i class="fas fa-calendar-check"></i>
+            <span>Ongoing Event</span>
+          </a>
+          <a class="sidebar-item" href="../coordinator/CoordinatorView.php">
+            <i class="fas fa-file-alt"></i>
+            <span>Proposal & Post Event</span>
+          </a>
+          <a
+            class="sidebar-item"
+            href="../coordinator/CoordinatorEventHistory.php"
+          >
+            <i class="fas fa-history"></i>
+            <span>History</span>
+          </a>
+          <a class="sidebar-item" href="CoordinatorContact.php">
+            <i class="fas fa-envelope"></i>
+            <span>Contact Us</span>
+          </a>
         </div>
 
-        <!-- Stats Section -->
-        <div class="stats-section">
-          <div class="stats-grid">
-            <div class="stat-card">
-              <div class="stat-number total-stat" id="totalStudents">5</div>
-              <div class="stat-label">Total</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-number present-stat" id="presentCount">0</div>
-              <div class="stat-label">Present</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-number absent-stat" id="absentCount">0</div>
-              <div class="stat-label">Absent</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-number unmarked-stat" id="unmarkedCount">5</div>
-              <div class="stat-label">Unmarked</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Attendance Section -->
-        <div class="attendance-section">
-          <div class="student-grid" id="studentGrid">
-            <!-- Students will be populated here -->
-          </div>
-        </div>
-
-        <!-- Bottom Actions -->
-        <div class="bottom-actions">
-          <button class="action-btn btn-save" onclick="saveAttendance()">
-            <i class="fas fa-save"></i> Save Attendance
-          </button>
-          <button class="action-btn btn-export" onclick="exportAttendance()">
-            <i class="fas fa-download"></i> Export Report
-          </button>
+        <div class="sidebar-footer text-center mt-auto">
+          <hr />
+          <small style="color: white; font-size: 0.8rem">
+            CMS v1.0 © 2025 Nilai University
+          </small>
         </div>
       </div>
     </div>
 
+    <!-- Main Content -->
+    <div class="main-content">
+      <div class="container-fluid">
+        <!-- Page Header -->
+        <div class="page-header">
+          <div>
+            <h1><i class="fas fa-calendar-check me-3"></i>Ongoing Events</h1>
+            <p>Manage and monitor all currently active events</p>
+          </div>
+        </div>
+
+        <!-- Filter Button -->
+        <div class="content-card">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+              <h5 class="mb-0 text-dark">
+                <i class="fas fa-calendar-check me-2 text-primary"></i>Ongoing
+                Events List
+              </h5>
+              <small class="text-muted"
+                >Manage and monitor all currently active events</small
+              >
+            </div>
+            <div>
+              <button
+                class="btn btn-outline-primary"
+                data-bs-toggle="modal"
+                data-bs-target="#filterModal"
+              >
+                <i class="fas fa-filter me-2"></i>Filter Events
+              </button>
+            </div>
+          </div>
+
+          <!-- Events Table -->
+          <div class="table-container">
+            <table class="table table-hover" id="ongoingEventsTable">
+              <thead>
+                <tr>
+                  <th>Event ID</th>
+                  <th>Event Name</th>
+                  <th>Student Name</th>
+                  <th>Club Name</th>
+                  <th>Event Type</th>
+                  <th>Event Date</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>EV001</strong></td>
+                  <td>Annual Tech Symposium</td>
+                  <td>Ahmad Rahman</td>
+                  <td>Computer Science Club</td>
+                  <td>
+                    <span class="event-type-badge academic">Academic</span>
+                  </td>
+                  <td>2025-08-15</td>
+                  <td>
+                    <span class="status-badge status-ongoing">Ongoing</span>
+                  </td>
+                  <td>
+                    <a
+                      href="view-event-details.php?id=EV001"
+                      class="btn btn-info btn-sm me-1"
+                      title="View Details"
+                    >
+                      <i class="fas fa-eye"></i>
+                    </a>
+                    <button
+                      class="btn btn-success btn-sm"
+                      onclick="exportSingleEvent('EV001')"
+                      title="Export Event"
+                    >
+                      <i class="fas fa-download"></i>
+                    </button>
+                  </td>
+                </tr>
+                <tr>
+                  <td><strong>EV002</strong></td>
+                  <td>Cultural Night 2025</td>
+                  <td>Siti Nurhaliza</td>
+                  <td>Cultural Society</td>
+                  <td>
+                    <span class="event-type-badge cultural">Cultural</span>
+                  </td>
+                  <td>2025-08-20</td>
+                  <td>
+                    <span class="status-badge status-ongoing">Ongoing</span>
+                  </td>
+                  <td>
+                    <a
+                      href="view-event-details.php?id=EV002"
+                      class="btn btn-info btn-sm me-1"
+                      title="View Details"
+                    >
+                      <i class="fas fa-eye"></i>
+                    </a>
+                    <button
+                      class="btn btn-success btn-sm"
+                      onclick="exportSingleEvent('EV002')"
+                      title="Export Event"
+                    >
+                      <i class="fas fa-download"></i>
+                    </button>
+                  </td>
+                </tr>
+                <tr>
+                  <td><strong>EV003</strong></td>
+                  <td>Inter-Faculty Football Championship</td>
+                  <td>Muhammad Ali</td>
+                  <td>Sports Club</td>
+                  <td><span class="event-type-badge sports">Sports</span></td>
+                  <td>2025-08-25</td>
+                  <td>
+                    <span class="status-badge status-ongoing">Ongoing</span>
+                  </td>
+                  <td>
+                    <a
+                      href="view-event-details.php?id=EV003"
+                      class="btn btn-info btn-sm me-1"
+                      title="View Details"
+                    >
+                      <i class="fas fa-eye"></i>
+                    </a>
+                    <button
+                      class="btn btn-success btn-sm"
+                      onclick="exportSingleEvent('EV003')"
+                      title="Export Event"
+                    >
+                      <i class="fas fa-download"></i>
+                    </button>
+                  </td>
+                </tr>
+                <tr>
+                  <td><strong>EV004</strong></td>
+                  <td>Digital Marketing Workshop</td>
+                  <td>Lisa Wong</td>
+                  <td>Business Club</td>
+                  <td>
+                    <span class="event-type-badge workshop">Workshop</span>
+                  </td>
+                  <td>2025-09-01</td>
+                  <td>
+                    <span class="status-badge status-ongoing">Ongoing</span>
+                  </td>
+                  <td>
+                    <a
+                      href="view-event-details.php?id=EV004"
+                      class="btn btn-info btn-sm me-1"
+                      title="View Details"
+                    >
+                      <i class="fas fa-eye"></i>
+                    </a>
+                    <button
+                      class="btn btn-success btn-sm"
+                      onclick="exportSingleEvent('EV004')"
+                      title="Export Event"
+                    >
+                      <i class="fas fa-download"></i>
+                    </button>
+                  </td>
+                </tr>
+                <tr>
+                  <td><strong>EV005</strong></td>
+                  <td>AI and Future Technology Seminar</td>
+                  <td>Dr. Raj Kumar</td>
+                  <td>Computer Science Club</td>
+                  <td><span class="event-type-badge seminar">Seminar</span></td>
+                  <td>2025-09-05</td>
+                  <td>
+                    <span class="status-badge status-ongoing">Ongoing</span>
+                  </td>
+                  <td>
+                    <button
+                      class="btn btn-info btn-sm me-1"
+                      onclick="viewEventDetails('EV005')"
+                      title="View Details"
+                    >
+                      <i class="fas fa-eye"></i>
+                    </button>
+                    <button
+                      class="btn btn-success btn-sm"
+                      onclick="exportSingleEvent('EV005')"
+                      title="Export Event"
+                    >
+                      <i class="fas fa-download"></i>
+                    </button>
+                  </td>
+                </tr>
+                <tr>
+                  <td><strong>EV006</strong></td>
+                  <td>Art Exhibition 2025</td>
+                  <td>Emily Chen</td>
+                  <td>Art Society</td>
+                  <td>
+                    <span class="event-type-badge cultural">Cultural</span>
+                  </td>
+                  <td>2025-09-10</td>
+                  <td>
+                    <span class="status-badge status-ongoing">Ongoing</span>
+                  </td>
+                  <td>
+                    <a
+                      href="view-event-details.php?id=EV006"
+                      class="btn btn-info btn-sm me-1"
+                      title="View Details"
+                    >
+                      <i class="fas fa-eye"></i>
+                    </a>
+                    <button
+                      class="btn btn-success btn-sm"
+                      onclick="exportSingleEvent('EV006')"
+                      title="Export Event"
+                    >
+                      <i class="fas fa-download"></i>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter Modal -->
+    <div class="modal fade" id="filterModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div
+            class="modal-header"
+            style="
+              background: linear-gradient(
+                135deg,
+                var(--primary-color),
+                var(--secondary-color)
+              );
+              color: white;
+            "
+          >
+            <h5 class="modal-title">
+              <i class="fas fa-filter me-2"></i>Filter Events
+            </h5>
+            <button
+              type="button"
+              class="btn-close btn-close-white"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <div class="row g-3">
+              <div class="col-12">
+                <label for="eventTypeFilter" class="form-label fw-semibold">
+                  <i class="fas fa-tag me-2 text-primary"></i>Event Type
+                </label>
+                <select class="form-select" id="eventTypeFilter">
+                  <option value="">All Event Types</option>
+                  <option value="Academic">Academic</option>
+                  <option value="Cultural">Cultural</option>
+                  <option value="Sports">Sports</option>
+                  <option value="Workshop">Workshop</option>
+                  <option value="Seminar">Seminar</option>
+                </select>
+              </div>
+              <div class="col-12">
+                <label for="clubFilter" class="form-label fw-semibold">
+                  <i class="fas fa-users me-2 text-primary"></i>Club
+                </label>
+                <select class="form-select" id="clubFilter">
+                  <option value="">All Clubs</option>
+                  <option value="Computer Science Club">
+                    Computer Science Club
+                  </option>
+                  <option value="Cultural Society">Cultural Society</option>
+                  <option value="Sports Club">Sports Club</option>
+                  <option value="Business Club">Business Club</option>
+                  <option value="Art Society">Art Society</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-outline-secondary"
+              onclick="clearFilters()"
+              data-bs-dismiss="modal"
+            >
+              <i class="fas fa-refresh me-2"></i>Clear All
+            </button>
+            <button
+              type="button"
+              class="btn btn-primary"
+              onclick="applyFilters()"
+              data-bs-dismiss="modal"
+            >
+              <i class="fas fa-check me-2"></i>Apply Filters
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert2/11.7.12/sweetalert2.all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
     <script>
-      // Sample student data
-      const students = [
-        { id: "CS001", name: "Alice Johnson" },
-        { id: "CS002", name: "Bob Smith" },
-        { id: "CS003", name: "Carol Williams" },
-        { id: "CS004", name: "David Brown" },
-        { id: "CS005", name: "Emma Davis" },
-      ];
+      // Initialize DataTable
+      let table;
 
-      // Current meeting
-      let currentMeeting = 1;
-      const totalMeetings = 20;
-
-      // Attendance data storage
-      let attendanceData = {};
-
-      // Initialize attendance data
-      function initializeAttendanceData() {
-        for (let meeting = 1; meeting <= totalMeetings; meeting++) {
-          attendanceData[meeting] = {};
-          students.forEach((student) => {
-            attendanceData[meeting][student.id] = null;
-          });
-        }
-      }
-
-      // Get student initials
-      function getInitials(name) {
-        return name
-          .split(" ")
-          .map((n) => n[0])
-          .join("")
-          .toUpperCase();
-      }
-
-      // Change meeting
-      function changeMeeting(direction) {
-        const newMeeting = currentMeeting + direction;
-        if (newMeeting >= 1 && newMeeting <= totalMeetings) {
-          currentMeeting = newMeeting;
-          updateMeetingDisplay();
-          renderStudents();
-        }
-      }
-
-      // Update meeting display
-      function updateMeetingDisplay() {
-        document.getElementById(
-          "currentMeetingDisplay"
-        ).textContent = `Meeting ${currentMeeting}`;
-        document.getElementById("prevBtn").disabled = currentMeeting === 1;
-        document.getElementById("nextBtn").disabled =
-          currentMeeting === totalMeetings;
-      }
-
-      // Render students
-      function renderStudents() {
-        const studentGrid = document.getElementById("studentGrid");
-        studentGrid.innerHTML = "";
-
-        students.forEach((student) => {
-          const attendance = attendanceData[currentMeeting][student.id];
-          const studentCard = document.createElement("div");
-          studentCard.className = `student-card ${
-            attendance === true
-              ? "present"
-              : attendance === false
-              ? "absent"
-              : ""
-          }`;
-
-          studentCard.innerHTML = `
-                    <div class="status-indicator ${
-                      attendance === true
-                        ? "present"
-                        : attendance === false
-                        ? "absent"
-                        : ""
-                    }"></div>
-                    <div class="student-header">
-                        <div class="student-avatar">
-                            ${getInitials(student.name)}
-                        </div>
-                        <div class="student-info">
-                            <h5>${student.name}</h5>
-                            <p>ID: ${student.id}</p>
-                        </div>
-                    </div>
-                    <div class="attendance-controls">
-                        <button class="attendance-btn btn-present ${
-                          attendance === true ? "active" : ""
-                        }" 
-                                onclick="markAttendance('${student.id}', true)">
-                            <i class="fas fa-check"></i> Present
-                        </button>
-                        <button class="attendance-btn btn-absent ${
-                          attendance === false ? "active" : ""
-                        }" 
-                                onclick="markAttendance('${
-                                  student.id
-                                }', false)">
-                            <i class="fas fa-times"></i> Absent
-                        </button>
-                    </div>
-                `;
-
-          studentGrid.appendChild(studentCard);
+      $(document).ready(function () {
+        table = $("#ongoingEventsTable").DataTable({
+          responsive: true,
+          pageLength: 10,
+          order: [[0, "asc"]],
+          language: {
+            search: "Search Events:",
+            lengthMenu: "Show _MENU_ events per page",
+            info: "Showing _START_ to _END_ of _TOTAL_ ongoing events",
+            emptyTable: "No ongoing events found",
+          },
         });
-
-        updateStats();
-      }
-
-      // Mark attendance
-      function markAttendance(studentId, isPresent) {
-        attendanceData[currentMeeting][studentId] = isPresent;
-        renderStudents();
-
-        // Quick feedback
-        const Toast = Swal.mixin({
-          toast: true,
-          position: "top-end",
-          showConfirmButton: false,
-          timer: 1000,
-          timerProgressBar: true,
-        });
-
-        Toast.fire({
-          icon: "success",
-          title: isPresent ? "Marked Present" : "Marked Absent",
-        });
-      }
-
-      // Mark all students
-      function markAllStudents(isPresent) {
-        const action = isPresent ? "present" : "absent";
-
-        Swal.fire({
-          title: `Mark All ${
-            action.charAt(0).toUpperCase() + action.slice(1)
-          }?`,
-          text: `This will mark all students as ${action} for Meeting ${currentMeeting}`,
-          icon: "question",
-          showCancelButton: true,
-          confirmButtonText: `Mark All ${
-            action.charAt(0).toUpperCase() + action.slice(1)
-          }`,
-          confirmButtonColor: isPresent ? "#00b894" : "#e17055",
-        }).then((result) => {
-          if (result.isConfirmed) {
-            students.forEach((student) => {
-              attendanceData[currentMeeting][student.id] = isPresent;
-            });
-            renderStudents();
-
-            Swal.fire({
-              title: "Done!",
-              text: `All students marked as ${action}`,
-              icon: "success",
-              timer: 1500,
-              showConfirmButton: false,
-            });
-          }
-        });
-      }
-
-      // Clear all marks
-      function clearAllMarks() {
-        Swal.fire({
-          title: "Clear All Marks?",
-          text: `This will clear all attendance for Meeting ${currentMeeting}`,
-          icon: "warning",
-          showCancelButton: true,
-          confirmButtonText: "Clear All",
-          confirmButtonColor: "#6c757d",
-        }).then((result) => {
-          if (result.isConfirmed) {
-            students.forEach((student) => {
-              attendanceData[currentMeeting][student.id] = null;
-            });
-            renderStudents();
-
-            Swal.fire({
-              title: "Cleared!",
-              text: "All marks have been cleared",
-              icon: "success",
-              timer: 1500,
-              showConfirmButton: false,
-            });
-          }
-        });
-      }
-
-      // Update stats
-      function updateStats() {
-        const meetingData = attendanceData[currentMeeting];
-        let present = 0,
-          absent = 0,
-          unmarked = 0;
-
-        Object.values(meetingData).forEach((status) => {
-          if (status === true) present++;
-          else if (status === false) absent++;
-          else unmarked++;
-        });
-
-        document.getElementById("totalStudents").textContent = students.length;
-        document.getElementById("presentCount").textContent = present;
-        document.getElementById("absentCount").textContent = absent;
-        document.getElementById("unmarkedCount").textContent = unmarked;
-      }
-
-      // Save attendance
-      function saveAttendance() {
-        const meetingData = attendanceData[currentMeeting];
-        const unmarkedCount = Object.values(meetingData).filter(
-          (status) => status === null
-        ).length;
-
-        if (unmarkedCount > 0) {
-          Swal.fire({
-            title: "Save Attendance?",
-            text: `${unmarkedCount} students are still unmarked. Save anyway?`,
-            icon: "warning",
-            showCancelButton: true,
-            confirmButtonText: "Save",
-            confirmButtonColor: "#00b894",
-          }).then((result) => {
-            if (result.isConfirmed) {
-              performSave();
-            }
-          });
-        } else {
-          performSave();
-        }
-      }
-
-      function performSave() {
-        Swal.fire({
-          title: "Saved!",
-          text: `Attendance for Meeting ${currentMeeting} has been saved`,
-          icon: "success",
-          confirmButtonColor: "#00b894",
-        });
-      }
-
-      // Export attendance
-      function exportAttendance() {
-        const csvContent = generateCSV();
-        const blob = new Blob([csvContent], { type: "text/csv" });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `attendance_report_${
-          new Date().toISOString().split("T")[0]
-        }.csv`;
-        a.click();
-        window.URL.revokeObjectURL(url);
-
-        Swal.fire({
-          title: "Exported!",
-          text: "Attendance report has been downloaded",
-          icon: "success",
-          confirmButtonColor: "#0984e3",
-        });
-      }
-
-      // Generate CSV
-      function generateCSV() {
-        let csv = "Student ID,Student Name,";
-        for (let i = 1; i <= totalMeetings; i++) {
-          csv += `Meeting ${i},`;
-        }
-        csv = csv.slice(0, -1) + "\n";
-
-        students.forEach((student) => {
-          csv += `${student.id},${student.name},`;
-          for (let meeting = 1; meeting <= totalMeetings; meeting++) {
-            const status = attendanceData[meeting][student.id];
-            csv +=
-              status === true
-                ? "Present,"
-                : status === false
-                ? "Absent,"
-                : "Unmarked,";
-          }
-          csv = csv.slice(0, -1) + "\n";
-        });
-
-        return csv;
-      }
-
-      // Initialize app
-      document.addEventListener("DOMContentLoaded", function () {
-        initializeAttendanceData();
-        updateMeetingDisplay();
-        renderStudents();
       });
 
-      // Keyboard shortcuts
-      document.addEventListener("keydown", function (e) {
-        if (e.ctrlKey && e.key === "s") {
-          e.preventDefault();
-          saveAttendance();
-        } else if (e.key === "ArrowLeft") {
-          changeMeeting(-1);
-        } else if (e.key === "ArrowRight") {
-          changeMeeting(1);
+      // Apply Filters Function
+      function applyFilters() {
+        const eventType = document.getElementById("eventTypeFilter").value;
+        const club = document.getElementById("clubFilter").value;
+
+        // Clear previous filters
+        table.columns().search("").draw();
+
+        // Apply event type filter
+        if (eventType) {
+          table.column(4).search(eventType).draw();
         }
+
+        // Apply club filter
+        if (club) {
+          table.column(3).search(club).draw();
+        }
+
+        // Show success message
+        let filterMessage = "Filters applied";
+        if (eventType && club) {
+          filterMessage += ` for ${eventType} events in ${club}`;
+        } else if (eventType) {
+          filterMessage += ` for ${eventType} events`;
+        } else if (club) {
+          filterMessage += ` for ${club}`;
+        }
+        filterMessage += "!";
+
+        showToast(filterMessage, "success");
+      }
+
+      // Clear Filters Function
+      function clearFilters() {
+        document.getElementById("eventTypeFilter").value = "";
+        document.getElementById("clubFilter").value = "";
+        table.columns().search("").draw();
+        showToast("All filters cleared!", "info");
+      }
+
+      // Export Single Event Function
+      function exportSingleEvent(eventId) {
+        // Sample event data - in real implementation, this would come from your database
+        const eventData = {
+          EV001: [
+            "EV001",
+            "Annual Tech Symposium",
+            "Ahmad Rahman",
+            "Computer Science Club",
+            "Academic",
+            "2025-08-15",
+            "Ongoing",
+          ],
+          EV002: [
+            "EV002",
+            "Cultural Night 2025",
+            "Siti Nurhaliza",
+            "Cultural Society",
+            "Cultural",
+            "2025-08-20",
+            "Ongoing",
+          ],
+          EV003: [
+            "EV003",
+            "Inter-Faculty Football Championship",
+            "Muhammad Ali",
+            "Sports Club",
+            "Sports",
+            "2025-08-25",
+            "Ongoing",
+          ],
+          EV004: [
+            "EV004",
+            "Digital Marketing Workshop",
+            "Lisa Wong",
+            "Business Club",
+            "Workshop",
+            "2025-09-01",
+            "Ongoing",
+          ],
+          EV005: [
+            "EV005",
+            "AI and Future Technology Seminar",
+            "Dr. Raj Kumar",
+            "Computer Science Club",
+            "Seminar",
+            "2025-09-05",
+            "Ongoing",
+          ],
+          EV006: [
+            "EV006",
+            "Art Exhibition 2025",
+            "Emily Chen",
+            "Art Society",
+            "Cultural",
+            "2025-09-10",
+            "Ongoing",
+          ],
+        };
+
+        const event = eventData[eventId];
+        if (event) {
+          // Create CSV content
+          const headers = [
+            "Event ID",
+            "Event Name",
+            "Student Name",
+            "Club Name",
+            "Event Type",
+            "Event Date",
+            "Status",
+          ];
+          const csvContent = [
+            headers.join(","),
+            event
+              .map((cell) => {
+                // Handle commas in data
+                if (cell.includes(",")) {
+                  return `"${cell}"`;
+                }
+                return cell;
+              })
+              .join(","),
+          ].join("\n");
+
+          // Create and download CSV file
+          const blob = new Blob([csvContent], { type: "text/csv" });
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `event_${eventId}_${
+            new Date().toISOString().split("T")[0]
+          }.csv`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+
+          showToast(`Event ${eventId} exported successfully!`, "success");
+        }
+      }
+
+      // Toast Notification Function
+      function showToast(message, type = "info") {
+        // Create toast element
+        const toast = document.createElement("div");
+        toast.className = `alert alert-${
+          type === "success" ? "success" : type === "error" ? "danger" : "info"
+        } position-fixed`;
+        toast.style.cssText = `
+                top: 20px; 
+                right: 20px; 
+                z-index: 9999;
+                min-width: 300px;
+                border-radius: 10px;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            `;
+        toast.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-${
+                      type === "success"
+                        ? "check-circle"
+                        : type === "error"
+                        ? "exclamation-circle"
+                        : "info-circle"
+                    } me-2"></i>
+                    ${message}
+                    <button type="button" class="btn-close ms-auto" onclick="this.parentElement.parentElement.remove()"></button>
+                </div>
+            `;
+
+        document.body.appendChild(toast);
+
+        // Auto remove after 3 seconds
+        setTimeout(() => {
+          if (toast.parentElement) {
+            toast.remove();
+          }
+        }, 3000);
+      }
+
+      // Search functionality enhancement
+      $("#ongoingEventsTable_filter input").attr(
+        "placeholder",
+        "Search events, students, or clubs..."
+      );
+
+      // Add smooth animations
+      $(document).ready(function () {
+        $(".content-card").hide().fadeIn(800);
+        $(".page-header").hide().slideDown(600);
       });
     </script>
   </body>

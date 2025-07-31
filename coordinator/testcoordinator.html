@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Coordinator Profile - Nilai University CMS</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --primary-color: #0abab5;
+        --secondary-color: #56dfcf;
+        --tertiary-color: #adeed9;
+        --accent-color: #ffedf3;
+        --dark-bg: #2c3e50;
+        --text-dark: #333;
+      }
+
+      body {
+        background: linear-gradient(
+          135deg,
+          var(--tertiary-color) 0%,
+          var(--accent-color) 100%
+        );
+        min-height: 100vh;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      /* Navigation Styles */
+      .navbar {
+        background: linear-gradient(
+          135deg,
+          var(--primary-color) 0%,
+          var(--secondary-color) 100%
+        );
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        backdrop-filter: blur(10px);
+      }
+
+      .navbar-brand {
+        font-weight: bold;
+        color: white !important;
+      }
+
+      /* Offcanvas Styles */
+      .offcanvas {
+        background: linear-gradient(
+          180deg,
+          var(--primary-color) 0%,
+          var(--secondary-color) 100%
+        );
+        border-right: 3px solid var(--tertiary-color);
+      }
+
+      .offcanvas-title {
+        color: white;
+        font-weight: bold;
+      }
+
+      .sidebar-item {
+        display: flex;
+        align-items: center;
+        padding: 12px 20px;
+        color: white;
+        text-decoration: none;
+        margin: 5px 0;
+        border-radius: 10px;
+        transition: all 0.3s ease;
+        border-left: 4px solid transparent;
+      }
+
+      .sidebar-item:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+        border-left-color: var(--accent-color);
+        transform: translateX(5px);
+      }
+
+      .sidebar-item.active {
+        background: rgba(255, 255, 255, 0.2);
+        border-left-color: var(--accent-color);
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .sidebar-item i {
+        width: 20px;
+        margin-right: 15px;
+      }
+
+      .sidebar-footer {
+        padding: 10px;
+        margin-top: auto;
+        text-align: center;
+        color: white;
+      }
+
+      /* Profile Card Styles */
+      .profile-container {
+        padding: 2rem;
+        display: flex;
+        justify-content: center;
+      }
+
+      .profile-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        width: 100%;
+        max-width: 900px;
+      }
+
+      /* Profile Header */
+      .profile-header {
+        background: linear-gradient(
+          135deg,
+          var(--primary-color),
+          var(--secondary-color)
+        );
+        padding: 3rem 2rem;
+        text-align: center;
+        color: white;
+        position: relative;
+      }
+
+      .profile-avatar {
+        width: 100px;
+        height: 100px;
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 50%;
+        margin: 0 auto 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+      }
+
+      .profile-avatar i {
+        font-size: 2.5rem;
+        color: var(--primary-color);
+      }
+
+      .profile-name {
+        font-size: 1.8rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+      }
+
+      .profile-role {
+        font-size: 1rem;
+        opacity: 0.9;
+        font-weight: 300;
+      }
+
+      /* Profile Body */
+      .profile-body {
+        padding: 2rem;
+      }
+
+      .profile-info-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .profile-info-item {
+        display: flex;
+        align-items: center;
+        padding: 1.2rem 0;
+        border-bottom: 1px solid #f0f0f0;
+      }
+
+      .profile-info-item:last-child {
+        border-bottom: none;
+      }
+
+      .info-icon {
+        width: 50px;
+        height: 50px;
+        background: linear-gradient(
+          135deg,
+          var(--primary-color),
+          var(--secondary-color)
+        );
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1.5rem;
+        flex-shrink: 0;
+      }
+
+      .info-icon i {
+        color: white;
+        font-size: 1.2rem;
+      }
+
+      .info-content {
+        flex: 1;
+      }
+
+      .info-label {
+        font-size: 0.9rem;
+        color: #666;
+        margin-bottom: 0.3rem;
+        font-weight: 500;
+      }
+
+      .info-value {
+        font-size: 1.1rem;
+        color: var(--text-dark);
+        font-weight: 600;
+        word-break: break-all;
+      }
+
+      .edit-icon {
+        color: #999;
+        font-size: 1rem;
+        cursor: pointer;
+        padding: 0.5rem;
+        transition: all 0.3s ease;
+        margin-left: 1rem;
+      }
+
+      .edit-icon:hover {
+        color: var(--primary-color);
+        transform: scale(1.1);
+      }
+
+      /* Edit Profile Button */
+      .edit-profile-btn {
+        background: linear-gradient(
+          135deg,
+          var(--primary-color),
+          var(--secondary-color)
+        );
+        border: none;
+        color: white;
+        padding: 0.8rem 2rem;
+        border-radius: 25px;
+        font-weight: 500;
+        font-size: 1rem;
+        display: block;
+        margin: 2rem auto 0;
+        transition: all 0.3s ease;
+        box-shadow: 0 5px 15px rgba(10, 186, 181, 0.3);
+      }
+
+      .edit-profile-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(10, 186, 181, 0.4);
+        color: white;
+      }
+
+      /* Modal Styles */
+      .modal-content {
+        border-radius: 20px;
+        border: none;
+        overflow: hidden;
+      }
+
+      .modal-header {
+        background: linear-gradient(
+          135deg,
+          var(--primary-color),
+          var(--secondary-color)
+        );
+        color: white;
+        border-bottom: none;
+        padding: 1.5rem 2rem;
+      }
+
+      .modal-header .btn-close {
+        filter: invert(1);
+      }
+
+      .modal-body {
+        padding: 2rem;
+      }
+
+      .form-label {
+        font-weight: 600;
+        color: var(--text-dark);
+        margin-bottom: 0.5rem;
+      }
+
+      .form-control {
+        border-radius: 10px;
+        border: 2px solid #e9ecef;
+        padding: 0.75rem 1rem;
+        transition: all 0.3s ease;
+        font-size: 1rem;
+      }
+
+      .form-control:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.2rem rgba(10, 186, 181, 0.25);
+      }
+
+      .btn-primary {
+        background: linear-gradient(
+          135deg,
+          var(--primary-color),
+          var(--secondary-color)
+        );
+        border: none;
+        border-radius: 10px;
+        padding: 0.75rem 1.5rem;
+        font-weight: 500;
+      }
+
+      .btn-primary:hover {
+        background: linear-gradient(
+          135deg,
+          var(--secondary-color),
+          var(--primary-color)
+        );
+        transform: translateY(-1px);
+      }
+
+      .btn-secondary {
+        border-radius: 10px;
+        padding: 0.75rem 1.5rem;
+      }
+
+      /* Success Animation */
+      .success-animation {
+        animation: successPulse 0.6s ease-in-out;
+      }
+
+      @keyframes successPulse {
+        0% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.02);
+          background-color: rgba(10, 186, 181, 0.1);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+
+      /* Responsive Design */
+      @media (max-width: 768px) {
+        .profile-container {
+          padding: 1rem;
+        }
+
+        .profile-header {
+          padding: 2rem 1.5rem;
+        }
+
+        .profile-name {
+          font-size: 1.5rem;
+        }
+
+        .profile-body {
+          padding: 1.5rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+      <div class="container-fluid">
+        <button
+          class="btn me-3"
+          type="button"
+          data-bs-toggle="offcanvas"
+          data-bs-target="#sidebar"
+        >
+          <i class="fas fa-bars text-white"></i>
+        </button>
+        <a class="navbar-brand" href="#">
+          <i class="fas fa-university me-2"></i>
+          Nilai University CMS
+        </a>
+        <div class="navbar-nav ms-auto">
+          <div class="nav-item dropdown">
+            <a
+              class="nav-link dropdown-toggle"
+              href="#"
+              role="button"
+              data-bs-toggle="dropdown"
+            >
+              <i class="fas fa-user-circle me-2"></i>
+              <span id="nav-coordinator-name">Dr. Sharwin Kumar</span>
+            </a>
+            <ul class="dropdown-menu">
+              <li>
+                <a
+                  class="dropdown-item"
+                  href="../coordinator/CoordinatorProfile.php"
+                  ><i class="fas fa-user me-2"></i>Profile</a
+                >
+              </li>
+              <li>
+                <hr class="dropdown-divider" />
+              </li>
+              <li>
+                <a
+                  class="dropdown-item"
+                  href="#"
+                  data-bs-toggle="modal"
+                  data-bs-target="#logoutModal"
+                >
+                  <i class="fas fa-sign-out-alt me-2"></i>Log Out
+                </a>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Offcanvas Sidebar -->
+    <div class="offcanvas offcanvas-start" tabindex="-1" id="sidebar">
+      <div class="offcanvas-header">
+        <h5 class="offcanvas-title">
+          <i class="fas fa-user-tie me-2"></i>
+          Coordinator Panel
+        </h5>
+        <button
+          type="button"
+          class="btn-close btn-close-white"
+          data-bs-dismiss="offcanvas"
+        ></button>
+      </div>
+      <div class="offcanvas-body d-flex flex-column">
+        <div class="sidebar-content">
+          <a
+            class="sidebar-item"
+            href="../coordinator/CoordinatorDashboard.php"
+          >
+            <i class="fas fa-home"></i>
+            <span>Dashboard</span>
+          </a>
+          <a
+            class="sidebar-item active"
+            href="../coordinator/CoordinatorProfile.php"
+          >
+            <i class="fas fa-user"></i>
+            <span>Profile</span>
+          </a>
+          <a
+            class="sidebar-item"
+            href="../coordinator/CoordinatorProgressView.php"
+          >
+            <i class="fas fa-calendar-check"></i>
+            <span>Ongoing Event</span>
+          </a>
+          <a class="sidebar-item" href="../coordinator/CoordinatorView.php">
+            <i class="fas fa-file-alt"></i>
+            <span>Proposal & Post Event</span>
+          </a>
+          <a
+            class="sidebar-item"
+            href="../coordinator/CoordinatorEventHistory.php"
+          >
+            <i class="fas fa-history"></i>
+            <span>History</span>
+          </a>
+          <a class="sidebar-item" href="CoordinatorContact.php">
+            <i class="fas fa-envelope"></i>
+            <span>Contact Us</span>
+          </a>
+        </div>
+
+        <div class="sidebar-footer text-center mt-auto">
+          <hr />
+          <small style="color: white; font-size: 0.8rem">
+            CMS v1.0 © 2025 Nilai University
+          </small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="profile-container">
+      <div class="profile-card">
+        <!-- Profile Header -->
+        <div class="profile-header">
+          <div class="profile-avatar">
+            <i class="fas fa-user"></i>
+          </div>
+          <h2 class="profile-name" id="header-name">Dr. Sharwin Kumar</h2>
+          <p class="profile-role">Event Coordinator</p>
+        </div>
+
+        <!-- Profile Body -->
+        <div class="profile-body">
+          <ul class="profile-info-list">
+            <!-- Full Name -->
+            <li class="profile-info-item">
+              <div class="info-icon">
+                <i class="fas fa-user"></i>
+              </div>
+              <div class="info-content">
+                <div class="info-label">👨‍💼 Full Name</div>
+                <div class="info-value" id="display-name">
+                  Dr. Sharwin Kumar
+                </div>
+              </div>
+            </li>
+
+            <!-- Coordinator ID -->
+            <li class="profile-info-item">
+              <div class="info-icon">
+                <i class="fas fa-id-badge"></i>
+              </div>
+              <div class="info-content">
+                <div class="info-label">🆔 Coordinator ID</div>
+                <div class="info-value" id="display-id">COORD2025001</div>
+              </div>
+            </li>
+
+            <!-- Email Address -->
+            <li class="profile-info-item">
+              <div class="info-icon">
+                <i class="fas fa-envelope"></i>
+              </div>
+              <div class="info-content">
+                <div class="info-label">📧 Email Address</div>
+                <div class="info-value" id="display-email">
+                  sharwin.kumar@nilai.edu.my
+                </div>
+              </div>
+            </li>
+
+            <!-- Phone Number -->
+            <li class="profile-info-item">
+              <div class="info-icon">
+                <i class="fas fa-mobile-alt"></i>
+              </div>
+              <div class="info-content">
+                <div class="info-label">📱 Phone Number</div>
+                <div class="info-value" id="display-phone">+60 12-345 6789</div>
+              </div>
+            </li>
+          </ul>
+
+          <!-- Edit Profile Button -->
+          <button class="edit-profile-btn" onclick="openEditProfileModal()">
+            <i class="fas fa-edit me-2"></i>
+            Edit Profile
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Profile Modal -->
+    <div class="modal fade" id="editModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">
+              <i class="fas fa-edit me-2"></i>
+              Edit Profile Information
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <form id="editForm">
+              <!-- Name Field -->
+              <div class="mb-4">
+                <label for="editName" class="form-label">
+                  <i class="fas fa-user me-2 text-primary"></i>
+                  👨‍💼 Full Name
+                </label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="editName"
+                  required
+                />
+                <div class="invalid-feedback" id="nameFeedback"></div>
+              </div>
+
+              <!-- Email Field -->
+              <div class="mb-4">
+                <label for="editEmail" class="form-label">
+                  <i class="fas fa-envelope me-2 text-primary"></i>
+                  📧 Email Address
+                </label>
+                <input
+                  type="email"
+                  class="form-control"
+                  id="editEmail"
+                  required
+                />
+                <div class="invalid-feedback" id="emailFeedback"></div>
+              </div>
+
+              <!-- Phone Field -->
+              <div class="mb-4">
+                <label for="editPhone" class="form-label">
+                  <i class="fas fa-mobile-alt me-2 text-primary"></i>
+                  📱 Phone Number
+                </label>
+                <input
+                  type="tel"
+                  class="form-control"
+                  id="editPhone"
+                  required
+                />
+                <div class="invalid-feedback" id="phoneFeedback"></div>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              <i class="fas fa-times me-1"></i> Cancel
+            </button>
+            <button
+              type="button"
+              class="btn btn-primary"
+              onclick="saveAllChanges()"
+            >
+              <i class="fas fa-save me-1"></i> Save All Changes
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Success Toast -->
+    <div class="position-fixed top-0 end-0 p-3" style="z-index: 1100">
+      <div
+        id="successToast"
+        class="toast align-items-center text-white bg-success border-0"
+        role="alert"
+      >
+        <div class="d-flex">
+          <div class="toast-body">
+            <i class="fas fa-check-circle me-2"></i>
+            Profile updated successfully!
+          </div>
+          <button
+            type="button"
+            class="btn-close btn-close-white me-2 m-auto"
+            data-bs-dismiss="toast"
+          ></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      function openEditProfileModal() {
+        const modal = new bootstrap.Modal(document.getElementById("editModal"));
+
+        // Populate the form with current values
+        document.getElementById("editName").value =
+          document.getElementById("display-name").textContent;
+        document.getElementById("editEmail").value =
+          document.getElementById("display-email").textContent;
+        document.getElementById("editPhone").value =
+          document.getElementById("display-phone").textContent;
+
+        // Clear any previous validation states
+        clearValidationErrors();
+
+        modal.show();
+
+        // Focus on first input after modal is shown
+        setTimeout(() => document.getElementById("editName").focus(), 500);
+      }
+
+      function saveAllChanges() {
+        const nameInput = document.getElementById("editName");
+        const emailInput = document.getElementById("editEmail");
+        const phoneInput = document.getElementById("editPhone");
+        const saveButton = document.querySelector(".btn-primary");
+
+        const nameValue = nameInput.value.trim();
+        const emailValue = emailInput.value.trim();
+        const phoneValue = phoneInput.value.trim();
+
+        // Clear previous validation errors
+        clearValidationErrors();
+
+        let hasErrors = false;
+
+        // Validate all fields
+        if (!nameValue) {
+          showFieldValidationError(
+            "editName",
+            "nameFeedback",
+            "Full name is required."
+          );
+          hasErrors = true;
+        }
+
+        if (!emailValue) {
+          showFieldValidationError(
+            "editEmail",
+            "emailFeedback",
+            "Email address is required."
+          );
+          hasErrors = true;
+        } else if (!isValidEmail(emailValue)) {
+          showFieldValidationError(
+            "editEmail",
+            "emailFeedback",
+            "Please enter a valid email address."
+          );
+          hasErrors = true;
+        }
+
+        if (!phoneValue) {
+          showFieldValidationError(
+            "editPhone",
+            "phoneFeedback",
+            "Phone number is required."
+          );
+          hasErrors = true;
+        } else if (!isValidPhone(phoneValue)) {
+          showFieldValidationError(
+            "editPhone",
+            "phoneFeedback",
+            "Please enter a valid phone number."
+          );
+          hasErrors = true;
+        }
+
+        if (hasErrors) {
+          return;
+        }
+
+        // Show loading state
+        saveButton.innerHTML =
+          '<i class="fas fa-spinner fa-spin me-1"></i> Saving Changes...';
+        saveButton.disabled = true;
+
+        // Simulate API call delay
+        setTimeout(() => {
+          // Update all display elements
+          document.getElementById("display-name").textContent = nameValue;
+          document.getElementById("display-email").textContent = emailValue;
+          document.getElementById("display-phone").textContent = phoneValue;
+
+          // Update header name and navigation
+          document.getElementById("header-name").textContent = nameValue;
+          document.getElementById("nav-coordinator-name").textContent =
+            nameValue;
+
+          // Add success animation to all updated items
+          const nameItem = document
+            .getElementById("display-name")
+            .closest(".profile-info-item");
+          const emailItem = document
+            .getElementById("display-email")
+            .closest(".profile-info-item");
+          const phoneItem = document
+            .getElementById("display-phone")
+            .closest(".profile-info-item");
+
+          [nameItem, emailItem, phoneItem].forEach((item) => {
+            item.classList.add("success-animation");
+            setTimeout(() => {
+              item.classList.remove("success-animation");
+            }, 600);
+          });
+
+          // Reset button state
+          saveButton.innerHTML =
+            '<i class="fas fa-save me-1"></i> Save All Changes';
+          saveButton.disabled = false;
+
+          // Close modal and show success toast
+          bootstrap.Modal.getInstance(
+            document.getElementById("editModal")
+          ).hide();
+          showSuccessToast();
+
+          // Here you would make the actual API call
+          // updateAllProfileData(nameValue, emailValue, phoneValue);
+        }, 1500);
+      }
+
+      function clearValidationErrors() {
+        const inputs = ["editName", "editEmail", "editPhone"];
+        inputs.forEach((inputId) => {
+          document.getElementById(inputId).classList.remove("is-invalid");
+        });
+      }
+
+      function showFieldValidationError(inputId, feedbackId, message) {
+        const input = document.getElementById(inputId);
+        const feedback = document.getElementById(feedbackId);
+
+        input.classList.add("is-invalid");
+        feedback.textContent = message;
+      }
+
+      function isValidEmail(email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+      }
+
+      function isValidPhone(phone) {
+        const phoneRegex = /^[\+\-\s\(\)\d]{7,20}$/;
+        return phoneRegex.test(phone);
+      }
+
+      function showSuccessToast() {
+        const toast = new bootstrap.Toast(
+          document.getElementById("successToast")
+        );
+        toast.show();
+      }
+
+      // Handle form submission with Enter key
+      document
+        .getElementById("editForm")
+        .addEventListener("submit", function (e) {
+          e.preventDefault();
+          saveAllChanges();
+        });
+
+      // Example function for database update
+      function updateAllProfileData(name, email, phone) {
+        /*
+            fetch('update_coordinator.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    name: name,
+                    email: email,
+                    phone: phone,
+                    coordinator_id: document.getElementById('display-id').textContent
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showSuccessToast();
+                } else {
+                    alert('Error updating profile: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while updating the profile.');
+            });
+            */
+      }
+    </script>
+  </body>
+</html>
