@@ -148,7 +148,7 @@ for ($h = 8; $h <= 22; $h++) {
     $times[] = ['value' => $value, 'label' => $label];
 }
 
-
+$button_label = ($mode === 'modify') ? 'Resubmit' : 'Edit Submit';
 ?>
 
 
@@ -687,7 +687,7 @@ for ($h = 8; $h <= 22; $h++) {
                     </button>
                     <div>
                         <button type="submit" class="btn btn-primary" id="submitBtn">
-                            📝 Submit Proposal
+                            📝 <?= $button_label ?>
                         </button>
                     </div>
                 </div>

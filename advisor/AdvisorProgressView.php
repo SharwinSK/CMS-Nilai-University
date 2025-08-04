@@ -215,7 +215,7 @@ foreach ($events as $e) {
                                     <td><span class="status-badge status-<?= $statusClass ?>"><?= $statusLabel ?></span></td>
                                     <td>
                                         <?php if ($showButtons): ?>
-                                            <a href="previewModal.php?Ev_ID=<?= $event['Ev_ID'] ?>&mode=view"
+                                            <a href="../model/viewProposal.php?id=<?= urlencode($event['Ev_ID']) ?>"
                                                 class="btn-action btn-view">
                                                 <i class="fas fa-eye me-1"></i>View
                                             </a>

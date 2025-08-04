@@ -23,6 +23,10 @@ function modifyProposal(eventId) {
   window.location.href = `../student/proposal/editModifyForm.php?mode=modify&id=${eventId}`;
 }
 
+function viewProposal(eventId) {
+  window.location.href = `../model/viewProposal.php?id=${eventId}`;
+}
+
 function deleteProposal(eventId) {
   if (confirm(`Are you sure you want to delete the proposal for ${eventId}?`)) {
     fetch(`../student/proposal/DeleteProposal.php`, {

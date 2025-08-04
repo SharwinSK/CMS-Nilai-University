@@ -1,233 +1,252 @@
 <?php
 session_start();
-include('../db/dbconfig.php'); // Adjust if needed
-include('LogoutDesign.php');
+include('../db/dbconfig.php'); // adjust path if needed
 
 if (!isset($_SESSION['Coor_ID'])) {
     header("Location: CoordinatorLogin.php");
     exit();
 }
+
 $coordinator_id = $_SESSION['Coor_ID'];
-$query = $conn->prepare("SELECT Coor_Name FROM coordinator WHERE Coor_ID = ?");
-$query->bind_param("s", $coordinator_id);
-$query->execute();
-$result = $query->get_result();
+$stmt = $conn->prepare("SELECT Coor_Name FROM coordinator WHERE Coor_ID = ?");
+$stmt->bind_param("s", $coordinator_id);
+$stmt->execute();
+$result = $stmt->get_result();
 $coordinator_name = ($result && $result->num_rows > 0) ? $result->fetch_assoc()['Coor_Name'] : "Coordinator";
 
-$proposals_query = "
-    SELECT e.Ev_ID, e.Ev_Name, s.Stu_Name, c.Club_Name, e.Updated_At
+// Fetch Proposals Pending Coordinator Review
+$proposal_query = "
+SELECT e.Ev_ID, e.Ev_Name, s.Stu_Name, c.Club_Name, e.Updated_At
 FROM events e
 JOIN student s ON e.Stu_ID = s.Stu_ID
 JOIN club c ON e.Club_ID = c.Club_ID
 JOIN eventstatus es ON e.Status_ID = es.Status_ID
 WHERE es.Status_Name = 'Approved by Advisor (Pending Coordinator Review)'
 ORDER BY e.Updated_At DESC
-
 ";
+$proposals_result = $conn->query($proposal_query);
 
-$proposals_result = $conn->query($proposals_query);
-
-$postmortems_query = "
-    SELECT ep.Rep_ID, e.Ev_Name, s.Stu_Name, c.Club_Name, ep.Updated_At 
-    FROM eventpostmortem ep
-    JOIN events e ON ep.Ev_ID = e.Ev_ID
-    JOIN student s ON e.Stu_ID = s.Stu_ID
-    JOIN club c ON e.Club_ID = c.Club_ID
-    JOIN eventstatus es ON ep.Status_ID = es.Status_ID
-    WHERE es.Status_Name = 'Postmortem Pending Review'
-    ORDER BY ep.Updated_At DESC
+// Fetch Postmortems Pending Review
+$post_query = "
+SELECT ep.Rep_ID, e.Ev_ID, e.Ev_Name, s.Stu_Name, c.Club_Name, ep.Updated_At 
+FROM eventpostmortem ep
+JOIN events e ON ep.Ev_ID = e.Ev_ID
+JOIN student s ON e.Stu_ID = s.Stu_ID
+JOIN club c ON e.Club_ID = c.Club_ID
+JOIN eventstatus es ON ep.Status_ID = es.Status_ID
+WHERE es.Status_Name = 'Postmortem Pending Review'
+ORDER BY ep.Updated_At DESC
 ";
-
-
-$postmortems_result = $conn->query($postmortems_query);
-$start_time = microtime(true);
+$postmortems_result = $conn->query($post_query);
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CMS GA Review</title>
-    <!-- Include Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="styleMain.css">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>All Submissions - Nilai University CMS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
+    <link href="../assets/css/coordinator.css?v=<?= time() ?>" rel="stylesheet" />
     <style>
-        .table td,
-        .table tr {
-            vertical-align: middle;
-            background-color: #D2FF72;
-            border-color: rgb(0, 0, 0);
-            text-align: center;
+        /* Main Content Styles */
+        .main-content {
+            padding: 20px;
+            margin-left: 0;
+            transition: all 0.3s ease;
         }
 
-        .table th {
-            background-color: #54C392;
-            color: white;
-            border-color: rgb(0, 0, 0);
+        .page-header {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            border-left: 5px solid var(--primary-color);
         }
 
-        .btn-primary {
-            background-color: #32CD32;
-            border: none;
-            color: white;
-            transition: transform 0.2s, box-shadow 0.2s;
+        .page-title {
+            color: var(--text-dark);
+            font-weight: bold;
+            margin: 0;
+            display: flex;
+            align-items: center;
         }
 
-        .btn-primary:hover {
-            background-color: #15B392;
-            transform: scale(1.05);
+        .page-title i {
+            color: var(--primary-color);
+            margin-right: 15px;
         }
     </style>
 </head>
 
 <body>
-    <!-- Top Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
-        <div class="container-fluid">
-            <button class="btn btn-outline-light me-2" data-bs-toggle="offcanvas" data-bs-target="#sidebar">
-                ☰
-            </button>
-            <a class="navbar-brand" href="CoordinatorDashboard.php">
-                <img src="NU logo.png" alt="Logo">
-                Event List
-            </a>
-            <div class="dropdown ms-auto">
-                <button class="btn btn-outline-light dropdown-toggle" type="button" id="dropdownMenuButton1"
-                    data-bs-toggle="dropdown">
-                    <?php echo $coordinator_name; ?>
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end">
-                    <li><a class="dropdown-item" href="CoordinatorProfile.php">Profile</a></li>
-                    <li>
-                        <hr class="dropdown-divider">
-                    </li>
-                    <li><a class="dropdown-item text-danger" href="#" data-bs-toggle="modal"
-                            data-bs-target="#logoutModal">Logout</a></li>
-                </ul>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Sidebar -->
-    <div class="offcanvas offcanvas-start" tabindex="-1" id="sidebar">
-        <div class="offcanvas-header">
-            <h5 class="offcanvas-title">Menu</h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
-        </div>
-        <div class="offcanvas-body d-flex flex-column">
-            <ul class="nav flex-column">
-                <li class="nav-item"><a class="nav-link active" href="CoordinatorDashboard.php">Dashboard</a></li>
-                <li class="nav-item"><a class="nav-link" href="CoordinatorProfile.php">Profile</a></li>
-                <li class="nav-item"><a class="nav-link" href="CoordinatorView.php">Proposals & Postmortems</a></li>
-                <li class="nav-item"><a class="nav-link" href="CoordinatorProgressView.php">Event Ongoing</a></li>
-                <li class="nav-item"><a class="nav-link" href="CoordinatorEventHistory.php">Event History</a></li>
-
-            </ul>
-        </div>
-    </div>
+    <?php include('../model/LogoutDesign.php'); ?>
+    <?php include('../components/Cordoffcanvas.php'); ?>
+    <?php include('../components/Cordheader.php'); ?>
 
     <!-- Main Content -->
-    <div class="container mt-4">
-        <h2 class="text-center">Review Submissions</h2>
-
-        <!-- Proposals Pending Review -->
-        <div class="mt-4">
-            <h4>Proposals Pending Review</h4>
-            <table class="table table-bordered">
-                <thead>
-                    <tr>
-                        <th>Event Name</th>
-                        <th>Student Name</th>
-                        <th>Club Name</th>
-                        <th>Submission Date</th>
-                        <th>Action</th>
-                        <th>Export</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if ($proposals_result->num_rows > 0): ?>
-                        <?php while ($proposal = $proposals_result->fetch_assoc()): ?>
-                            <tr>
-                                <td><?php echo $proposal['Ev_Name']; ?></td>
-                                <td><?php echo $proposal['Stu_Name']; ?></td>
-                                <td><?php echo $proposal['Club_Name']; ?></td>
-                                <td><?php echo date('d M Y', strtotime($proposal['Updated_At'])); ?></td>
-                                <td>
-                                    <a href="CoordinatorDecision.php?type=proposal&id=<?php echo $proposal['Ev_ID']; ?>"
-                                        class="btn btn-primary btn-sm">Review</a>
-                                </td>
-                                <td>
-                                    <a href="generate_pdf.php?id=<?php echo $proposal['Ev_ID']; ?>"
-                                        class="btn btn-warning btn-sm">Export</a>
-                                </td>
-                            </tr>
-                        <?php endwhile; ?>
-                    <?php else: ?>
-                        <tr>
-                            <td colspan="5" class="text-center">No proposals pending review.</td>
-                        </tr>
-                    <?php endif; ?>
-                </tbody>
-            </table>
+    <div class="main-content">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1 class="page-title">
+                <i class="fas fa-inbox"></i>
+                All Submissions
+            </h1>
+            <p class="mb-0 text-muted">
+                Manage and review all proposal and post-event submissions
+            </p>
         </div>
 
-        <!-- Postmortems Pending Review -->
-        <div class="mt-4">
-            <h4>Postmortems Pending Review</h4>
-            <table class="table table-bordered">
-                <thead>
-                    <tr>
-                        <th>Event Name</th>
-                        <th>Student Name</th>
-                        <th>Club Name</th>
-                        <th>Submission Date</th>
-                        <th>Action</th>
-                        <th>Export</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if ($postmortems_result->num_rows > 0): ?>
-                        <?php while ($postmortem = $postmortems_result->fetch_assoc()): ?>
-                            <tr>
-                                <td><?php echo $postmortem['Ev_Name']; ?></td>
-                                <td><?php echo $postmortem['Stu_Name']; ?></td>
-                                <td><?php echo $postmortem['Club_Name']; ?></td>
-                                <td><?php echo date('d M Y', strtotime($postmortem['Updated_At'])); ?></td>
-                                <td>
-                                    <a href="CoordinatorDecision.php?type=postmortem&id=<?php echo $postmortem['Rep_ID']; ?>"
-                                        class="btn btn-primary btn-sm">Review</a>
-                                </td>
-                                <td>
-                                    <a href="reportgeneratepdf.php?id=<?php echo $postmortem['Rep_ID']; ?>"
-                                        class="btn btn-primary">Export
-                                        to
-                                        PDF</a>
-                                </td>
-                            </tr>
-                        <?php endwhile; ?>
-                    <?php else: ?>
-                        <tr>
-                            <td colspan="5" class="text-center">No postmortems pending review.</td>
-                        </tr>
-                    <?php endif; ?>
-                </tbody>
-            </table>
+        <!-- Tabs -->
+        <ul class="nav nav-tabs" id="submissionTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="proposals-tab" data-bs-toggle="tab" data-bs-target="#proposals"
+                    type="button" role="tab">
+                    <i class="fas fa-file-alt me-2"></i>
+                    📝 Proposal Submissions
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="post-events-tab" data-bs-toggle="tab" data-bs-target="#post-events"
+                    type="button" role="tab">
+                    <i class="fas fa-clipboard-check me-2"></i>
+                    📄 Post-Event Submissions
+                </button>
+            </li>
+        </ul>
+
+        <!-- Tab Content -->
+        <div class="tab-content" id="submissionTabContent">
+            <!-- Proposal Submissions Tab -->
+            <div class="tab-pane fade show active" id="proposals" role="tabpanel">
+                <div class="content-card">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">
+                            <i class="fas fa-file-alt text-primary me-2"></i>
+                            Proposal Submissions
+                        </h5>
+                        <span class="badge bg-primary"><?= $proposals_result->num_rows ?> Total Submissions</span>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Event Name</th>
+                                    <th>Student Name</th>
+                                    <th>Club Name</th>
+                                    <th>Submission Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="proposalsTableBody">
+                                <?php if ($proposals_result->num_rows > 0): ?>
+                                    <?php while ($row = $proposals_result->fetch_assoc()): ?>
+                                        <tr>
+                                            <td><strong><?= htmlspecialchars($row['Ev_Name']) ?></strong></td>
+                                            <td><?= htmlspecialchars($row['Stu_Name']) ?></td>
+                                            <td><?= htmlspecialchars($row['Club_Name']) ?></td>
+                                            <td><?= date('d M Y', strtotime($row['Updated_At'])) ?></td>
+                                            <td>
+                                                <a href="CoordinatorDecision.php?type=proposal&id=<?= $row['Ev_ID'] ?>"
+                                                    class="action-btn btn-view">
+                                                    <i class="fas fa-eye"></i>
+                                                    <span class="tooltip">View Full Proposal</span>
+                                                </a>
+                                                <a href="../components/pdf/generate_pdf.php?id=<?= $row['Ev_ID'] ?>"
+                                                    class="action-btn btn-export">
+                                                    <i class="fas fa-download"></i>
+                                                    <span class="tooltip">Export Proposal PDF</span>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    <?php endwhile; ?>
+                                <?php else: ?>
+                                    <tr>
+                                        <td colspan="5" class="text-center">No proposals pending review.</td>
+                                    </tr>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Post-Event Submissions Tab -->
+            <div class="tab-pane fade" id="post-events" role="tabpanel">
+                <div class="content-card">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">
+                            <i class="fas fa-clipboard-check text-primary me-2"></i>
+                            Post-Event Submissions
+                        </h5>
+                        <span class="badge bg-success"><?= $postmortems_result->num_rows ?> Total Reports</span>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th class="event-id-col">Event ID</th>
+                                    <th>Event Name</th>
+                                    <th>Student Name</th>
+                                    <th>Club Name</th>
+                                    <th>Submission Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="postEventsTableBody">
+                                <?php if ($postmortems_result->num_rows > 0): ?>
+                                    <?php while ($row = $postmortems_result->fetch_assoc()): ?>
+                                        <tr>
+                                            <td class="event-id-col"><strong><?= htmlspecialchars($row['Ev_ID']) ?></strong>
+                                            </td>
+                                            <td><?= htmlspecialchars($row['Ev_Name']) ?></td>
+                                            <td><?= htmlspecialchars($row['Stu_Name']) ?></td>
+                                            <td><?= htmlspecialchars($row['Club_Name']) ?></td>
+                                            <td><?= date('d M Y', strtotime($row['Updated_At'])) ?></td>
+                                            <td>
+                                                <a href="CoordinatorDecision.php?type=postmortem&id=<?= $row['Rep_ID'] ?>"
+                                                    class="action-btn btn-view">
+                                                    <i class="fas fa-eye"></i>
+                                                    <span class="tooltip">View Full Post-Event Report</span>
+                                                </a>
+                                                <a href="reportgeneratepdf.php?id=<?= $row['Rep_ID'] ?>"
+                                                    class="action-btn btn-export">
+                                                    <i class="fas fa-download"></i>
+                                                    <span class="tooltip">Export Post-Event PDF</span>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    <?php endwhile; ?>
+                                <?php else: ?>
+                                    <tr>
+                                        <td colspan="6" class="text-center">No post-event reports pending review.</td>
+                                    </tr>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
     <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <?php
-    // End time after processing the page
-    $end_time = microtime(true);
-    $page_load_time = round(($end_time - $start_time) * 1000, 2); // Convert to milliseconds
-    
-    echo "<p style='color: green; font-weight: bold; text-align: center;'>
-      Page Load Time: " . $page_load_time . " ms
-      </p>";
-    ?>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+
+        // Tab switching
+        document.querySelectorAll('[data-bs-toggle="tab"]').forEach((tab) => {
+            tab.addEventListener("shown.bs.tab", function () {
+                // Simple tab switching - no filter reset needed since filters are removed
+            });
+        });
+    </script>
 </body>
 
 </html>

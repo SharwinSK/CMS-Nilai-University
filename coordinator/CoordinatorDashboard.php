@@ -134,7 +134,6 @@ $carousel_result = $conn->query($carousel_query);
     <title>Coordinator Dashboard - Nilai University CMS</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
-   
     <link href="../assets/css/coordinator.css?v=<?= time() ?>" rel="stylesheet" />
 </head>
 
