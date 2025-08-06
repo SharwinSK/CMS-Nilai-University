@@ -151,7 +151,7 @@ $postmortems_result = $conn->query($post_query);
                                             <td><?= htmlspecialchars($row['Club_Name']) ?></td>
                                             <td><?= date('d M Y', strtotime($row['Updated_At'])) ?></td>
                                             <td>
-                                                <a href="CoordinatorDecision.php?type=proposal&id=<?= $row['Ev_ID'] ?>"
+                                                <a href="CoorProposalDecision.php?type=proposal&id=<?= $row['Ev_ID'] ?>"
                                                     class="action-btn btn-view">
                                                     <i class="fas fa-eye"></i>
                                                     <span class="tooltip">View Full Proposal</span>
@@ -209,7 +209,7 @@ $postmortems_result = $conn->query($post_query);
                                             <td><?= htmlspecialchars($row['Club_Name']) ?></td>
                                             <td><?= date('d M Y', strtotime($row['Updated_At'])) ?></td>
                                             <td>
-                                                <a href="CoordinatorDecision.php?type=postmortem&id=<?= $row['Rep_ID'] ?>"
+                                                <a href="CoorPostDecision.php?type=postmortem&id=<?= $row['Rep_ID'] ?>"
                                                     class="action-btn btn-view">
                                                     <i class="fas fa-eye"></i>
                                                     <span class="tooltip">View Full Post-Event Report</span>

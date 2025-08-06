@@ -1,0 +1,518 @@
+ :root {
+        --primary-color: #0abab5;
+        --secondary-color: #56dfcf;
+        --tertiary-color: #adeed9;
+        --accent-color: #ffedf3;
+        --dark-bg: #2c3e50;
+        --text-dark: #333;
+      }
+
+      body {
+        background: linear-gradient(
+          135deg,
+          var(--tertiary-color) 0%,
+          var(--accent-color) 100%
+        );
+        min-height: 100vh;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        margin: 0;
+        padding: 20px;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+      }
+
+      .header {
+        background: linear-gradient(
+          135deg,
+          var(--primary-color),
+          var(--secondary-color)
+        );
+        color: white;
+        padding: 20px;
+        text-align: center;
+        position: relative;
+      }
+
+      .header h1 {
+        margin: 0;
+        font-size: 2rem;
+      }
+
+      .back-btn {
+        position: absolute;
+        left: 20px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: #ff6b6b;
+        border: none;
+        color: white;
+        padding: 10px;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 1.2rem;
+        transition: background 0.3s ease;
+      }
+
+      .back-btn:hover {
+        background: #ff5252;
+      }
+
+      .export-btn {
+        position: absolute;
+        right: 20px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: #4caf50;
+        border: none;
+        color: white;
+        padding: 10px 15px;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background 0.3s ease;
+      }
+
+      .export-btn:hover {
+        background: #45a049;
+      }
+
+      .content {
+        padding: 30px;
+      }
+
+      .poster-section {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+
+      .poster {
+        max-width: 300px;
+        max-height: 400px;
+        border: 3px solid var(--primary-color);
+        border-radius: 10px;
+        cursor: pointer;
+        transition: transform 0.3s ease;
+      }
+
+      .poster:hover {
+        transform: scale(1.05);
+      }
+
+      .section {
+        background: #f8f9fa;
+        margin: 20px 0;
+        padding: 25px;
+        border-radius: 10px;
+        border-left: 5px solid var(--primary-color);
+      }
+
+      .section h2 {
+        color: var(--primary-color);
+        margin-top: 0;
+        font-size: 1.5rem;
+        border-bottom: 2px solid var(--tertiary-color);
+        padding-bottom: 10px;
+      }
+
+      .detail-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 15px;
+        margin-top: 20px;
+      }
+
+      .detail-item {
+        background: white;
+        padding: 15px;
+        border-radius: 8px;
+        border: 1px solid #e0e0e0;
+      }
+
+      .reject-summary {
+        background: #ffe6e6;
+        border: 1px solid #ff6b6b;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 20px;
+      }
+
+      .reject-summary h4 {
+        color: #dc3545;
+        margin-top: 0;
+      }
+
+      .reject-summary ul {
+        margin: 10px 0;
+        padding-left: 20px;
+      }
+
+      .reject-summary li {
+        color: #666;
+        margin: 5px 0;
+      }
+
+      .detail-label {
+        font-weight: bold;
+        color: var(--text-dark);
+        margin-bottom: 5px;
+      }
+
+      .detail-value {
+        color: #666;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+        background: white;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+
+      th,
+      td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #e0e0e0;
+      }
+
+      th {
+        background: var(--primary-color);
+        color: white;
+        font-weight: 600;
+      }
+
+      tr:hover {
+        background: #f5f5f5;
+      }
+
+      .view-btn {
+        background: var(--secondary-color);
+        color: white;
+        border: none;
+        padding: 5px 10px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        text-decoration: none;
+        display: inline-block;
+      }
+
+      .view-btn:hover {
+        background: var(--primary-color);
+      }
+
+      .budget-summary {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        margin-top: 15px;
+      }
+
+      .budget-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 0;
+        border-bottom: 1px solid #e0e0e0;
+      }
+
+      .budget-row.total {
+        font-weight: bold;
+        color: var(--primary-color);
+        border-bottom: 2px solid var(--primary-color);
+      }
+
+      .action-section {
+        background: white;
+        padding: 25px;
+        margin: 20px 0;
+        border-radius: 10px;
+        border: 2px solid var(--primary-color);
+      }
+
+      .dropdown {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid var(--tertiary-color);
+        border-radius: 8px;
+        margin: 10px 0;
+        font-size: 1rem;
+      }
+
+      .button-group {
+        display: flex;
+        gap: 15px;
+        margin-top: 20px;
+        justify-content: center;
+      }
+
+      .checkbox-container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 15px;
+        padding: 15px;
+        background: white;
+        border-radius: 8px;
+        border: 1px solid #e0e0e0;
+      }
+
+      .section-title {
+        font-weight: 600;
+        color: var(--text-dark);
+      }
+
+      .section-checkboxes {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+      }
+
+      .checkbox-group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .section-checkbox {
+        width: 20px;
+        height: 20px;
+      }
+
+      .approve-checkbox {
+        accent-color: #28a745;
+      }
+
+      .reject-checkbox {
+        accent-color: #dc3545;
+      }
+
+      .checkbox-label {
+        font-weight: 500;
+        cursor: pointer;
+      }
+
+      .approve-label {
+        color: #28a745;
+      }
+
+      .reject-label {
+        color: #dc3545;
+      }
+
+      .approve-btn:disabled {
+        background: #cccccc;
+        cursor: not-allowed;
+      }
+
+      .approve-btn {
+        background: #28a745;
+        color: white;
+        border: none;
+        padding: 15px 30px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 1.1rem;
+        font-weight: 600;
+      }
+
+      .reject-btn {
+        background: #dc3545;
+        color: white;
+        border: none;
+        padding: 15px 30px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 1.1rem;
+        font-weight: 600;
+      }
+
+      /* New styles for bulk action buttons */
+.bulk-actions {
+  position: fixed;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
+  z-index: 999;
+  border: 1px solid #e0e0e0;
+  min-width: 90px;
+}
+.bulk-actions::before {
+  content: "Quick Actions";
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-dark);
+  text-align: center;
+  margin-bottom: 5px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.bulk-btn {
+  padding: 6px 8px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.7rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+      .bulk-approve {
+  background: #28a745;
+  color: white;
+}
+
+    .bulk-approve:hover {
+  background: #218838;
+  transform: translateY(-1px);
+}
+
+      .bulk-reject {
+        background: #dc3545;
+        color: white;
+      }
+
+      .bulk-reject:hover {
+  background: #c82333;
+  transform: translateY(-1px);
+}
+
+      .bulk-clear {
+        background: #6c757d;
+        color: white;
+      }
+
+      .bulk-clear:hover {
+  background: #5a6268;
+  transform: translateY(-1px);
+}
+
+      .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .modal-content {
+        background: white;
+        padding: 30px;
+        border-radius: 15px;
+        max-width: 600px;
+        width: 90%;
+        position: relative;
+        max-height: 80vh;
+        overflow-y: auto;
+      }
+
+      .reject-modal-content {
+        background: white;
+        padding: 30px;
+        border-radius: 15px;
+        max-width: 500px;
+        width: 90%;
+        position: relative;
+      }
+
+      .modal-content img {
+        width: 100%;
+        height: auto;
+        border-radius: 10px;
+      }
+
+      .close {
+        position: absolute;
+        top: 15px;
+        right: 20px;
+        font-size: 2rem;
+        cursor: pointer;
+        color: #666;
+      }
+
+      .feedback-textarea {
+        width: 100%;
+        height: 120px;
+        padding: 15px;
+        border: 2px solid var(--tertiary-color);
+        border-radius: 8px;
+        resize: vertical;
+        margin: 15px 0;
+      }
+
+      .submit-feedback {
+        background: var(--primary-color);
+        color: white;
+        border: none;
+        padding: 12px 25px;
+        border-radius: 8px;
+        cursor: pointer;
+        width: 100%;
+      }
+
+      .success-message {
+        text-align: center;
+        color: #28a745;
+        font-size: 1.2rem;
+        font-weight: 600;
+      }
+
+      @media (max-width: 768px) {
+        .detail-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .button-group {
+          flex-direction: column;
+        }
+
+        .header h1 {
+          font-size: 1.5rem;
+        }
+
+     
+      }
+
+
+  
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .bulk-actions {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    top: auto;
+    transform: none;
+    flex-direction: column;
+    min-width: 80px;
+    padding: 6px;
+    gap: 4px;
+  }
+  
+  .bulk-btn {
+    padding: 5px 6px;
+    font-size: 0.65rem;
+  }
+}

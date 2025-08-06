@@ -1,6 +1,7 @@
 <?php
 include('../../db/dbconfig.php');
-$Ev_ID = $_GET['Ev_ID'] ?? '';
+$Ev_ID = $_GET['event_id'] ?? '';
+
 
 $Status_ID = 7;
 $isDisabled = '';
@@ -18,19 +19,25 @@ $uploadedPhotos = [];
 
 // Load from events table
 $sql = "SELECT e.Ev_ID, e.Ev_Name, e.Ev_Objectives, s.Stu_Name, c.Club_Name, e.Status_ID 
-            FROM events e
-            JOIN student s ON e.Stu_ID = s.Stu_ID
-            JOIN club c ON e.Club_ID = c.Club_ID
-            WHERE e.Ev_ID = ?";
+        FROM events e
+        JOIN student s ON e.Stu_ID = s.Stu_ID
+        JOIN club c ON e.Club_ID = c.Club_ID
+        WHERE e.Ev_ID = ?";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("s", $Ev_ID);
 $stmt->execute();
-$stmt->bind_result($Ev_ID, $eventName, $objectives, $proposerName, $clubName, $Status_ID);
-$stmt->fetch();
+$stmt->bind_result($tmpEvID, $tmpName, $tmpObj, $tmpStu, $tmpClub, $tmpStatus);
+if ($stmt->fetch()) {
+    $eventName = $tmpName;
+    $objectives = $tmpObj;
+    $proposerName = $tmpStu;
+    $clubName = $tmpClub;
+    $Status_ID = $tmpStatus;
+}
 $stmt->close();
 
-// Get COCU claimers from committee
-$sql = "SELECT Com_ID, Com_Name, Com_Position FROM committee WHERE Ev_ID = ? AND Com_COCUClaimers = 1";
+// Fix COCU claimers query
+$sql = "SELECT Com_ID, Com_Name, Com_Position FROM committee WHERE Ev_ID = ? AND Com_COCUClaimers = 'yes'";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("s", $Ev_ID);
 $stmt->execute();
@@ -39,6 +46,7 @@ while ($row = $result->fetch_assoc()) {
     $committeeMembers[] = $row;
 }
 $stmt->close();
+
 ?>
 
 <!DOCTYPE html>
@@ -49,6 +57,7 @@ $stmt->close();
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Post Event Form</title>
     <link href="postevnt.css" rel="stylesheet" />
+
 
 </head>
 

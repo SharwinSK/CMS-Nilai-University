@@ -473,9 +473,9 @@ Proposal';
                                 <select name="club" class="form-select" required>
                                     <option value="">-- Select Club --</option>
                                     <?php while ($club = $club_result->fetch_assoc()): ?>
-                                            <option value="<?= $club['Club_ID'] ?>">
-                                                <?= $club['Club_Name'] ?>
-                                            </option>
+                                                <option value="<?= $club['Club_ID'] ?>">
+                                                    <?= $club['Club_Name'] ?>
+                                                </option>
                                     <?php endwhile; ?>
                                 </select>
                                 <div class="error-message">Please select a club</div>
@@ -606,9 +606,9 @@ Proposal';
                                 <select name="venue" class="form-select" required>
                                     <option value="">-- Select Main Venue --</option>
                                     <?php foreach ($venues as $v): ?>
-                                            <option value="<?= $v['Venue_ID'] ?>">
-                                                <?= $v['Venue_Name'] ?>
-                                            </option>
+                                                <option value="<?= $v['Venue_ID'] ?>">
+                                                    <?= $v['Venue_Name'] ?>
+                                                </option>
                                     <?php endforeach; ?>
                                 </select>
                                 <div class="error-message">Please select venue</div>
@@ -799,9 +799,9 @@ Proposal';
                                 <select name="altVenue" class="form-select">
                                     <option value="">-- Select Alternative Venue --</option>
                                     <?php foreach ($venues as $v): ?>
-                                            <option value="<?= $v['Venue_ID'] ?>">
-                                                <?= $v['Venue_Name'] ?>
-                                            </option>
+                                                <option value="<?= $v['Venue_ID'] ?>">
+                                                    <?= $v['Venue_Name'] ?>
+                                                </option>
                                     <?php endforeach; ?>
                                 </select>
                                 <div class="error-message">

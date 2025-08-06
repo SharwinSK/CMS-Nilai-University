@@ -1,0 +1,532 @@
+:root {
+            --primary-medium: #9de5ff;
+            --primary-dark: #aca8ff;
+            --primary-purple: #ac73ff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Arial", sans-serif;
+            background: linear-gradient(135deg,
+                    var(--primary-medium),
+                    var(--primary-dark));
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg,
+                    var(--primary-purple),
+                    var(--primary-dark));
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .form-container {
+            padding: 30px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+            padding: 25px;
+            border: 2px solid #f0f0f0;
+            border-radius: 10px;
+            background: #fafafa;
+        }
+
+        .section-title {
+            font-size: 1.8em;
+            color: var(--primary-purple);
+            margin-bottom: 20px;
+            border-bottom: 3px solid var(--primary-medium);
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .required {
+            color: #e74c3c;
+        }
+
+        input[type="text"],
+        input[type="date"],
+        input[type="time"],
+        input[type="file"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus,
+        input[type="date"]:focus,
+        input[type="time"]:focus,
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--primary-purple);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background: var(--primary-medium);
+            font-weight: bold;
+        }
+
+        .btn {
+            background: var(--primary-purple);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .btn:hover {
+            background: #9a5bff;
+        }
+
+        .btn-secondary {
+            background: var(--primary-dark);
+        }
+
+        .btn-secondary:hover {
+            background: #9b9cff;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+
+        .btn-success {
+            background: #27ae60;
+        }
+
+        .btn-success:hover {
+            background: #219a52;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .navigation-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #eee;
+        }
+
+        .photo-preview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .photo-item {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .photo-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .photo-item .remove-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .file-preview {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            display: none;
+        }
+
+        .file-preview.show {
+            display: block;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+        }
+
+        .modal-content {
+            margin: auto;
+            display: block;
+            width: 80%;
+            max-width: 700px;
+            max-height: 80%;
+            object-fit: contain;
+        }
+
+        .close {
+            position: absolute;
+            top: 15px;
+            right: 35px;
+            color: #f1f1f1;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: #bbb;
+        }
+
+        .error-message {
+            color: #e74c3c;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .meeting-item {
+            background: white;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+
+        .meeting-details {
+            display: none;
+            margin-top: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+
+        .meeting-details.show {
+            display: block;
+        }
+
+        .file-preview {
+            margin-top: 5px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .file-preview .file-name {
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .modal-dialog {
+            background: white;
+            padding: 20px;
+            max-width: 600px;
+            margin: 100px auto;
+            border-radius: 10px;
+            position: relative;
+        }
+
+
+        /* Additional CSS for Improved Attendance Section */
+
+/* Summary Statistics */
+.attendance-summary {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.summary-card {
+    background: white;
+    padding: 15px 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    min-width: 120px;
+}
+
+.summary-number {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.summary-label {
+    font-size: 12px;
+    color: #666;
+    text-transform: uppercase;
+}
+
+.summary-card.present .summary-number {
+    color: var(--success-color, #27ae60);
+}
+
+.summary-card.absent .summary-number {
+    color: var(--danger-color, #e74c3c);
+}
+
+.summary-card.pending .summary-number {
+    color: var(--warning-color, #f39c12);
+}
+
+/* Improved Attendance Table Styles */
+.attendance-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.attendance-table th {
+    background: var(--primary-purple, #ac73ff);
+    color: white;
+    padding: 15px;
+    font-weight: bold;
+    text-align: center;
+    border: none;
+}
+
+.attendance-table td {
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+    vertical-align: middle;
+}
+
+.member-name {
+    font-weight: bold;
+    color: #333;
+    min-width: 200px;
+}
+
+.meeting-attendance {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.meeting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid var(--primary-medium, #9de5ff);
+}
+
+.meeting-date {
+    font-weight: bold;
+    color: #333;
+    min-width: 80px;
+}
+
+.attendance-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+/* Status Badge Style */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    user-select: none;
+}
+
+.status-badge.present {
+    background: #d4edda;
+    color: #27ae60;
+    border: 1px solid #c3e6cb;
+}
+
+.status-badge.absent {
+    background: #f8d7da;
+    color: #e74c3c;
+    border: 1px solid #f5c6cb;
+}
+
+.status-badge.not-set {
+    background: #fff3cd;
+    color: #f39c12;
+    border: 1px solid #ffeaa7;
+}
+
+.status-badge:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Status Icon */
+.status-icon {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.status-icon.present {
+    background: #27ae60;
+}
+
+.status-icon.absent {
+    background: #e74c3c;
+}
+
+.status-icon.not-set {
+    background: #f39c12;
+}
+
+.no-meetings {
+    text-align: center;
+    padding: 20px;
+    color: #666;
+    font-style: italic;
+}
+
+.note {
+    background: #e3f2fd;
+    border-left: 4px solid #2196f3;
+    padding: 15px;
+    margin-top: 20px;
+    border-radius: 0 8px 8px 0;
+    font-size: 14px;
+    color: #1976d2;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .meeting-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .attendance-controls {
+        width: 100%;
+        justify-content: flex-end;
+    }
+
+    .member-name {
+        min-width: auto;
+    }
+
+    .attendance-summary {
+        justify-content: center;
+    }
+
+    .summary-card {
+        min-width: 100px;
+    }
+}

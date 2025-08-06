@@ -174,7 +174,7 @@ while ($row = $type_result->fetch_assoc()) {
                                             <span class="status-badge status-ongoing">Ongoing</span>
                                         </td>
                                         <td>
-                                            <a href="view-event-details.php?id=<?php echo $proposal['Ev_ID']; ?>"
+                                            <a href="../model/viewproposal.php?id=<?php echo $proposal['Ev_ID']; ?>"
                                                 class="btn btn-info btn-sm me-1" title="View Details">
                                                 <i class="fas fa-eye"></i>
                                             </a>

@@ -151,7 +151,7 @@ $_SESSION['post_event_data'] = [
 // Fetch committee claimers from DB (for attendance marking)
 include('../../db/dbconfig.php');
 $committee = [];
-$stmt = $conn->prepare("SELECT Com_ID, Com_Name, Com_Position FROM committee WHERE Ev_ID = ? AND Com_COCUClaimers = 1");
+$stmt = $conn->prepare("SELECT Com_ID, Com_Name, Com_Position FROM committee WHERE Ev_ID = ? AND Com_COCUClaimers = 'yes'");
 $stmt->bind_param("s", $event_id);
 $stmt->execute();
 $result = $stmt->get_result();

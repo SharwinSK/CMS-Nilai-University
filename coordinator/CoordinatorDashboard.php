@@ -44,7 +44,7 @@ while ($row = $resultProposal->fetch_assoc()) {
         'event' => $row['Ev_Name'],
         'club' => $row['Club_Name'],
         'time' => time_elapsed_string($row['created_at']),
-        'link' => "CoordinatorDecision.php?type=proposal&id=" . $row['Ev_ID']
+        'link' => "CoorProposalDecision.php?type=proposal&id=" . $row['Ev_ID']
     ];
 }
 
@@ -64,7 +64,7 @@ while ($row = $resultPost->fetch_assoc()) {
         'event' => $row['Ev_Name'],
         'club' => $row['Club_Name'],
         'time' => time_elapsed_string($row['created_at']),
-        'link' => "CoordinatorDecision.php?type=postmortem&id=" . $row['Rep_ID']
+        'link' => "CoorPostDecision.php?type=postmortem&id=" . $row['Rep_ID']
     ];
 }
 
