@@ -1,6 +1,8 @@
 <?php
 session_start();
 include('../../db/dbconfig.php');
+include('../model/sendMailTemplates.php');
+
 
 // 1. Validate
 $mode = $_POST['mode'] ?? '';
@@ -42,12 +44,13 @@ try {
     }
 
     if (!empty($_FILES['budgetStatement']['name'])) {
-        $uploadDir = '../../uploads/budget/';
+        $uploadDir = '../../uploads/statements/'; // ✅ Match create mode folder
         $newName = uniqid("budget_") . "_" . basename($_FILES['budgetStatement']['name']);
         $targetPath = $uploadDir . $newName;
         move_uploaded_file($_FILES['budgetStatement']['tmp_name'], $targetPath);
-        $budgetPath = $targetPath;
+        $budgetPath = $newName; // ✅ Only filename, not full path
     }
+
 
     // 🟩 Update eventpostmortem
     $stmt = $conn->prepare("UPDATE eventpostmortem 
@@ -76,44 +79,50 @@ try {
             $stmt->close();
         }
     }
-
-
-    // 🟩 Meetings and attendance
-    $conn->query("DELETE FROM posteventmeeting WHERE Rep_ID = '$rep_id'");
-    $conn->query("DELETE FROM committeeattendance WHERE Rep_ID = '$rep_id'");
     $meetingIDs = [];
+    $newMeetingMap = [];
 
-    $meetingDates = $_POST['meetingDate'] ?? [];
-    $startTimes = $_POST['meetingStartTime'] ?? [];
-    $endTimes = $_POST['meetingEndTime'] ?? [];
-    $locations = $_POST['meetingLocation'] ?? [];
+    $rawMeetingRows = $_POST['meetingDate'];
+    $index = 0;
 
     foreach ($meetingDates as $i => $date) {
         $start = $startTimes[$i] ?? '';
         $end = $endTimes[$i] ?? '';
         $location = $locations[$i] ?? '';
-        $desc = $_POST['meeting_descriptions'][$i] ?? ''; // Optional if added via modal
+        $desc = $_POST['meeting_descriptions'][$i] ?? '';
 
-        $stmt = $conn->prepare("INSERT INTO posteventmeeting (Rep_ID, Meeting_Date, Start_Time, End_Time, Meeting_Description, Meeting_Location) VALUES (?, ?, ?, ?, ?, ?)");
+        $meetingRowId = $_POST['meetingRowIds'][$i] ?? 'new-' . $index; // fallback if not set
+
+        $stmt = $conn->prepare("INSERT INTO posteventmeeting (Rep_ID, Meeting_Date, Start_Time, End_Time, Meeting_Description, Meeting_Location) 
+                            VALUES (?, ?, ?, ?, ?, ?)");
         $stmt->bind_param("ssssss", $rep_id, $date, $start, $end, $desc, $location);
         $stmt->execute();
 
-        $meetingIDs[] = $conn->insert_id;
+        $newId = $conn->insert_id;
+        $newMeetingMap[$meetingRowId] = $newId;
+        $index++;
     }
 
-    // 🟩 Attendance
-    if (!empty($_POST['attendance'])) {
-        foreach ($_POST['attendance'] as $comId => $meetingStatuses) {
-            foreach ($meetingStatuses as $meetingIndex => $status) {
-                $meeting_id = $meetingIDs[$meetingIndex] ?? null;
-                if ($meeting_id) {
-                    $stmt = $conn->prepare("INSERT INTO committeeattendance (Rep_ID, Meeting_ID, Com_ID, Attendance_Status) VALUES (?, ?, ?, ?)");
-                    $stmt->bind_param("siss", $rep_id, $meeting_id, $comId, $status);
-                    $stmt->execute();
-                }
+    // 🟩 Attendance - Re-insert fresh values
+    foreach ($_POST['attendance'] as $comId => $meetingStatuses) {
+        foreach ($meetingStatuses as $meetingID => $status) {
+            // If meeting ID is a "new-5" type, convert it
+            if (isset($newMeetingMap[$meetingID])) {
+                $meetingID = $newMeetingMap[$meetingID];
+            }
+
+            // Now insert only if it's a valid integer
+            if (is_numeric($meetingID)) {
+                $stmt = $conn->prepare("INSERT INTO committeeattendance (Rep_ID, Meeting_ID, Com_ID, Attendance_Status) 
+                                    VALUES (?, ?, ?, ?)");
+                $stmt->bind_param("siss", $rep_id, $meetingID, $comId, $status);
+                $stmt->execute();
+                $stmt->close();
             }
         }
     }
+
+
 
     // 🟩 Individual Reports - DELETE all first, then INSERT new ones
     $conn->query("DELETE FROM individualreport WHERE Rep_ID = '$rep_id'");
@@ -154,6 +163,43 @@ try {
                 $stmt->close();
             }
         }
+    }
+
+    if ($mode === 'modify') {
+        // 🟩 Fetch event info
+        $stmt = $conn->prepare("SELECT Ev_Name, Club_ID, Stu_ID FROM events WHERE Ev_ID = ?");
+        $stmt->bind_param("s", $ev_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $eventRow = $result->fetch_assoc();
+        $eventName = $eventRow['Ev_Name'];
+        $clubID = $eventRow['Club_ID'];
+        $studentID = $eventRow['Stu_ID'];
+        $stmt->close();
+
+        // 🟩 Fetch student name
+        $stmt = $conn->prepare("SELECT Stu_Name FROM student WHERE Stu_ID = ?");
+        $stmt->bind_param("s", $studentID);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $studentName = $result->fetch_assoc()['Stu_Name'];
+        $stmt->close();
+
+        // 🟩 Fetch coordinator info
+        $stmt = $conn->prepare("SELECT coordinator.Coor_Name, coordinator.Coor_Email 
+                            FROM club 
+                            JOIN coordinator ON club.Coordinator_ID = coordinator.Coor_ID 
+                            WHERE club.Club_ID = ?");
+        $stmt->bind_param("s", $clubID);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $coorRow = $result->fetch_assoc();
+        $coordinatorName = $coorRow['Coor_Name'];
+        $coordinatorEmail = $coorRow['Coor_Email'];
+        $stmt->close();
+
+        // ✅ Send email
+        postEventSubmitted($coordinatorName, $eventName, $studentName, $coordinatorEmail);
     }
 
     // ✅ Commit all changes

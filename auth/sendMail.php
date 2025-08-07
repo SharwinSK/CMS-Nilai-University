@@ -2,7 +2,7 @@
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-require __DIR__ . '/vendor/autoload.php'; // Load PHPMailer via Composer
+require __DIR__ . '../../vendor/autoload.php'; // Load PHPMailer via Composer
 
 function sendNotificationEmail($toEmail, $subject, $body)
 {

@@ -283,6 +283,9 @@ $stmt->close();
                             <tbody>
                                 <?php if (!empty($meetings)): ?>
                                     <?php foreach ($meetings as $index => $meet): ?>
+                                        <input type="hidden" name="meetingRowIds[]"
+                                            value="<?= htmlspecialchars($meet['Meeting_ID'] ?? 'new-' . $index) ?>">
+
                                         <tr data-meeting-id="<?= $meet['Meeting_ID'] ?>">
                                             <td><input type="date" name="meetingDate[]"
                                                     value="<?= htmlspecialchars($meet['Meeting_Date']) ?>" required
@@ -368,8 +371,8 @@ $stmt->close();
                         <?php if (!empty($budgetStatementFile)): ?>
                             <div class="file-preview show" id="budgetPreview">
                                 <span class="file-name">Current file: <?= basename($budgetStatementFile) ?></span>
-                                <a href="../../uploads/statements/<?= basename($budgetStatementFile) ?>" target="_blank"
-                                    class="btn btn-secondary btn-sm">View Current</a>
+                                <a href="../../uploads/statements/<?= htmlspecialchars($budgetStatementFile) ?>"
+                                    target="_blank" class="btn btn-secondary btn-sm">View Current</a>
                                 <button type="button" class="btn btn-danger btn-sm"
                                     onclick="removeExistingBudget()">Remove</button>
                                 <input type="hidden" name="existing_budget"
@@ -434,16 +437,15 @@ $stmt->close();
                                                             </span>
                                                             <label style="display: flex; align-items: center; gap: 5px; margin: 0;">
                                                                 <input type="radio"
-                                                                    name="attendance[<?= $member['Com_ID'] ?>][<?= $meetingID ?>]"
-                                                                    value="present" <?= ($status === 'present') ? 'checked' : '' ?>
-                                                                    style="width: auto;">
+                                                                    name="attendance[<?= $member['Com_ID'] ?>][<?= $loopIndex ?>]"
+                                                                    value="Present" <?= ($status === 'Present') ? 'checked' : '' ?> />
                                                                 <span style="color: #27ae60;">Present</span>
                                                             </label>
                                                             <label style="display: flex; align-items: center; gap: 5px; margin: 0;">
                                                                 <input type="radio"
-                                                                    name="attendance[<?= $member['Com_ID'] ?>][<?= $meetingID ?>]"
-                                                                    value="absent" <?= ($status === 'absent') ? 'checked' : '' ?>
-                                                                    style="width: auto;">
+                                                                    name="attendance[<?= $member['Com_ID'] ?>][<?= $loopIndex ?>]"
+                                                                    value="Absent" <?= ($status === 'Absent') ? 'checked' : '' ?> />
+                                                                style="width: auto;">
                                                                 <span style="color: #e74c3c;">Absent</span>
                                                             </label>
                                                         </div>
@@ -579,23 +581,25 @@ $stmt->close();
         let removedPhotos = [];
         let existingAttendance = <?= json_encode($attendanceData) ?>;
         let committeeMembers = <?= json_encode($committeeMembers) ?>;
+        let eventFlowIndex = <?= count($eventFlows) ?>;
 
         // Event Flow Table Functions
         function addEventFlowRow() {
             const tableBody = document.querySelector("#eventFlowTable tbody");
-            const rowCount = tableBody.rows.length; // count rows to get next index
             const row = document.createElement("tr");
 
             row.innerHTML = `
-        <td><input type="time" name="event_flows[${rowCount}][time]" class="form-control" required></td>
-        <td><input type="text" name="event_flows[${rowCount}][description]" class="form-control" required></td>
+        <td><input type="time" name="event_flows[${eventFlowIndex}][time]" class="form-control" required></td>
+        <td><input type="text" name="event_flows[${eventFlowIndex}][description]" class="form-control" required></td>
         <td class="text-center">
             <button type="button" class="btn btn-danger btn-sm removeFlowRow">🗑</button>
         </td>
     `;
 
             tableBody.appendChild(row);
+            eventFlowIndex++; // increment safely
         }
+
 
 
         // Event delegation for remove flow row buttons
@@ -615,6 +619,8 @@ $stmt->close();
 
             row.setAttribute('data-meeting-id', newMeetingId);
             row.innerHTML = `
+            <input type="hidden" name="meetingRowIds[]" value="new-${meetingCounter}">
+
                 <td><input type="date" name="meetingDate[]" required onchange="updateAttendanceTable()"></td>
                 <td><input type="time" name="meetingStartTime[]" required></td>
                 <td><input type="time" name="meetingEndTime[]" required></td>
@@ -809,13 +815,13 @@ $stmt->close();
                                 style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px; padding: 8px; background: #f8f9fa; border-radius: 5px;">
                                 <span style="font-weight: bold; min-width: 80px;">${formattedDate}:</span>
                                 <label style="display: flex; align-items: center; gap: 5px; margin: 0;">
-                                    <input type="radio" name="attendance[${comId}][${meeting.id}]" value="present" 
-                                        ${existingStatus === 'present' ? 'checked' : ''} style="width: auto;">
+                                  <input type="radio" name="attendance[${comId}][${meeting.id}]" value="Present" 
+    ${existingStatus === 'Present' ? 'checked' : ''} style="width: auto;">
                                     <span style="color: #27ae60;">Present</span>
                                 </label>
                                 <label style="display: flex; align-items: center; gap: 5px; margin: 0;">
-                                    <input type="radio" name="attendance[${comId}][${meeting.id}]" value="absent" 
-                                        ${existingStatus === 'absent' ? 'checked' : ''} style="width: auto;">
+<input type="radio" name="attendance[${comId}][${meeting.id}]" value="Absent" 
+    ${existingStatus === 'Absent' ? 'checked' : ''} style="width: auto;">
                                     <span style="color: #e74c3c;">Absent</span>
                                 </label>
                             </div>

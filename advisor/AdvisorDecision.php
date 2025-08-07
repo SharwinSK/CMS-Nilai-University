@@ -1,6 +1,7 @@
 <?php
 session_start();
 include('../db/dbconfig.php'); // adjust path as needed
+include('../model/sendMailTemplates.php');
 
 // Check if advisor is logged in
 if (!isset($_SESSION['Adv_ID'])) {
@@ -114,6 +115,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $comment_stmt->bind_param("sis", $event_id, $status_id, $advisor_feedback);
         $comment_stmt->execute();
     }
+
+    // === Prepare Data for Email ===
+    $studentName = $proposal['Stu_Name'];
+    $studentEmail = '';
+    $coordinatorName = '';
+    $coordinatorEmail = '';
+    $eventName = $proposal['Ev_Name'];
+    $clubName = $proposal['Club_Name'];
+
+    // Get student email
+    $stmt = $conn->prepare("SELECT Stu_Email FROM student WHERE Stu_ID = ?");
+    $stmt->bind_param("s", $proposal['Stu_ID']);
+    $stmt->execute();
+    $studentResult = $stmt->get_result();
+    $studentEmail = $studentResult->fetch_assoc()['Stu_Email'];
+    $stmt->close();
+
+
+    // ✅ Get first coordinator (since no Club_ID-Coor_ID link exists)
+    $stmt = $conn->prepare("SELECT Coor_Name, Coor_Email FROM coordinator LIMIT 1");
+    $stmt->execute();
+    $coorResult = $stmt->get_result();
+
+    if ($coorRow = $coorResult->fetch_assoc()) {
+        $coordinatorName = $coorRow['Coor_Name'];
+        $coordinatorEmail = $coorRow['Coor_Email'];
+    }
+    $stmt->close();
+
+
+    // === Send Emails Based on Decision ===
+    if ($decision === 'approve') {
+        advisorApproved($studentName, $eventName, $studentEmail, $coordinatorEmail, $clubName);
+    } elseif ($decision === 'send_back') {
+        advisorRejected($studentName, $eventName, $studentEmail);
+    }
+
 
     // 4. Redirect to dashboard
     echo "<script>

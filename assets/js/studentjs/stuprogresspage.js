@@ -69,6 +69,9 @@ function editPostEvent(repId) {
 function modifyPostEvent(repId) {
   window.location.href = `../student/postevent/PostEventEdit_Form.php?mode=modify&rep_id=${repId}`;
 }
+function viewPostEvent(repId) {
+  window.location.href = `../model/viewPostEvent.php?rep_id=${repId}`;
+}
 
 function exportPostEvent(eventId) {
   // Generate and download post event report PDF

@@ -1,6 +1,7 @@
 <?php
 session_start();
 include('../../db/dbconfig.php');
+include('../../model/sendMailTemplates.php');
 
 // Step 1: Validate mode and event ID
 $mode = $_GET['mode'] ?? '';
@@ -237,7 +238,36 @@ try {
 
     $stmt = $conn->prepare("UPDATE budgetsummary SET Total_Income = ?, Total_Expense = ?, Surplus_Deficit = ?, Prepared_By = ?, statement = NULL WHERE Ev_ID = ?");
     $stmt->bind_param("dddss", $income, $expense, $surplus, $prepared_by, $ev_id);
-    $stmt->execute();
+    $stmt->execute(); 
+
+    
+    if ($mode === 'modify' && $new_status == 3) {
+        $stu_id = $_SESSION['Stu_ID'];
+        $stmt = $conn->prepare("SELECT Stu_Name FROM student WHERE Stu_ID = ?");
+        $stmt->bind_param("s", $stu_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $stuRow = $result->fetch_assoc();
+        $studentName = $stuRow['Stu_Name'];
+        $stmt->close();
+
+        // ✅ Get Club Name based on Club_ID
+        $stmt = $conn->prepare("SELECT Club_Name FROM club WHERE Club_ID = ?");
+        $stmt->bind_param("i", $club_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $clubRow = $result->fetch_assoc();
+        $clubName = $clubRow['Club_Name'];
+        $stmt->close();
+
+        // ✅ Hardcoded coordinator info (until your DB structure is updated to include Coor_ID in club)
+        $coordinatorName = "Coordinator";
+        $coordinatorEmail = "oppoa3s9879@gmail.com"; // from your SQL dump
+
+        modifiedProposalToCoordinator($coordinatorName, $ev_name, $clubName, $studentName, $coordinatorEmail);
+    }
+
+
 
     $conn->commit();
     header("Location: ../StudentDashboard.php?updated=1");

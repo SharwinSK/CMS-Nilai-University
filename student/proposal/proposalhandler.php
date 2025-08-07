@@ -1,5 +1,6 @@
 <?php
 include('../../db/dbconfig.php');
+include('../../model/sendMailTemplates.php');
 session_start();
 
 if ($_GET['mode'] !== 'create') {
@@ -203,6 +204,41 @@ $stmt = $conn->prepare("INSERT INTO BudgetSummary (Ev_ID, Total_Income, Total_Ex
 $stmt->bind_param("sddds", $event_id, $total_income, $total_expense, $surplus, $prepared_by);
 $stmt->execute();
 $stmt->close();
+
+
+
+
+
+
+
+//Email Notifcation for the Advisor 
+
+$advisorQuery = $conn->prepare("SELECT Adv_ID, Adv_Name, Adv_Email 
+                                FROM advisor 
+                                WHERE Club_ID = ?");
+
+$advisorQuery->bind_param("s", $club_id);
+$advisorQuery->execute();
+$advisorResult = $advisorQuery->get_result();
+$advisorData = $advisorResult->fetch_assoc();
+$advisorQuery->close();
+
+$advisorName = $advisorData['Adv_Name'];
+$advisorEmail = $advisorData['Adv_Email'];
+
+// === Get Student Name ===
+$studentQuery = $conn->prepare("SELECT Stu_Name FROM student WHERE Stu_ID = ?");
+$studentQuery->bind_param("s", $stu_id);
+$studentQuery->execute();
+$studentResult = $studentQuery->get_result();
+$studentData = $studentResult->fetch_assoc();
+$studentQuery->close();
+
+$studentName = $studentData['Stu_Name'];
+
+// ✅ Send Email Notification to Advisor
+newProposalToAdvisor($studentName, $ev_name, $advisorName, $advisorEmail);
+
 ?>
 
 <!-- ✅ Success Page -->

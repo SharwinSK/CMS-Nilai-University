@@ -1,5 +1,7 @@
 <?php
 include('../db/dbconfig.php');
+require_once '../model/sendMailTemplates.php';
+
 session_start();
 
 if (!isset($_SESSION['Coor_ID'])) {
@@ -17,16 +19,19 @@ $stmt = $conn->prepare("
     SELECT 
         ep.*, 
         e.Ev_ID, e.Ev_Name, e.Ev_Poster, e.Ev_Objectives, 
-        s.Stu_Name, 
+        s.Stu_Name, s.Stu_Email,
+        a.Adv_Email,
         c.Club_Name,
         bs.statement AS BudgetStatement
     FROM eventpostmortem ep
     JOIN events e ON ep.Ev_ID = e.Ev_ID
     JOIN student s ON e.Stu_ID = s.Stu_ID
+   LEFT JOIN advisor a ON e.Club_ID = a.Club_ID
     JOIN club c ON e.Club_ID = c.Club_ID
     LEFT JOIN budgetsummary bs ON e.Ev_ID = bs.Ev_ID
     WHERE ep.Rep_ID = ?
 ");
+
 $stmt->bind_param("s", $rep_id);
 $stmt->execute();
 $details = $stmt->get_result()->fetch_assoc();
@@ -81,9 +86,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt = $conn->prepare("UPDATE eventpostmortem SET Status_ID = ? WHERE Rep_ID = ?");
         $stmt->bind_param("is", $status_id, $rep_id);
         $stmt->execute();
+
+        // ✅ Send post-event approval email
+        $eventName = $details['Ev_Name'];
+        $studentEmail = $details['Stu_Email'];
+        $advisorEmail = $details['Adv_Email'];
+        $advisorName = $details['Adv_Name']; // 👈 NEW
+
+        postEventApproved($eventName, $studentEmail, $advisorEmail, $advisorName); // 👈 UPDATED
+
         header("Location: ../coordinator/CoordinatorDashboard.php");
         exit();
-
     } elseif ($action === 'reject') {
         if (empty($feedback)) {
             die("Feedback is required for rejection.");
@@ -104,6 +117,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                   VALUES (?, ?, ?, 'Coordinator', 'postmortem')");
         $insert->bind_param("sis", $ev_id, $status_id, $full_comment);
         $insert->execute();
+
+        // ❌ Send post-event rejection email
+        $eventName = $details['Ev_Name'];
+        $studentName = $details['Stu_Name'];
+        $studentEmail = $details['Stu_Email'];
+
+        postEventRejected($eventName, $studentName, $studentEmail);
 
         header("Location: ../coordinator/CoordinatorDashboard.php");
         exit();
@@ -371,14 +391,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if (!empty($details['rep_photo'])) {
                         $photos = json_decode($details['rep_photo'], true);
                         if (is_array($photos)) {
-                        foreach ($photos as $index => $photoPath) {
-    $escapedPath = '../uploads/photos/' . basename($photoPath);
-    $photoGridHTML .= '
+                            foreach ($photos as $index => $photoPath) {
+                                $escapedPath = '../uploads/photos/' . basename($photoPath);
+                                $photoGridHTML .= '
         <div class="photo-item" onclick="openPhotoModal(\'' . $escapedPath . '\')">
             <img src="' . $escapedPath . '" alt="Event Photo ' . ($index + 1) . '" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;" />
         </div>
     ';
-}
+                            }
 
                         } else {
                             $photoGridHTML = '<p>No valid photos found.</p>';

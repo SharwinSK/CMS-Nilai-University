@@ -1,6 +1,7 @@
 <?php
 session_start();
 include('../../db/dbconfig.php');
+include('../model/sendMailTemplates.php');
 
 $mode = $_GET['mode'] ?? '';
 
@@ -116,9 +117,45 @@ try {
         $stmt->execute();
     }
 
+    // === Fetch event name + club_id
+    $stmt = $conn->prepare("SELECT Ev_Name, Club_ID, Stu_ID FROM events WHERE Ev_ID = ?");
+    $stmt->bind_param("s", $event_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result->fetch_assoc();
+    $eventName = $row['Ev_Name'];
+    $clubID = $row['Club_ID'];
+    $studentID = $row['Stu_ID'];
+    $stmt->close();
+
+    // === Fetch student name
+    $stmt = $conn->prepare("SELECT Stu_Name FROM student WHERE Stu_ID = ?");
+    $stmt->bind_param("s", $studentID);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $studentName = $result->fetch_assoc()['Stu_Name'];
+    $stmt->close();
+
+    // === Fetch coordinator name + email
+    $stmt = $conn->prepare("SELECT coordinator.Coor_Name, coordinator.Coor_Email 
+                        FROM club 
+                        JOIN coordinator ON club.Coor_ID = coordinator.Coor_ID 
+                        WHERE club.Club_ID = ?");
+    $stmt->bind_param("s", $clubID);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result->fetch_assoc();
+    $coordinatorName = $row['Coor_Name'];
+    $coordinatorEmail = $row['Coor_Email'];
+    $stmt->close();
+
+    // ✅ Send email
+    postEventSubmitted($coordinatorName, $eventName, $studentName, $coordinatorEmail);
+
 
     $conn->commit();
     unset($_SESSION['post_event_data']);
+
 
     // Return JSON
     header("Location: ../../model/confirmationPage.php?rep_id=$report_id&event_id=$event_id");

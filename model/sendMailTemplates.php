@@ -1,40 +1,41 @@
 <?php
-include 'sendMail.php';
+include '../auth/sendMail.php';
 
-// 1. New Proposal → Advisor Only
+// 1. New Proposal → Advisor
 function newProposalToAdvisor($studentName, $eventName, $advisorName, $advisorEmail)
 {
-    $subject = "New Proposal Submitted";
-    $body = "Hi $advisorName, a new event proposal titled \"$eventName\" has been submitted by $studentName. Please review it.";
+    $subject = "New Event Proposal Submitted";
+    $body = "Dear $advisorName,\n\nA new event proposal titled \"$eventName\" has been submitted by $studentName. Kindly log in to review and take the necessary action.\n\nThank you.";
     sendNotificationEmail($advisorEmail, $subject, $body);
 }
 
-// 2. Advisor Approved → Notify Student + Coordinator
+// 2. Advisor Approved → Student + Coordinator
 function advisorApproved($studentName, $eventName, $studentEmail, $coordinatorEmail, $clubName)
 {
-    $subjectStudent = "Proposal Approved";
-    $bodyStudent = "Hi $studentName, your proposal \"$eventName\" was approved by Advisor. Please log in for more info.";
+    // To Student
+    $subjectStudent = "Proposal Approved by Advisor";
+    $bodyStudent = "Dear $studentName,\n\nYour event proposal titled \"$eventName\" has been approved by your advisor. It has now been forwarded for coordinator review.\n\nThank you.";
     sendNotificationEmail($studentEmail, $subjectStudent, $bodyStudent);
 
-    $subjectCoor = "New Proposal Approved by Advisor";
-    $bodyCoor = "Hi Coordinator, a new event proposal titled \"$eventName\" from $studentName under the club \“$clubName\” has been approved by Advisor. Please review it.";
+    // To Coordinator
+    $subjectCoor = "New Proposal Awaiting Your Review";
+    $bodyCoor = "Dear Coordinator,\n\nA new event proposal titled \"$eventName\" has been submitted by $studentName under the club \"$clubName\". Please review it at your earliest convenience.\n\nThank you.";
     sendNotificationEmail($coordinatorEmail, $subjectCoor, $bodyCoor);
 }
 
-
-
-// 4. Rejected by Advisor → Notify Student Only
+// 3. Advisor Rejected → Student
 function advisorRejected($studentName, $eventName, $studentEmail)
 {
-    $subject = "Proposal Rejected";
-    $body = "Hi $studentName, your proposal \"$eventName\" was rejected by Advisor. Please log in for more info.";
+    $subject = "Proposal Rejected by Advisor";
+    $body = "Dear $studentName,\n\nYour event proposal titled \"$eventName\" has been rejected by your advisor. Please make the necessary modifications and resubmit it for review.\n\nThank you.";
     sendNotificationEmail($studentEmail, $subject, $body);
 }
 
-function coordinatorApproved($studentName, $eventName, $studentEmail, $advisorEmail)
+// 4. Coordinator Approved → Student + Advisor
+function coordinatorApproved($eventName, $studentEmail, $advisorEmail)
 {
-    $subject = "Proposal Approved";
-    $body = "Hi, your proposal \"$eventName\" was approved by Coordinator. Please log in for more info.";
+    $subject = "Proposal Approved by Coordinator";
+    $body = "Dear Participant,\n\nThe event proposal titled \"$eventName\" has been approved by the coordinator. Your event is now officially approved.\n\nThank you.";
 
     sendNotificationEmail($studentEmail, $subject, $body);
     if (!empty($advisorEmail)) {
@@ -42,12 +43,55 @@ function coordinatorApproved($studentName, $eventName, $studentEmail, $advisorEm
     }
 }
 
-function coordinatorRejected($studentName, $eventName, $studentEmail)
+// 5. Coordinator Rejected → Student + Advisor
+function coordinatorRejected($eventName, $studentEmail, $advisorEmail)
 {
-    $subject = "Proposal Rejected";
-    $body = "Hi $studentName, your proposal \"$eventName\" was rejected by Coordinator. Please log in for more info.";
+    $subject = "Proposal Rejected by Coordinator";
+    $body = "Dear Participant,\n\nThe event proposal titled \"$eventName\" has been rejected by the coordinator. Please review the comments and resubmit if necessary.\n\nThank you.";
+
     sendNotificationEmail($studentEmail, $subject, $body);
+    if (!empty($advisorEmail)) {
+        sendNotificationEmail($advisorEmail, $subject, $body);
+    }
 }
 
+// 6. Student Resubmits Modified Proposal → Coordinator
+function modifiedProposalToCoordinator($coordinatorName, $eventName, $clubName, $studentName, $coordinatorEmail)
+{
+    $subject = "Modified Proposal Resubmitted";
+    $body = "Dear $coordinatorName,\n\nA modified proposal titled \"$eventName\" from the club \"$clubName\" has been resubmitted by $studentName. Please review the updated version.\n\nThank you.";
+    sendNotificationEmail($coordinatorEmail, $subject, $body);
+}
 
+// 7. Post-Event Submitted by Student → Coordinator
+function postEventSubmitted($coordinatorName, $eventName, $studentName, $coordinatorEmail)
+{
+    $subject = "Post-Event Report Submitted";
+    $body = "Dear $coordinatorName,\n\nThe post-event report for \"$eventName\" has been submitted by $studentName. Kindly review the report.\n\nThank you.";
+    sendNotificationEmail($coordinatorEmail, $subject, $body);
+}
+
+// 8. Post-Event Approved by Coordinator → Student + Advisor
+function postEventApproved($eventName, $studentEmail, $advisorEmail, $advisorName)
+{
+    // Email to student
+    $subjectStudent = "Post-Event Report Approved";
+    $bodyStudent = "Dear Participant,\n\nThe post-event report for \"$eventName\" has been reviewed and approved. Thank you for organizing and participating in the event.\n\nRegards.";
+    sendNotificationEmail($studentEmail, $subjectStudent, $bodyStudent);
+
+    // Email to advisor
+    if (!empty($advisorEmail)) {
+        $subjectAdvisor = "Post-Event Report Approved";
+        $bodyAdvisor = "Dear $advisorName,\n\nThe post-event report for \"$eventName\" has been reviewed and approved. This marks the successful completion of the event process.\n\nThank you for your guidance.\n\nRegards.";
+        sendNotificationEmail($advisorEmail, $subjectAdvisor, $bodyAdvisor);
+    }
+}
+
+// 9. Post-Event Rejected by Coordinator → Student
+function postEventRejected($eventName, $studentName, $studentEmail)
+{
+    $subject = "Post-Event Report Rejected";
+    $body = "Dear $studentName,\n\nYour post-event report for \"$eventName\" has been rejected by the coordinator. Please make the necessary modifications and resubmit it.\n\nThank you.";
+    sendNotificationEmail($studentEmail, $subject, $body);
+}
 ?>

@@ -1,6 +1,8 @@
 <?php
 session_start();
 include('../db/dbconfig.php');
+require_once '../model/sendMailTemplates.php';
+
 
 if (!isset($_SESSION['Coor_ID'])) {
     header("Location: CoordinatorLogin.php");
@@ -17,6 +19,8 @@ $stmt = $conn->prepare("
     SELECT 
         e.*, 
         s.Stu_Name, 
+        s.Stu_Email,
+        a.Adv_Email,
         c.Club_Name, 
         bs.Total_Income, 
         bs.Total_Expense, 
@@ -26,12 +30,14 @@ $stmt = $conn->prepare("
         v2.Venue_Name AS AltVenue
     FROM events e
     LEFT JOIN student s ON e.Stu_ID = s.Stu_ID
+    LEFT JOIN advisor a ON e.Club_ID = a.Club_ID
     LEFT JOIN club c ON e.Club_ID = c.Club_ID
     LEFT JOIN budgetsummary bs ON e.Ev_ID = bs.Ev_ID
     LEFT JOIN venue v1 ON e.Ev_VenueID = v1.Venue_ID
     LEFT JOIN venue v2 ON e.Ev_AltVenueID = v2.Venue_ID
     WHERE e.Ev_ID = ?
 ");
+
 $stmt->bind_param("s", $ev_id);
 $stmt->execute();
 $details = $stmt->get_result()->fetch_assoc();
@@ -124,6 +130,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             WHERE Ev_ID = ?");
         $stmt->bind_param("ssss", $event_type, $Ev_TypeRef, $Ev_RefNum, $ev_id);
         $stmt->execute();
+        // 💌 Send approval email to student + advisor
+        // ✅ Send proposal approval email
+        $eventName = $details['Ev_Name'];
+        $studentEmail = $details['Stu_Email'];
+        $advisorEmail = $details['Adv_Email'];
+
+        coordinatorApproved($eventName, $studentEmail, $advisorEmail);
 
         // Optional: redirect or return JSON
         echo json_encode(['status' => 'success']);
@@ -149,6 +162,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $stmt = $conn->prepare("UPDATE events SET Status_ID = 4 WHERE Ev_ID = ?");
         $stmt->bind_param("s", $ev_id);
         $stmt->execute();
+
+        // 💌 Send rejection email to student + advisor
+
+        $eventName = $details['Ev_Name'];
+        $studentEmail = $details['Stu_Email'];
+        $advisorEmail = $details['Adv_Email'];
+
+        coordinatorRejected($eventName, $studentEmail, $advisorEmail);
+
 
         echo json_encode(['status' => 'rejected']);
         exit();
