@@ -11,14 +11,13 @@ if (!isset($_SESSION['Stu_ID'])) {
 $stu_id = $_SESSION['Stu_ID'];
 
 $carousel_query = "
-    SELECT e.Ev_ID, e.Ev_Name, e.Ev_Poster 
+    SELECT e.Ev_ID, e.Ev_Name, e.Ev_Poster, e.Ev_Date, c.Club_Name
     FROM events e
-    LEFT JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID
-    WHERE e.Stu_ID = '$stu_id'
-      AND e.Status_ID = 5
-      AND ep.Status_ID IS NULL
+    LEFT JOIN club c ON c.Club_ID = e.Club_ID
+    WHERE e.Status_ID = 5
+    ORDER BY e.Ev_Date DESC
+    LIMIT 10
 ";
-
 
 $carousel_result = $conn->query($carousel_query);
 $first = true;
@@ -61,44 +60,77 @@ $total_completed = $completed_result->fetch_assoc()['total_completed'] ?? 0;
 
 
 $notification_query = "
+    -- 1) PROPOSAL side (only if NO postmortem exists yet)
     SELECT 
-        e.Ev_ID, 
-        e.Ev_Name, 
-        es.Status_Name, 
+        e.Ev_ID,
+        e.Ev_Name,
+        es.Status_Name,
         es.Status_ID,
-        CASE 
-            WHEN ep.Rep_ID IS NULL THEN 'Proposal'
-            ELSE 'Postmortem'
-        END AS Type
+        'Proposal' AS Type,
+        e.Updated_At AS UpdatedAt
     FROM events e
-    JOIN eventstatus es ON e.Status_ID = es.Status_ID
-    LEFT JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID
+    JOIN eventstatus es ON es.Status_ID = e.Status_ID
     WHERE e.Stu_ID = '$stu_id'
-      AND (
-        (ep.Rep_ID IS NULL AND es.Status_ID BETWEEN 1 AND 5)
-        OR (ep.Status_ID BETWEEN 6 AND 7)
+      AND e.Status_ID IN (1,2,3,4,5)
+      AND NOT EXISTS (
+            SELECT 1 
+            FROM eventpostmortem epx 
+            WHERE epx.Ev_ID = e.Ev_ID
       )
-    ORDER BY e.Updated_At DESC
+
+    UNION ALL
+
+    -- 2) POSTMORTEM side (when a postmortem entry exists)
+    SELECT 
+        e.Ev_ID,
+        e.Ev_Name,
+        es2.Status_Name,
+        es2.Status_ID,
+        'Postmortem' AS Type,
+        ep.Updated_At AS UpdatedAt
+    FROM eventpostmortem ep
+    JOIN events e   ON e.Ev_ID = ep.Ev_ID
+    JOIN eventstatus es2 ON es2.Status_ID = ep.Status_ID
+    WHERE e.Stu_ID = '$stu_id'
+      AND ep.Status_ID IN (6,7,8)
+
+    ORDER BY UpdatedAt DESC
 ";
+
 
 $notification_result = $conn->query($notification_query);
 
+// Replace the existing calendar_event_query with this:
 $calendar_event_query = "
-    SELECT e.Ev_ID, e.Ev_Name, e.Ev_Date 
+    SELECT e.Ev_ID, e.Ev_Name, e.Ev_Date, c.Club_Name
     FROM events e
-    WHERE e.Stu_ID = '$stu_id' AND e.Status_ID = 5
+    LEFT JOIN club c ON e.Club_ID = c.Club_ID
+    WHERE e.Status_ID = 5
 ";
+
 $calendar_event_result = $conn->query($calendar_event_query);
 
 $events_by_date = [];
 while ($row = $calendar_event_result->fetch_assoc()) {
     $date = $row['Ev_Date'];
-    $events_by_date[$date][] = $row['Ev_Name'];
+    $events_by_date[$date][] = [
+        'name' => $row['Ev_Name'],
+        'club' => $row['Club_Name'] ?? 'No Club',
+        'id' => $row['Ev_ID']
+    ];
 }
+
+$status_counts = [];
+while ($count_row = $notification_result->fetch_assoc()) {
+    $status = $count_row['Status_Name'];
+    $status_counts[$status] = ($status_counts[$status] ?? 0) + 1;
+}
+
+// Reset result pointer
+$notification_result->data_seek(0);
 ?>
 
-<?php include('../components/header.php'); ?>
-<?php include('../components/offcanvas.php'); ?>
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -114,7 +146,8 @@ while ($row = $calendar_event_result->fetch_assoc()) {
 
 <body>
     <?php include('../model/LogoutDesign.php'); ?>
-
+    <?php include('../components/header.php'); ?>
+    <?php include('../components/offcanvas.php'); ?>
     <!-- Main Content -->
     <div class="container-fluid p-4">
         <!-- Statistics Cards -->
@@ -227,6 +260,19 @@ while ($row = $calendar_event_result->fetch_assoc()) {
                 nextBtn.addEventListener("click", nextMonth);
             }
         });
+        // Auto-slide carousel
+        document.addEventListener('DOMContentLoaded', function () {
+            const carousel = document.getElementById('eventCarousel');
+            if (carousel) {
+                const bsCarousel = new bootstrap.Carousel(carousel, {
+                    interval: 3000, // 3 seconds
+                    wrap: true,
+                    pause: 'hover'
+                });
+            }
+        });
+
+
     </script>
 
 </body>

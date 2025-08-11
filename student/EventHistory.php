@@ -164,15 +164,18 @@ $offset = ($current_page - 1) * $results_per_page;
                                         <ul class="dropdown-menu" aria-labelledby="viewDropdown<?= $event['Ev_ID'] ?>">
                                             <li>
                                                 <a class="dropdown-item" href="#"
-                                                    onclick="viewProposal(<?= $event['Ev_ID'] ?>)">
+                                                    onclick="viewProposal('<?= htmlspecialchars($event['Ev_ID']) ?>')">
                                                     <i class="fas fa-file-alt me-2"></i>View Proposal
                                                 </a>
+
+
                                             </li>
                                             <li>
                                                 <a class="dropdown-item" href="#"
-                                                    onclick="viewPostEvent(<?= $event['Ev_ID'] ?>)">
+                                                    onclick="viewPostEvent('<?= htmlspecialchars($event['Rep_ID'], ENT_QUOTES) ?>')">
                                                     <i class="fas fa-file-pdf me-2"></i>View Post Event
                                                 </a>
+
                                             </li>
                                         </ul>
                                     </div>
@@ -185,8 +188,8 @@ $offset = ($current_page - 1) * $results_per_page;
                                             class="btn proposal-btn btn-sm" title="Export Proposal Document">
                                             <i class="fas fa-file-alt"></i> Proposal PDF
                                         </a>
-                                        <a href="../components/pdf/reportgeneratepdf.php?rep_id=<?= $event['Rep_ID'] ?>"
-                                            class="btn postevent-btn btn-sm" title="Export Post Event Document">
+                                        <a href="../components/pdf/reportgeneratepdf.php?id=<?= urlencode($event['Rep_ID']) ?>"
+                                            class="btn postevent-btn btn-sm">
                                             <i class="fas fa-file-pdf"></i> Post Event PDF
                                         </a>
                                     </div>
@@ -234,12 +237,14 @@ $offset = ($current_page - 1) * $results_per_page;
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         function viewProposal(eventId) {
-            window.location.href = `../model/viewproposal.php?event_id=${encodeURIComponent(eventId)}`;
+            window.location.href = `../model/viewproposal.php?id=${encodeURIComponent(eventId)}`;
         }
 
-        function viewPostEvent(eventId) {
-            window.location.href = `../model/viewpostevent.php?event_id=${encodeURIComponent(eventId)}`;
+
+        function viewPostEvent(repId) {
+            window.location.href = `../model/viewpostevent.php?rep_id=${encodeURIComponent(repId)}`;
         }
+
         function resetFilters() {
             window.location.href = window.location.pathname; // clear all filters
         }

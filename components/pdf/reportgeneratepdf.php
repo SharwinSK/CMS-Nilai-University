@@ -210,4 +210,4 @@ if ($individual_result->num_rows > 0) {
     }
 }
 
-$pdf->Output("PostEventReport_{$report_id}.pdf", 'I');
+$pdf->Output("PostEventReport_{$report_id}.pdf", 'D');

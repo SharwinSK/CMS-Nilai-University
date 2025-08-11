@@ -82,9 +82,25 @@ $com_stmt->bind_param("s", $ev_id);
 $com_stmt->execute();
 $com_result = $com_stmt->get_result();
 
-$bud_result = $conn->query("SELECT * FROM budget WHERE Ev_ID = '$ev_id'");
-$summary_result = $conn->query("SELECT * FROM budgetsummary WHERE Ev_ID = '$ev_id'");
+// Event flow
+$flow_stmt = $conn->prepare("SELECT * FROM eventminutes WHERE Ev_ID = ? ORDER BY `Date`");
+$flow_stmt->bind_param("s", $ev_id);
+$flow_stmt->execute();
+$flow_result = $flow_stmt->get_result();
+
+// Budget
+$bud_stmt = $conn->prepare("SELECT * FROM budget WHERE Ev_ID = ?");
+$bud_stmt->bind_param("s", $ev_id);
+$bud_stmt->execute();
+$bud_result = $bud_stmt->get_result();
+
+// Budget summary
+$summary_stmt = $conn->prepare("SELECT * FROM budgetsummary WHERE Ev_ID = ?");
+$summary_stmt->bind_param("s", $ev_id);
+$summary_stmt->execute();
+$summary_result = $summary_stmt->get_result();
 $summary = $summary_result->fetch_assoc();
+
 
 ?>
 
@@ -483,17 +499,21 @@ $summary = $summary_result->fetch_assoc();
         });
 
         // Enhance poster image interaction
-        document.querySelector('.poster-image').addEventListener('click', function () {
-            Swal.fire({
-                imageUrl: this.src,
-                imageAlt: 'Event Poster',
-                imageWidth: '80%',
-                imageHeight: 'auto',
-                showConfirmButton: false,
-                showCloseButton: true,
-                background: 'rgba(0,0,0,0.9)'
+        const posterEl = document.querySelector('.poster-image');
+        if (posterEl) {
+            posterEl.addEventListener('click', function () {
+                Swal.fire({
+                    imageUrl: this.src,
+                    imageAlt: 'Event Poster',
+                    imageWidth: '80%',
+                    imageHeight: 'auto',
+                    showConfirmButton: false,
+                    showCloseButton: true,
+                    background: 'rgba(0,0,0,0.9)'
+                });
             });
-        });
+        }
+
 
 
         // Add loading animation for heavy content

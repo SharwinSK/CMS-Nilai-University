@@ -9,43 +9,46 @@ function updateCalendarDisplay() {
   const firstDayOfMonth = new Date(year, month, 1);
   const lastDayOfMonth = new Date(year, month + 1, 0);
 
-  const firstDayWeek = firstDayOfMonth.getDay(); // Sunday = 0
+  const firstDayWeek = firstDayOfMonth.getDay();
   const totalDaysInMonth = lastDayOfMonth.getDate();
 
   const calendarDays = document.getElementById("calendarDays");
   calendarDays.innerHTML = "";
 
-  // Calculate the starting date of the grid (including previous month's trailing days)
   let startDate = new Date(firstDayOfMonth);
-  startDate.setDate(startDate.getDate() - firstDayWeek); // Go back to the previous Sunday
+  startDate.setDate(startDate.getDate() - firstDayWeek);
 
-  // Always show 6 full weeks (6 * 7 = 42 cells)
   for (let i = 0; i < 42; i++) {
     const cellDate = new Date(startDate);
     cellDate.setDate(startDate.getDate() + i);
 
-    const dateStr = cellDate.toISOString().split("T")[0];
+    // Fix: Format date properly without timezone conversion
+    const year = cellDate.getFullYear();
+    const month = String(cellDate.getMonth() + 1).padStart(2, "0");
+    const day = String(cellDate.getDate()).padStart(2, "0");
+    const dateStr = `${year}-${month}-${day}`;
+
     const dayElement = document.createElement("div");
     dayElement.className = "calendar-day";
     dayElement.textContent = cellDate.getDate();
 
-    // Dim the days from other months
-    if (cellDate.getMonth() !== month) {
+    if (cellDate.getMonth() !== currentDate.getMonth()) {
       dayElement.style.opacity = "0.4";
     }
 
-    // Highlight today
     if (cellDate.toDateString() === today.toDateString()) {
       dayElement.classList.add("today");
     }
 
-    // Add event if matched
-    if (events[dateStr]) {
+    // Check for events on this date
+    if (events[dateStr] && events[dateStr].length > 0) {
       dayElement.classList.add("has-event");
 
+      const eventCount = events[dateStr].length;
       const eventLabel = document.createElement("span");
       eventLabel.className = "event-name";
-      eventLabel.textContent = events[dateStr];
+      eventLabel.textContent =
+        eventCount > 1 ? `${eventCount} Events` : events[dateStr][0].name;
       dayElement.appendChild(document.createElement("br"));
       dayElement.appendChild(eventLabel);
 
@@ -57,7 +60,6 @@ function updateCalendarDisplay() {
     calendarDays.appendChild(dayElement);
   }
 
-  // Update month title
   document.getElementById("currentMonth").textContent =
     firstDayOfMonth.toLocaleString("default", {
       month: "long",
@@ -75,13 +77,31 @@ function nextMonth() {
   updateCalendarDisplay();
 }
 
-function showEventDetails(date, eventName) {
-  document.getElementById("eventModalTitle").textContent =
-    "Event: " + eventName;
-  document.getElementById("eventModalBody").innerHTML = `
-    <p><strong>Event:</strong> ${eventName}</p>
-    <p><strong>Date:</strong> ${new Date(date).toLocaleDateString()}</p>
-  `;
+function showEventDetails(date, eventList) {
+  // Fix: Create date without timezone conversion
+  const dateParts = date.split("-");
+  const displayDate = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
+  const formattedDate = displayDate.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+
+  document.getElementById(
+    "eventModalTitle"
+  ).textContent = `Events on ${formattedDate}`;
+
+  let eventHTML = "";
+  eventList.forEach((event) => {
+    eventHTML += `
+      <div style="margin-bottom: 15px; padding: 10px; border-left: 4px solid var(--primary-purple); background: #f8f9fa;">
+        <p><strong>Event:</strong> ${event.name}</p>
+        <p><strong>Club:</strong> ${event.club}</p>
+      </div>
+    `;
+  });
+
+  document.getElementById("eventModalBody").innerHTML = eventHTML;
   new bootstrap.Modal(document.getElementById("eventModal")).show();
 }
 
