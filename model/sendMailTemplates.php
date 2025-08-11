@@ -1,5 +1,5 @@
 <?php
-include '../../auth/sendMail.php';
+include '../auth/sendMail.php';
 
 // 1. New Proposal → Advisor
 function newProposalToAdvisor($studentName, $eventName, $advisorName, $advisorEmail)

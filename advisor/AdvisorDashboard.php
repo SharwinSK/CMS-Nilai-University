@@ -42,26 +42,43 @@ $pending_proposals_query = "
       AND es.Status_Name = 'Pending Advisor Review'
 ";
 
-
 $stmt = $conn->prepare($pending_proposals_query);
 $stmt->bind_param('i', $club_id);
 $stmt->execute();
 $pending_proposals = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
+// Get event summary for advisor's club (Status ID: 3, 4, 5 for proposals and 6 for post-events)
+$event_summary_query = "
+    SELECT e.Ev_ID, e.Ev_Name, e.Ev_Date, es.Status_Name, es.Status_Type, s.Stu_Name
+    FROM events e
+    JOIN student s ON e.Stu_ID = s.Stu_ID
+    JOIN eventstatus es ON e.Status_ID = es.Status_ID
+    WHERE e.Club_ID = ? 
+      AND e.Status_ID IN (3, 4, 5, 6)
+    ORDER BY e.Ev_Date DESC, e.created_at DESC
+    LIMIT 10
+";
+
+$stmt = $conn->prepare($event_summary_query);
+$stmt->bind_param('i', $club_id);
+$stmt->execute();
+$event_summary = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
 // Calendar events: get event name + date for advisor's club
 $calendar_query = "
     SELECT e.Ev_ID, e.Ev_Name, e.Ev_Date, c.Club_Name
     FROM events e
-    JOIN club c ON e.Club_ID = c.Club_ID
-    WHERE e.Club_ID = ?
+    JOIN club c ON c.Club_ID = e.Club_ID
+    WHERE e.Status_ID = 5
+      AND NOT EXISTS (
+          SELECT 1 FROM eventpostmortem ep
+          WHERE ep.Ev_ID = e.Ev_ID
+      )
+    ORDER BY e.Ev_Date ASC
 ";
 
+$calendar_result = $conn->query($calendar_query);
 
-$stmt = $conn->prepare($calendar_query);
-$stmt->bind_param('i', $club_id);
-$stmt->execute();
-$calendar_result = $stmt->get_result();
 
 $calendar_events = [];
 while ($row = $calendar_result->fetch_assoc()) {
@@ -76,8 +93,7 @@ while ($row = $calendar_result->fetch_assoc()) {
 }
 ?>
 
-<?php include('../components/Advoffcanvas.php'); ?>
-<?php include('../components/Advheader.php'); ?>
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -98,6 +114,8 @@ while ($row = $calendar_result->fetch_assoc()) {
 </head>
 
 <body>
+    <?php include('../components/Advoffcanvas.php'); ?>
+    <?php include('../components/Advheader.php'); ?>
     <?php include('../model/LogoutDesign.php'); ?>
     <!-- Main Content -->
     <div class="container-fluid main-content">
@@ -172,6 +190,72 @@ while ($row = $calendar_result->fetch_assoc()) {
                         <?php include('../components/Advnotifypanel.php'); ?>
                     </div>
                 </div>
+
+                <!-- Event Summary Panel -->
+                <div class="dashboard-card">
+                    <div class="event-summary-header">
+                        <h4 class="section-title">
+                            <i class="fas fa-list-ul me-2"></i>
+                            Event Summary
+                        </h4>
+                        <a href="AdvisorProgressView.php" class="view-btn">
+                            <i class="fas fa-eye me-1"></i>View All
+                        </a>
+                    </div>
+                    <div class="event-summary-list">
+                        <?php if (empty($event_summary)): ?>
+                            <div class="no-events-message">
+                                <p class="text-muted text-center">No events to display</p>
+                            </div>
+                        <?php else: ?>
+                            <?php foreach ($event_summary as $event): ?>
+                                <div class="event-list-item">
+                                    <div class="event-info">
+                                        <div class="event-name">
+                                            <?= htmlspecialchars($event['Ev_Name']) ?>
+                                        </div>
+                                        <div class="event-meta">
+                                            <small class="text-muted">
+                                                <?= date('M j, Y', strtotime($event['Ev_Date'])) ?>
+                                            </small>
+                                        </div>
+                                    </div>
+                                    <div class="event-status">
+                                        <?php
+                                        $status_class = '';
+                                        $status_short = '';
+                                        switch ($event['Status_Name']) {
+                                            case 'Approved by Advisor (Pending Coordinator Review)':
+                                                $status_class = 'status-pending';
+                                                $status_short = 'Pending Review';
+                                                break;
+                                            case 'Rejected by Coordinator':
+                                                $status_class = 'status-rejected';
+                                                $status_short = 'Rejected';
+                                                break;
+                                            case 'Approved by Coordinator':
+                                                $status_class = 'status-approved';
+                                                $status_short = 'Approved';
+                                                break;
+                                            case 'Postmortem Pending Review':
+                                                $status_class = 'status-pending';
+                                                $status_short = 'PM Pending';
+                                                break;
+                                            default:
+                                                $status_class = 'status-pending';
+                                                $status_short = 'Pending';
+                                        }
+                                        ?>
+                                        <span class="status-badge-small <?= $status_class ?>">
+                                            <?= $status_short ?>
+                                        </span>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
                 <!-- Calendar -->
                 <div class="calendar-container">
                     <h4 class="section-title">
@@ -218,7 +302,6 @@ while ($row = $calendar_result->fetch_assoc()) {
             </div>
         </div>
     </div>
-
 
     <!-- Bootstrap JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>

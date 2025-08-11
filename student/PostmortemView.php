@@ -31,8 +31,7 @@ $total_approved = $approved_events_result->num_rows;
 
 
 ?>
-<?php include('../components/header.php'); ?>
-<?php include('../components/offcanvas.php'); ?>
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -48,7 +47,8 @@ $total_approved = $approved_events_result->num_rows;
 
 <body>
     <?php include('../model/LogoutDesign.php'); ?>
-
+    <?php include('../components/header.php'); ?>
+    <?php include('../components/offcanvas.php'); ?>
     <!-- Main Content -->
     <div class="container-fluid main-content">
         <!-- Page Header -->
@@ -64,7 +64,7 @@ $total_approved = $approved_events_result->num_rows;
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h5 class="mb-0">
                     <i class="fas fa-calendar-check me-2 text-purple"></i>
-                    Completed Events
+                    Post Event List
                 </h5>
                 <small class="text-muted">Total: <?= $total_approved ?>
                     event<?= $total_approved != 1 ? 's' : '' ?></small>

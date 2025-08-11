@@ -58,6 +58,7 @@ foreach ($events as $e) {
     elseif ($e['Ev_Status'] === 'Approved by Coordinator')
         $ongoing++;
 }
+$currentPage = 'progress';
 ?>
 
 <!DOCTYPE html>

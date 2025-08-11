@@ -1,18 +1,26 @@
 <?php
 session_start();
-include('../db/dbconfig.php');
 
-$currentPage = 'userguide';
-if (!isset($_SESSION['Stu_ID'])) {
-    header("Location: ../studentlogin.php");
+include('../db/dbconfig.php'); // Adjust if needed
+
+
+// Security check
+if (!isset($_SESSION['Adv_ID'])) {
+    header("Location: AdvisorLogin.php");
     exit();
 }
-// Set current page for sidebar active state
-$currentPage = 'guide';
-$student_name = $_SESSION['Stu_Name'];
+
+$advisor_id = $_SESSION['Adv_ID'];
+$club_id = $_SESSION['Club_ID'];
+// Get advisor name
+$stmt = $conn->prepare("SELECT Adv_Name FROM advisor WHERE Adv_ID = ?");
+$stmt->bind_param('s', $advisor_id);
+$stmt->execute();
+$result = $stmt->get_result();
+$advisor_name = $result->fetch_assoc()['Adv_Name'] ?? 'Unknown Advisor';
+
+$currentPage = 'contact';
 ?>
-
-
 
 
 <!DOCTYPE html>
@@ -89,11 +97,9 @@ $student_name = $_SESSION['Stu_Name'];
 </head>
 
 <body>
-
+    <?php include('../components/Advoffcanvas.php'); ?>
+    <?php include('../components/Advheader.php'); ?>
     <?php include('../model/LogoutDesign.php'); ?>
-    <?php include('../components/header.php'); ?>
-    <?php include('../components/offcanvas.php'); ?>
-
     <!-- Main Content -->
     <div class="container-fluid contact-container">
         <div class="row justify-content-center">

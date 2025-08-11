@@ -8,10 +8,9 @@ if (!isset($_SESSION['Stu_ID'])) {
     exit();
 }
 // Set current page for sidebar active state
-$currentPage = 'guide';
+$currentPage = 'contact';
 $student_name = $_SESSION['Stu_Name'];
 ?>
-
 
 
 
@@ -27,6 +26,8 @@ $student_name = $_SESSION['Stu_Name'];
     <link href="../assets/css/student.css?v=<?= time() ?>" rel="stylesheet" />
 
     <style>
+       
+
         /* Custom styles for contact page */
         .contact-container {
             margin-top: 2rem;
@@ -89,11 +90,9 @@ $student_name = $_SESSION['Stu_Name'];
 </head>
 
 <body>
-
     <?php include('../model/LogoutDesign.php'); ?>
     <?php include('../components/header.php'); ?>
     <?php include('../components/offcanvas.php'); ?>
-
     <!-- Main Content -->
     <div class="container-fluid contact-container">
         <div class="row justify-content-center">

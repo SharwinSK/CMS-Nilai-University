@@ -16,11 +16,10 @@ $carousel_query = "
     LEFT JOIN club c ON c.Club_ID = e.Club_ID
     WHERE e.Status_ID = 5
     ORDER BY e.Ev_Date DESC
-    LIMIT 10
 ";
-
 $carousel_result = $conn->query($carousel_query);
 $first = true;
+
 
 // Pending Proposals
 $pending_proposals_query = "

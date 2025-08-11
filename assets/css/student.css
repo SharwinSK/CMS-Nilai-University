@@ -1,31 +1,32 @@
 
 /*Student Dashboard*/
- :root {
-        --primary-light: #d5fdff;
-        --primary-medium: #9de5ff;
-        --primary-dark: #aca8ff;
-        --primary-purple: #ac73ff;
-      }
+:root {
+  --primary-light: #7858A6;   /* Page background */
+  --primary-medium: #371B58;  /* Can be used for accents/cards */
+  --primary-dark: #4C3575;    /* Header & Offcanvas main */
+  --primary-purple: #5B4B8A;  /* Offcanvas hover / highlight */
+}
 
-      body {
-        background: linear-gradient(
-          135deg,
-          var(--primary-light) 0%,
-          var(--primary-medium) 100%
-        );
-        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-        min-height: 100vh;
-      }
 
-      .navbar {
-        background: linear-gradient(
-          90deg,
-          var(--primary-purple) 0%,
-          var(--primary-dark) 100%
-        );
-        box-shadow: 0 4px 15px rgba(172, 115, 255, 0.2);
-      }
+    
+body {
+  background: linear-gradient(
+    
+    var(--primary-light) 0%,
+    var(--primary-medium) 100%
+  );
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  min-height: 100vh;
+}
 
+   .navbar {
+  background: linear-gradient(
+    90deg,
+    var(--primary-dark) 0%,
+    var(--primary-medium) 100%
+  );
+  box-shadow: 0 4px 15px rgba(56, 127, 57, 0.3);
+}
       .navbar-brand {
         font-weight: bold;
         color: white !important;
@@ -45,19 +46,22 @@
         left: auto;
       }
 
-      .offcanvas {
-        background: linear-gradient(
-          180deg,
-          var(--primary-light) 0%,
-          var(--primary-medium) 100%
-        );
-        border-right: 3px solid var(--primary-purple);
-      }
+ .offcanvas {
+  background: linear-gradient(
+    180deg,
+    var(--primary-light) 0%,
+    var(--primary-medium) 100%
+  );
+  border-right: 3px solid var(--primary-purple);
+}
 
-      .offcanvas-header {
-        background: var(--primary-purple);
-        color: white;
-      }
+
+      
+.offcanvas-header {
+  background: var(--primary-dark);
+  color: white;
+}
+
 .offcanvas-body {
     display: flex;
     flex-direction: column;
@@ -679,7 +683,6 @@
           padding: 10px;
         }
       }
-      
       
 
       /*student profile section*/

@@ -1,5 +1,3 @@
-
-
 <div class="offcanvas offcanvas-start" tabindex="-1" id="sidebar">
     <div class="offcanvas-header">
         <h5 class="offcanvas-title">
@@ -28,7 +26,7 @@
             <i class="fas fa-history"></i>
             <span>History</span>
         </a>
-        <a class="sidebar-item <?= ($currentPage == 'contact') ? 'active' : '' ?>" href="../advisor/AdvisorContact.php">
+        <a class="sidebar-item <?= ($currentPage == 'contact') ? 'active' : '' ?>" href="../advisor/contactus.php">
             <i class="fas fa-envelope"></i>
             <span>Contact Us</span>
         </a>

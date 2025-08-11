@@ -460,14 +460,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 
     <!-- !-- Poster Modal -->
-    <div id="posterModal" class="modal poster-modal">
+    <div id="posterModal" class="modal poster-modal" style="display: none;">
         <div class="modal-content">
             <span class="close" onclick="closePosterModal()">&times;</span>
-            <img src="../uploads/posters/<?php echo $proposal['Ev_Poster']; ?>" class="poster-preview" id="posterClick"
-                style="cursor: pointer;" class="poster-large" />
+            <img src="../uploads/posters/<?php echo $proposal['Ev_Poster']; ?>" alt="Event Poster"
+                class="poster-large" />
         </div>
     </div>
-
     <!-- Reject Modal -->
     <div id="rejectModal" class="modal">
         <div class="modal-content">
@@ -562,7 +561,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             document.getElementById("rejectForm").submit();
         }
 
-
         function approveProposal() {
             // Show success modal
             document.getElementById("successModal").style.display = "block";
@@ -578,7 +576,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         function viewCOCUStatement(filename) {
             window.open('../uploads/statements/' + filename, '_blank');
         }
-
 
         function viewAdditionalDoc() {
             const filePath = "<?php echo isset($proposal['Ev_AdditionalInfo']) ? $proposal['Ev_AdditionalInfo'] : ''; ?>";
@@ -596,17 +593,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         function exportPDF() {
             const evId = "<?php echo $event_id; ?>";
             window.open(`../components/pdf/generate_pdf.php?id=${evId}`, '_blank');
-
         }
-
 
         function returnProposal() {
             window.location.href = 'AdvisorDashboard.php';
-        }
-
-        function viewPoster() {
-            const modal = new bootstrap.Modal(document.getElementById('posterModal'));
-            modal.show();
         }
 
         // Close modals when clicking outside
@@ -614,9 +604,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             const modals = [
                 "posterModal",
                 "rejectModal",
-                "successModal",
-                "cocuModal",
-                "docsModal",
+                "successModal"
             ];
             modals.forEach((modalId) => {
                 const modal = document.getElementById(modalId);
@@ -636,23 +624,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             });
         });
 
-        // Add loading animation for buttons
-        document.querySelectorAll(".btn, .view-btn").forEach((button) => {
-            button.addEventListener("click", function () {
-                const original = this.innerHTML;
-                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
-                this.disabled = true;
-
-                setTimeout(() => {
-                    this.innerHTML = original;
-                    this.disabled = false;
-                }, 1000);
-            });
-        });
-
-        // Initialize tooltips for action buttons
+        // Initialize when page loads
         document.addEventListener("DOMContentLoaded", function () {
             console.log("Advisor Proposal Review System Loaded");
+
+            // Ensure all modals are hidden on page load
+            const modals = document.querySelectorAll('.modal');
+            modals.forEach(modal => {
+                modal.style.display = 'none';
+            });
 
             // Add hover effects for better interactivity
             const sections = document.querySelectorAll(".section");

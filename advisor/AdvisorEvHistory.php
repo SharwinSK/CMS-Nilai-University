@@ -1,7 +1,7 @@
 <?php
 session_start();
 include('../db/dbconfig.php');
-
+$currentPage = 'history';
 if (!isset($_SESSION['Adv_ID']) || !isset($_SESSION['Club_ID'])) {
   header("Location: AdvisorLogin.php");
   exit();

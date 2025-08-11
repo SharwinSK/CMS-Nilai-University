@@ -39,8 +39,7 @@
             <i class="fas fa-question-circle"></i>
             <span>User Guide</span>
         </a>
-        <a class="sidebar-item <?= ($currentPage == 'contact') ? 'active' : '' ?>"
-            href="../student/StudentDashboard.php">
+        <a class="sidebar-item <?= ($currentPage == 'contact') ? 'active' : '' ?>" href="../student/contactus.php">
             <i class="fas fa-phone"></i>
             <span>Contact</span>
         </a>

@@ -1,44 +1,35 @@
 <?php
 session_start();
-include('../../db/dbconfig.php'); // adjust path as needed
+include('../../db/dbconfig.php');
 
-$mode = isset($_GET['mode']) ? $_GET['mode'] : 'create';
+// Guard session
+if (empty($_SESSION['Stu_ID'])) {
+    header('Location: ../../auth/login.php');
+    exit;
+}
 
 $stu_id = $_SESSION['Stu_ID'];
-$student_result = $conn->query("SELECT Stu_Name FROM student WHERE Stu_ID =
-'$stu_id'");
-$student = $student_result->fetch_assoc();
-$club_result =
-    $conn->query("SELECT Club_ID, Club_Name FROM club");
-$venue_result =
-    $conn->query("SELECT Venue_ID, Venue_Name FROM venue ORDER BY Venue_Name");
+
+// Get student name (prepared)
+$student_stmt = $conn->prepare("SELECT Stu_Name FROM student WHERE Stu_ID = ?");
+$student_stmt->bind_param("s", $stu_id);
+$student_stmt->execute();
+$student = $student_stmt->get_result()->fetch_assoc();
+if (!$student) {
+    die("Student not found.");
+}
+
+// Get clubs (ordered) & venues (ordered)
+$club_result = $conn->query("SELECT Club_ID, Club_Name FROM club ORDER BY Club_Name");
+$venue_result = $conn->query("SELECT Venue_ID, Venue_Name FROM venue ORDER BY Venue_Name");
 $venues = [];
 while ($v = $venue_result->fetch_assoc()) {
     $venues[] = $v;
 }
-$action = '';
-$submit_label = '';
-$is_edit = false;
-if (
-    $mode
-    === 'create'
-) {
-    $action = 'ProposalHandler.php?mode=create';
-    $submit_label =
-        'Submit Proposal';
-} elseif ($mode === 'edit') {
-    $action =
-        'ProposalHandler.php?mode=edit&id=' . $_GET['id'];
-    $submit_label = 'Update
-Proposal';
-    $is_edit = true;
-} elseif ($mode === 'modify') {
-    $action =
-        'ProposalHandler.php?mode=modify&id=' . $_GET['id'];
-    $submit_label = 'Resubmit
-Proposal';
-    $is_edit = true;
-} ?>
+
+// CREATE mode only
+$action = 'ProposalHandler.php?mode=create';
+?>
 
 <!DOCTYPE html>
 <html lang="en">
@@ -63,7 +54,7 @@ Proposal';
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1600px;
             margin: 0 auto;
             background: white;
             border-radius: 15px;
@@ -134,24 +125,8 @@ Proposal';
             }
         }
 
-        .section-title {
-            color: #ac73ff;
-            font-size: 1.8em;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #ac73ff;
-            display: flex;
-            align-items: center;
-        }
 
-        .section-title::before {
-            content: "";
-            width: 20px;
-            height: 20px;
-            background: #ac73ff;
-            border-radius: 50%;
-            margin-right: 10px;
-        }
+
 
         .form-group {
             margin-bottom: 20px;
@@ -168,6 +143,35 @@ Proposal';
             min-width: 250px;
         }
 
+        .view-modal .modal-content {
+            max-width: 700px;
+            width: 90%;
+        }
+
+        .view-modal textarea {
+            width: 100%;
+            height: 200px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 14px;
+            line-height: 1.5;
+            background-color: #f8f9fa;
+            resize: none;
+        }
+
+        .view-modal .modal-header {
+            padding: 20px 20px 10px 20px;
+            border-bottom: 2px solid #ac73ff;
+            margin-bottom: 15px;
+        }
+
+        .view-modal .modal-header h3 {
+            color: #ac73ff;
+            margin: 0;
+        }
+
         label {
             display: block;
             margin-bottom: 8px;
@@ -178,6 +182,36 @@ Proposal';
         .required::after {
             content: " *";
             color: #e74c3c;
+        }
+
+        /* Ensure all section titles have the line */
+        .section-title {
+            color: #ac73ff;
+            font-size: 1.8em;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #ac73ff !important;
+            /* Added !important to ensure it shows */
+            display: flex;
+            align-items: center;
+            width: 100%;
+            /* Ensure full width */
+        }
+
+        .section-title::before {
+            content: "";
+            width: 20px;
+            height: 20px;
+            background: #ac73ff;
+            border-radius: 50%;
+            margin-right: 10px;
+            flex-shrink: 0;
+            /* Prevent shrinking */
+        }
+
+        /* Make sure the container doesn't interfere with the line */
+        .section-title-container {
+            width: 100%;
         }
 
         input[type="text"],
@@ -208,6 +242,115 @@ Proposal';
         textarea {
             resize: vertical;
             min-height: 120px;
+        }
+
+        /* Sample button styling */
+        .sample-download-container {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+        }
+
+        .sample-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+
+        .sample-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            background: linear-gradient(135deg, #5a67d8 0%, #6b5b95 100%);
+            color: white;
+            text-decoration: none;
+        }
+
+        .sample-button:active {
+            transform: translateY(0px);
+            box-shadow: 0 2px 6px rgba(102, 126, 234, 0.3);
+        }
+
+        .sample-icon {
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+            color: inherit;
+        }
+
+        .sample-text {
+            font-weight: 500;
+            color: inherit;
+        }
+
+        /* Tooltip styling improvements */
+        .sample-tooltip {
+            position: relative;
+            display: inline-block;
+        }
+
+        .sample-tooltip .tooltiptext {
+            visibility: hidden;
+            width: 180px;
+            background-color: #2d3748;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 8px 12px;
+            position: absolute;
+            z-index: 1000;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -90px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            font-size: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .sample-tooltip .tooltiptext::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: #2d3748 transparent transparent transparent;
+        }
+
+        .sample-tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .sample-button {
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+
+            .sample-icon {
+                width: 16px;
+                height: 16px;
+            }
+
+            .sample-tooltip .tooltiptext {
+                width: 140px;
+                margin-left: -70px;
+                font-size: 11px;
+            }
         }
 
         .upload-area {
@@ -300,6 +443,179 @@ Proposal';
         .btn-secondary {
             background: #6c757d;
             color: white;
+        }
+
+        /* Consistent button styling for Add/View buttons */
+        .btn-sm {
+            padding: 4px 8px !important;
+            font-size: 11px !important;
+            font-weight: 500;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 40px;
+            height: 26px;
+        }
+
+
+
+        @keyframes slideInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-50px) scale(0.95);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .btn-secondary.btn-sm {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary.btn-sm:hover {
+            background: #5a6268;
+            transform: translateY(-1px);
+        }
+
+        .btn-primary.btn-sm {
+            background: #ac73ff;
+            color: white;
+        }
+
+        .btn-primary.btn-sm:hover {
+            background: #8b5cf6;
+            transform: translateY(-1px);
+        }
+
+        /* Button container styling */
+        .button-container {
+            display: flex;
+            gap: 3px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Committee table specific styles */
+        #committeeTable {
+            min-width: 1200px;
+            /* Ensure minimum width */
+        }
+
+        #committeeTable th:nth-child(1),
+        /* Student ID */
+        #committeeTable td:nth-child(1) {
+            min-width: 120px;
+            width: 120px;
+        }
+
+        #committeeTable th:nth-child(2),
+        /* Name */
+        #committeeTable td:nth-child(2) {
+            min-width: 150px;
+            width: 150px;
+        }
+
+        #committeeTable th:nth-child(3),
+        /* Position */
+        #committeeTable td:nth-child(3) {
+            min-width: 130px;
+            width: 130px;
+        }
+
+        #committeeTable th:nth-child(4),
+        /* Department */
+        #committeeTable td:nth-child(4) {
+            min-width: 250px;
+            /* Increased significantly */
+            width: 250px;
+        }
+
+        #committeeTable th:nth-child(5),
+        /* Phone */
+        #committeeTable td:nth-child(5) {
+            min-width: 140px;
+            /* Increased */
+            width: 140px;
+        }
+
+        #committeeTable th:nth-child(6),
+        /* Job Scope */
+        #committeeTable td:nth-child(6) {
+            min-width: 120px;
+            width: 120px;
+        }
+
+        #committeeTable th:nth-child(7),
+        /* COCU Claimer */
+        #committeeTable td:nth-child(7) {
+            min-width: 80px;
+            width: 80px;
+        }
+
+        #committeeTable th:nth-child(8),
+        /* Upload COCU */
+        #committeeTable td:nth-child(8) {
+            min-width: 100px;
+            /* Reduced */
+            width: 100px;
+        }
+
+        #committeeTable th:nth-child(9),
+        /* Actions */
+        #committeeTable td:nth-child(9) {
+            min-width: 60px;
+            width: 60px;
+        }
+
+        /* Delete icon button */
+        .btn-delete-icon {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-delete-icon:hover {
+            background: #c0392b;
+            transform: translateY(-1px);
+        }
+
+        /* Sample format tooltip */
+        .sample-tooltip {
+            position: relative;
+            display: inline-block;
+        }
+
+        .sample-tooltip .tooltiptext {
+            visibility: hidden;
+            width: 140px;
+            background-color: #555;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -70px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 12px;
+        }
+
+        .sample-tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
         }
 
         .btn-secondary:hover {
@@ -442,6 +758,60 @@ Proposal';
         .form-group.error .error-message {
             display: block;
         }
+
+        /* add once */
+        .error-field {
+            border-color: #e74c3c !important;
+        }
+
+        /* Scroll buttons */
+        .scroll-buttons {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 999;
+        }
+
+        .scroll-btn {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #ac73ff, #8b5cf6);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            box-shadow: 0 4px 12px rgba(172, 115, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .scroll-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(172, 115, 255, 0.4);
+        }
+
+        .scroll-btn:active {
+            transform: translateY(0);
+        }
+
+        @media (max-width: 768px) {
+            .scroll-buttons {
+                right: 15px;
+                bottom: 15px;
+            }
+
+            .scroll-btn {
+                width: 45px;
+                height: 45px;
+                font-size: 18px;
+            }
+        }
     </style>
 </head>
 
@@ -455,7 +825,8 @@ Proposal';
         </div>
 
         <div class="form-container">
-            <form method="POST" enctype="multipart/form-data" action="<?= $action ?>">
+            <form id="proposalForm" method="POST" enctype="multipart/form-data" action="<?= $action ?>">
+
                 <!-- Section 1: Student Information -->
                 <div class="section">
                     <h2 class="section-title">Student Information</h2>
@@ -463,18 +834,20 @@ Proposal';
                         <div class="form-col">
                             <div class="form-group">
                                 <label for="studentName" class="required">Student Name</label>
-                                <input type="text" name="student_name" value="<?= $student['Stu_Name'] ?>" readonly />
+                                <input id="studentName" type="text" name="student_name"
+                                    value="<?= htmlspecialchars($student['Stu_Name'], ENT_QUOTES, 'UTF-8') ?>"
+                                    readonly />
                                 <div class="error-message">Please enter student name</div>
                             </div>
                         </div>
                         <div class="form-col">
                             <div class="form-group">
                                 <label for="club" class="required">Club</label>
-                                <select name="club" class="form-select" required>
+                                <select id="club" name="club" class="form-select" required>
                                     <option value="">-- Select Club --</option>
                                     <?php while ($club = $club_result->fetch_assoc()): ?>
-                                        <option value="<?= $club['Club_ID'] ?>">
-                                            <?= $club['Club_Name'] ?>
+                                        <option value="<?= htmlspecialchars($club['Club_ID'], ENT_QUOTES, 'UTF-8') ?>">
+                                            <?= htmlspecialchars($club['Club_Name'], ENT_QUOTES, 'UTF-8') ?>
                                         </option>
                                     <?php endwhile; ?>
                                 </select>
@@ -498,7 +871,8 @@ Proposal';
                         <div class="form-col">
                             <div class="form-group">
                                 <label for="eventName" class="required">Event Name</label>
-                                <input type="text" id="eventName" name="eventName" required />
+                                <input type="text" id="eventName" name="eventName" placeholder="Enter event name"
+                                    required />
                                 <div class="error-message">Please enter event name</div>
                             </div>
                         </div>
@@ -524,20 +898,25 @@ Proposal';
 
                     <div class="form-group">
                         <label for="eventObjectives" class="required">Event Objectives</label>
-                        <textarea id="eventObjectives" name="eventObjectives" required></textarea>
+                        <textarea id="eventObjectives" name="eventObjectives" required
+                            placeholder="• Enter first objective&#10;• Enter second objective&#10;• Enter third objective"></textarea>
                         <div class="error-message">Please enter event objectives</div>
+                        <div class="file-info" style="color: #666; font-size: 12px; margin-top: 5px;">
+                            💡 Tip: Start each objective with a bullet point (-)
+                        </div>
                     </div>
 
                     <div class="form-group">
                         <label for="eventIntroduction" class="required">Introduction Event</label>
                         <textarea id="eventIntroduction" name="eventIntroduction" style="min-height: 200px"
-                            required></textarea>
+                            placeholder="Enter event introduction" required></textarea>
                         <div class="error-message">Please enter event introduction</div>
                     </div>
 
                     <div class="form-group">
                         <label for="eventPurpose" class="required">Purpose of Event</label>
-                        <textarea id="eventPurpose" name="eventPurpose" required></textarea>
+                        <textarea id="eventPurpose" name="eventPurpose" placeholder="Enter event purpose"
+                            required></textarea>
                         <div class="error-message">Please enter event purpose</div>
                     </div>
 
@@ -546,19 +925,21 @@ Proposal';
                             <div class="form-group">
                                 <label for="estimatedParticipants" class="required">Estimated Participants</label>
                                 <input type="number" id="estimatedParticipants" name="estimatedParticipants" min="1"
-                                    required />
+                                    placeholder="Example: 100" required />
                                 <div class="error-message">
                                     Please enter estimated participants
                                 </div>
                             </div>
+
                         </div>
-                        <div class="form-col">
-                            <div class="form-group">
-                                <label for="eventDate" class="required">Event Date</label>
-                                <input type="date" id="eventDate" name="eventDate" required />
-                                <div class="error-message">
-                                    Please select event date (minimum 14 days from today)
-                                </div>
+                        <div class="form-group">
+                            <label for="eventDate" class="required">Event Date</label>
+                            <input type="date" id="eventDate" name="eventDate" required />
+                            <div class="file-info" style="color: #666; font-size: 12px; margin-top: 5px;">
+                                📅 The date can be chosen after 14 days from today
+                            </div>
+                            <div class="error-message">
+                                Please select event date (minimum 14 days from today)
                             </div>
                         </div>
                     </div>
@@ -603,11 +984,11 @@ Proposal';
                         <div class="form-col">
                             <div class="form-group">
                                 <label for="venue" class="required">Venue</label>
-                                <select name="venue" class="form-select" required>
+                                <select id="venue" name="venue" class="form-select" required>
                                     <option value="">-- Select Main Venue --</option>
                                     <?php foreach ($venues as $v): ?>
-                                        <option value="<?= $v['Venue_ID'] ?>">
-                                            <?= $v['Venue_Name'] ?>
+                                        <option value="<?= htmlspecialchars($v['Venue_ID'], ENT_QUOTES, 'UTF-8') ?>">
+                                            <?= htmlspecialchars($v['Venue_Name'], ENT_QUOTES, 'UTF-8') ?>
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
@@ -640,7 +1021,8 @@ Proposal';
                         <div class="form-col">
                             <div class="form-group">
                                 <label for="picName" class="required">Name</label>
-                                <input type="text" id="picName" name="picName" required />
+                                <input type="text" id="picName" name="picName" placeholder="Enter person in charge name"
+                                    required />
                                 <div class="error-message">
                                     Please enter person in charge name
                                 </div>
@@ -649,7 +1031,7 @@ Proposal';
                         <div class="form-col">
                             <div class="form-group">
                                 <label for="picId" class="required">ID</label>
-                                <input type="text" id="picId" name="picId" required />
+                                <input type="text" id="picId" name="picId" placeholder="00020547" required />
                                 <div class="error-message">
                                     Please enter person in charge ID
                                 </div>
@@ -658,7 +1040,7 @@ Proposal';
                         <div class="form-col">
                             <div class="form-group">
                                 <label for="picPhone" class="required">Phone Number</label>
-                                <input type="tel" id="picPhone" name="picPhone" required />
+                                <input type="tel" id="picPhone" name="picPhone" placeholder="0123456789" required />
                                 <div class="error-message">Please enter phone number</div>
                             </div>
                         </div>
@@ -668,6 +1050,14 @@ Proposal';
                 <!-- Section 4: Event Flow -->
                 <div class="section">
                     <h2 class="section-title">Event Flow (Minutes of Meeting)</h2>
+                    <div class="file-info"
+                        style="margin-bottom: 15px; background: #fff3cd; padding: 10px; border-radius: 5px; border-left: 4px solid #ffc107;">
+                        📝 <strong>Instructions:</strong>
+                        <ul style="margin: 5px 0 0 20px; color: #666;">
+                            <li>Click "Add" button in Activity Description column to enter detailed activity description
+                            </li>
+                        </ul>
+                    </div>
                     <div class="table-container">
                         <table id="eventFlowTable">
                             <thead>
@@ -697,9 +1087,37 @@ Proposal';
 
                 <!-- Section 5: Committee Members -->
                 <div class="section">
-                    <h2 class="section-title">Committee Members</h2>
-                    <div class="file-info">
-                        Note: Shall upload PDF files only, maximum file size: 2MB
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+                        <div style="flex: 1;">
+                            <h2 class="section-title">Committee Members</h2>
+                        </div>
+                        <div class="sample-download-container">
+                            <div class="sample-tooltip">
+                                <a href="../../samples/Committee_Sample.pdf" download class="sample-button">
+                                    <svg class="sample-icon" viewBox="0 0 24 24" fill="none">
+                                        <path
+                                            d="M3 7V17C3 18.1046 3.89543 19 5 19H19C20.1046 19 21 18.1046 21 17V9C21 7.89543 20.1046 7 19 7H13L11 5H5C3.89543 5 3 5.89543 3 7Z"
+                                            stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                            stroke-linejoin="round" />
+                                        <path d="M12 15L12 11M12 11L10 13M12 11L14 13" stroke="currentColor"
+                                            stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                                    </svg>
+                                    <span class="sample-text">Sample</span>
+                                </a>
+                                <span class="tooltiptext">Download Sample COCU Statement</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="file-info"
+                        style="background: #fff3cd; padding: 15px; border-radius: 8px; border-left: 4px solid #ffc107; margin-bottom: 20px;">
+                        📋 <strong>Instructions and Notes:</strong>
+                        <ul style="margin: 8px 0 0 20px; color: #666; line-height: 1.5;">
+                            <li>Upload PDF files only, maximum file size: 2MB</li>
+                            <li>Click "Add" button in Job Scope column to enter detailed job description</li>
+                            <li>For COCU claimers, upload the COCU statement document</li>
+                        </ul>
                     </div>
 
                     <div class="table-container">
@@ -713,7 +1131,7 @@ Proposal';
                                     <th>Phone</th>
                                     <th>Job Scope</th>
                                     <th>COCU Claimer</th>
-                                    <th>Upload COCU Statement</th>
+                                    <th>Upload COCU</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -725,14 +1143,8 @@ Proposal';
                         <button type="button" class="btn btn-add" id="addCommitteeBtn">
                             + Add New Row
                         </button>
-                        <div style="margin-bottom: 10px;">
-                            <a href="../../samples/Committee_Sample.pdf" download class="btn btn-secondary">
-                                📥 Download Sample Format
-                            </a>
-                        </div>
                     </div>
                 </div>
-
                 <!-- Section 6: Budget -->
                 <div class="section">
                     <h2 class="section-title">Budget</h2>
@@ -774,7 +1186,8 @@ Proposal';
                         </div>
                         <div class="form-group" style="margin-top: 15px">
                             <label for="preparedBy" class="required">Prepared By:</label>
-                            <input type="text" id="preparedBy" name="preparedBy" required />
+                            <input type="text" id="preparedBy" name="preparedBy" placeholder="Secretary/Treasure"
+                                required />
                             <div class="error-message">Please enter prepared by</div>
                         </div>
                     </div>
@@ -788,19 +1201,22 @@ Proposal';
                             <div class="form-group">
                                 <label for="alternativeDate" class="required">Alternative Date</label>
                                 <input type="date" id="alternativeDate" name="alternativeDate" required />
-                                <div class="error-message">
-                                    Please select alternative date
+                                <div class="file-info" style="color:#666;font-size:12px;margin-top:5px;">
+                                    📅 Must be at least 14 days from today
                                 </div>
+                                <div class="error-message">Please select alternative date (min 14 days)</div>
                             </div>
                         </div>
+
+
                         <div class="form-col">
                             <div class="form-group">
                                 <label for="alternativeVenue" class="required">Alternative Venue</label>
-                                <select name="altVenue" class="form-select">
+                                <select id="alternativeVenue" name="altVenue" class="form-select" required>
                                     <option value="">-- Select Alternative Venue --</option>
                                     <?php foreach ($venues as $v): ?>
-                                        <option value="<?= $v['Venue_ID'] ?>">
-                                            <?= $v['Venue_Name'] ?>
+                                        <option value="<?= htmlspecialchars($v['Venue_ID'], ENT_QUOTES, 'UTF-8') ?>">
+                                            <?= htmlspecialchars($v['Venue_Name'], ENT_QUOTES, 'UTF-8') ?>
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
@@ -809,22 +1225,34 @@ Proposal';
                                 </div>
                             </div>
                         </div>
+
                     </div>
-                    <div class="form-group">
-                        <label for="additionalDocument">Additional Document (Optional)</label>
-                        <div class="upload-area" id="additionalDocUpload">
-                            <div>
-                                <p>
-                                    📁 Drag and drop additional document here or click to browse
-                                </p>
-                                <input type="file" id="additionalDocument" name="additionalDocument"
-                                    style="display: none" />
+                    <div class="form-col">
+                        <div class="form-group">
+                            <label for="additionalDocument">Additional Document (Optional)</label>
+                            <div class="upload-area" id="additionalDocUpload">
+                                <div>
+                                    <p>📁 Drag and drop additional document here or click to browse</p>
+                                    <input type="file" id="additionalDocument" name="additionalDocument" accept=".pdf"
+                                        style="display: none" />
+                                </div>
                             </div>
+                            <div class="file-info">Only upload PDF file</div>
+                            <div class="preview-container" id="additionalDocPreview"></div>
                         </div>
-                        <div class="file-info">Any file type accepted</div>
+                    </div>
+
+                </div>
+                <!-- View Modal -->
+                <div id="viewModal" class="modal view-modal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3 id="viewModalTitle">View Details</h3>
+                            <span class="close">&times;</span>
+                        </div>
+                        <textarea id="viewModalContent" readonly></textarea>
                     </div>
                 </div>
-
                 <!-- Form Actions -->
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" id="backBtn">
@@ -869,6 +1297,16 @@ Proposal';
         </div>
     </div>
 
+    <!-- Scroll Buttons -->
+    <div class="scroll-buttons">
+        <button class="scroll-btn" id="scrollTopBtn" onclick="scrollToTop()" title="Scroll to Top">
+            ↑
+        </button>
+        <button class="scroll-btn" id="scrollBottomBtn" onclick="scrollToBottom()" title="Scroll to Bottom">
+            ↓
+        </button>
+    </div>
+
     <script>
         // Initialize form
         document.addEventListener("DOMContentLoaded", function () {
@@ -885,11 +1323,48 @@ Proposal';
             updateRemainingHours(); // 👉 Add this to calculate hours immediately
         }
 
+        // Scroll functions
+        function scrollToTop() {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        }
+
+        function scrollToBottom() {
+            window.scrollTo({
+                top: document.body.scrollHeight,
+                behavior: 'smooth'
+            });
+        }
+
+        // Show/hide scroll buttons based on scroll position
+        window.addEventListener('scroll', function () {
+            const scrollTopBtn = document.getElementById('scrollTopBtn');
+            const scrollBottomBtn = document.getElementById('scrollBottomBtn');
+
+            if (window.pageYOffset > 300) {
+                scrollTopBtn.style.opacity = '1';
+                scrollTopBtn.style.pointerEvents = 'auto';
+            } else {
+                scrollTopBtn.style.opacity = '0.5';
+                scrollTopBtn.style.pointerEvents = 'none';
+            }
+
+            if ((window.innerHeight + window.pageYOffset) >= document.body.offsetHeight - 100) {
+                scrollBottomBtn.style.opacity = '0.5';
+                scrollBottomBtn.style.pointerEvents = 'none';
+            } else {
+                scrollBottomBtn.style.opacity = '1';
+                scrollBottomBtn.style.pointerEvents = 'auto';
+            }
+        });
+
+
         function setupEventListeners() {
             // File upload handlers
             setupFileUpload("posterUpload", "eventPoster", handlePosterUpload);
-            setupFileUpload("additionalDocUpload", "additionalDocument");
-
+            setupFileUpload("additionalDocUpload", "additionalDocument", handleAdditionalDocUpload);
             // Button handlers
             document
                 .getElementById("addEventFlowBtn")
@@ -907,7 +1382,7 @@ Proposal';
             // Form submission
             document
                 .getElementById("previewBtn")
-                .addEventListener("click", handlePreview);
+                .addEventListener("click", showPreviewMessage);
             document
                 .getElementById("backBtn")
                 .addEventListener("click", handleBack);
@@ -919,13 +1394,14 @@ Proposal';
         }
 
         function setMinimumDates() {
-            const today = new Date();
-            const minDate = new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000);
-            const minDateStr = minDate.toISOString().split("T")[0];
-
-            document.getElementById("eventDate").min = minDateStr;
-            document.getElementById("alternativeDate").min = minDateStr;
+            const minDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)
+                .toISOString().split("T")[0];
+            const eventDate = document.getElementById("eventDate");
+            const altDate = document.getElementById("alternativeDate");
+            if (eventDate) eventDate.min = minDate;
+            if (altDate) altDate.min = minDate;
         }
+
 
         function setupFileUpload(uploadAreaId, inputId, callback) {
             const uploadArea = document.getElementById(uploadAreaId);
@@ -1003,13 +1479,13 @@ Proposal';
                 <td><input type="time" name="eventFlowEnd[]" required></td>
                 <td><input type="number" name="eventFlowHours[]" class="hours-input" step="0.5" min="0" readonly></td>
                 <td>
-                    <div style="display: flex; gap: 5px;">
-                        <button type="button" class="btn btn-secondary btn-sm" onclick="addActivityDescription('${rowId}')">Add</button>
+                    <div class="button-container">
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="addActivityDescription('${rowId}')" title="Click to add activity description">Add</button>
                         <button type="button" class="btn btn-primary btn-sm" onclick="viewActivityDescription('${rowId}')" disabled>View</button>
                     </div>
                     <input type="hidden" name="eventFlowActivity[]" id="activity_${rowId}">
                 </td>
-                <td><input type="text" name="eventFlowRemarks[]"></td>
+                <td><input type="text" name="eventFlowRemarks[]" placeholder="Meeting/Eventflow" style="background-color: #f8f9fa;" required></td>
                 <td><button type="button" class="btn btn-danger btn-sm" onclick="deleteRow(this)">Delete</button></td>
             `;
 
@@ -1061,62 +1537,66 @@ Proposal';
             const rowId = "committee_" + Date.now();
 
             row.innerHTML = `
-                <td><input type="text" class="form-control form-control-lg" style="min-width:150px;" name="committeeId[]" required></td>
-                <td><input type="text" class="form-control form-control-lg" style="min-width:150px;" name="committeeName[]" required></td>
-                <td><input type="text" class="form-control form-control-lg" style="min-width:150px;" name="committeePosition[]" required></td>
+                <td><input type="text" style="width: 100%;" name="committeeId[]" placeholder="00020547" required></td>
+                <td><input type="text" style="width: 100%;" name="committeeName[]" placeholder="Sharwin" required></td>
+                <td><input type="text" style="width: 100%;" name="committeePosition[]" placeholder="Publicity" required></td>
                 <td>
-            <select class="form-select" name="committeeDepartment[]" required>
-    <option value="">Department</option>
-    <option value="Foundation in Business">Foundation in Business</option>
-    <option value="Foundation in Science">Foundation in Science</option>
-    <option value="DCS">Diploma in Computer Science</option>
-    <option value="DIA">Diploma in Accounting</option>
-    <option value="DAME">Diploma in Aircraft Maintenance Engineering</option>
-    <option value="DIT">Diploma in Information Technology</option>
-    <option value="DHM">Diploma in Hotel Management</option>
-    <option value="DCA">Diploma in Culinary Arts</option>
-    <option value="DBA">Diploma in Business Adminstration</option>
-    <option value="DIN">Diploma in Nursing</option>
-    <option value="BOF">Bachelor of Finance</option>
-    <option value="BAAF">Bachelor of Arts in Accounting & Finance</option>
-    <option value="BBAF">Bachelor of Business Adminstration in Finance</option>
-    <option value="BSB">Bachelor of Science Biotechonology</option>
-    <option value="BCSAI">Bachelor of Computer Science Artificial Intelligence</option>
-    <option value="BITC">Bachelor of Information Technology Cybersecurity</option>
-    <option value="BSE">Bachelor of Software Engineering</option>
-    <option value="BCSDS">Bachelor of Computer Science Data Science</option>
-    <option value="BIT">Bachelor of Information Technology</option>
-    <option value="BITIECC">Bachelor of Information Technology Internet Engineering and Cloud Computing</option>
-    <option value="BEM">Bachelor of Event Management</option>
-    <option value="BHMBM">Bachelor of Hospitality Management with Business Management</option>
-    <option value="BBAGL">Bachelor of Business Administration in Global Logistic</option>
-    <option value="BBADM">Bachelor of Business Administration in Digital Marketing</option>
-    <option value="BBAM">Bachelor of Business Administration in Marketing</option>
-    <option value="BBAMT">Bachelor of Business Administration in Management</option>
-    <option value="BBAIB">Bachelor of Business Administration in International Business</option>
-    <option value="BBAHRM">Bachelor of Business Administration in Human Resource Management</option>
-    <option value="BBA">Bachelor of Business Administration</option>
-    <option value="BSN">Bachelor of Science in Nursing</option>
-  </select>
-</td>
-                <td><input type="tel" name="committeePhone[]" required></td>
+                    <select style="width: 100%;" name="committeeDepartment[]" required>
+                        <option value="">Select Department</option>
+                        <option value="Foundation in Business">Foundation in Business</option>
+                        <option value="Foundation in Science">Foundation in Science</option>
+                        <option value="DCS">Diploma in Computer Science</option>
+                        <option value="DIA">Diploma in Accounting</option>
+                        <option value="DAME">Diploma in Aircraft Maintenance Engineering</option>
+                        <option value="DIT">Diploma in Information Technology</option>
+                        <option value="DHM">Diploma in Hotel Management</option>
+                        <option value="DCA">Diploma in Culinary Arts</option>
+                        <option value="DBA">Diploma in Business Administration</option>
+                        <option value="DIN">Diploma in Nursing</option>
+                        <option value="BOF">Bachelor of Finance</option>
+                        <option value="BAAF">Bachelor of Arts in Accounting & Finance</option>
+                        <option value="BBAF">Bachelor of Business Administration in Finance</option>
+                        <option value="BSB">Bachelor of Science Biotechnology</option>
+                        <option value="BCSAI">Bachelor of Computer Science Artificial Intelligence</option>
+                        <option value="BITC">Bachelor of Information Technology Cybersecurity</option>
+                        <option value="BSE">Bachelor of Software Engineering</option>
+                        <option value="BCSDS">Bachelor of Computer Science Data Science</option>
+                        <option value="BIT">Bachelor of Information Technology</option>
+                        <option value="BITIECC">Bachelor of Information Technology Internet Engineering and Cloud Computing</option>
+                        <option value="BEM">Bachelor of Event Management</option>
+                        <option value="BHMBM">Bachelor of Hospitality Management with Business Management</option>
+                        <option value="BBAGL">Bachelor of Business Administration in Global Logistic</option>
+                        <option value="BBADM">Bachelor of Business Administration in Digital Marketing</option>
+                        <option value="BBAM">Bachelor of Business Administration in Marketing</option>
+                        <option value="BBAMT">Bachelor of Business Administration in Management</option>
+                        <option value="BBAIB">Bachelor of Business Administration in International Business</option>
+                        <option value="BBAHRM">Bachelor of Business Administration in Human Resource Management</option>
+                        <option value="BBA">Bachelor of Business Administration</option>
+                        <option value="BSN">Bachelor of Science in Nursing</option>
+                    </select>
+                </td>
+                <td><input type="tel" style="width: 100%;" name="committeePhone[]" placeholder="0123456789" required></td>
                 <td>
-                    <div style="display: flex; gap: 5px;">
+                    <div class="button-container">
                         <button type="button" class="btn btn-secondary btn-sm" onclick="addJobScope('${rowId}')">Add</button>
                         <button type="button" class="btn btn-primary btn-sm" onclick="viewJobScope('${rowId}')" disabled>View</button>
                     </div>
                     <input type="hidden" name="committeeJobScope[]" id="jobScope_${rowId}">
                 </td>
                 <td>
-                    <select name="cocuClaimer[]" onchange="toggleCocuUpload(this, '${rowId}')" required>
+                    <select name="cocuClaimer[]" style="width: 100%;" onchange="toggleCocuUpload(this, '${rowId}')" required>
                         <option value="no" selected>No</option>
                         <option value="yes">Yes</option>
                     </select>
                 </td>
                 <td>
-                    <input type="file" name="cocuStatement[]" id="cocuFile_${rowId}" accept=".pdf" disabled>
+                    <input type="file" name="cocuStatement[]" id="cocuFile_${rowId}" accept=".pdf" disabled style="font-size: 11px; width: 100%;">
                 </td>
-                <td><button type="button" class="btn btn-danger btn-sm" onclick="deleteRow(this)">Delete</button></td>
+                <td>
+                    <button type="button" class="btn-delete-icon" onclick="deleteRow(this)" title="Delete row">
+                        🗑️
+                    </button>
+                </td>
             `;
 
             tbody.appendChild(row);
@@ -1127,8 +1607,8 @@ Proposal';
             const row = document.createElement("tr");
 
             row.innerHTML = `
-                <td><input type="text" name="budgetDescription[]" required></td>
-                <td><input type="number" name="budgetAmount[]" step="0.01" min="0" required></td>
+                <td><input type="text" name="budgetDescription[]" placeholder="Enter budget description" required></td>
+                <td><input type="number" name="budgetAmount[]" step="0.01" min="0" placeholder="enter amount = 250" required></td>
                 <td>
                     <select name="budgetType[]" required>
                         <option value="">Select</option>
@@ -1136,7 +1616,7 @@ Proposal';
                         <option value="expense">Expense</option>
                     </select>
                 </td>
-                <td><input type="text" name="budgetRemarks[]"></td>
+                <td><input type="text" name="budgetRemarks[]" placeholder="Enter remarks (optional)"></td>
                 <td><button type="button" class="btn btn-danger btn-sm" onclick="deleteRow(this)">Delete</button></td>
             `;
 
@@ -1144,10 +1624,26 @@ Proposal';
         }
 
         function deleteRow(button) {
-            if (confirm("Are you sure you want to delete this row?")) {
-                button.closest("tr").remove();
-                calculateBudget();
-            }
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "You want to delete this row?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#e74c3c',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, delete it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    button.closest("tr").remove();
+                    calculateBudget();
+                    updateRemainingHours();
+                    Swal.fire(
+                        'Deleted!',
+                        'Row has been deleted.',
+                        'success'
+                    )
+                }
+            });
         }
 
         function setupModalHandlers() {
@@ -1162,12 +1658,7 @@ Proposal';
                 });
             });
 
-            // Close modal on outside click
-            window.addEventListener("click", function (e) {
-                if (e.target.classList.contains("modal")) {
-                    e.target.style.display = "none";
-                }
-            });
+          
 
             // Save activity description
             document
@@ -1229,21 +1720,7 @@ Proposal';
 
         function viewActivityDescription(rowId) {
             const description = document.getElementById("activity_" + rowId).value;
-            if (description) {
-                Swal.fire({
-                    title: "Activity Description",
-                    text: description,
-                    icon: "info",
-                    confirmButtonText: "Close",
-                });
-            } else {
-                Swal.fire({
-                    title: "No Description",
-                    text: "No description has been added for this activity yet.",
-                    icon: "warning",
-                    confirmButtonText: "OK",
-                });
-            }
+            showViewModal("Activity Description", description || "No description has been added for this activity yet.");
         }
 
         function addJobScope(rowId) {
@@ -1257,24 +1734,16 @@ Proposal';
             ).value;
             document.getElementById("jobScopeDescription").value = existingJobScope;
         }
+        function showViewModal(title, content) {
+            document.getElementById("viewModalTitle").textContent = title;
+            document.getElementById("viewModalContent").value = content;
+            document.getElementById("viewModal").style.display = "block";
+        }
+
 
         function viewJobScope(rowId) {
             const jobScope = document.getElementById("jobScope_" + rowId).value;
-            if (jobScope) {
-                Swal.fire({
-                    title: "Job Scope Description",
-                    text: jobScope,
-                    icon: "info",
-                    confirmButtonText: "Close",
-                });
-            } else {
-                Swal.fire({
-                    title: "No Description",
-                    text: "No job scope has been added yet.",
-                    icon: "warning",
-                    confirmButtonText: "OK",
-                });
-            }
+            showViewModal("Job Scope", jobScope || "No job scope has been added for this activity yet.");
         }
 
         function toggleCocuUpload(select, rowId) {
@@ -1398,41 +1867,69 @@ Proposal';
 
             return isValid;
         }
+        function markError(field, show) {
+            const group = field.closest(".form-group");
+            if (group) group.classList.toggle("error", !!show);
+            else field.classList.toggle("error-field", !!show);
+        }
 
+        function handleAdditionalDocUpload(file) {
+            if (file) {
+                if (file.type !== "application/pdf") {
+                    Swal.fire("Invalid File", "Only PDF files are allowed.", "error");
+                    document.getElementById("additionalDocument").value = "";
+                    return;
+                }
 
+                if (file.size > 10 * 1024 * 1024) {
+                    Swal.fire("File Too Large", "Maximum file size is 10MB.", "error");
+                    document.getElementById("additionalDocument").value = "";
+                    return;
+                }
 
-        function handlePreview() {
-            if (validateForm()) {
-                alert(
-                    "Preview functionality would open a new window/modal showing the formatted proposal."
-                );
-                // In a real application, you would generate and display a preview
-            } else {
-                alert("Please fill in all required fields before previewing.");
+                const preview = document.getElementById("additionalDocPreview");
+                preview.innerHTML = `
+            <div style="margin-top: 10px; padding: 10px; background: #e8f5e8; border-radius: 5px;">
+                <span>✅ ${file.name}</span>
+                <button type="button" class="btn btn-primary btn-sm" style="margin-left: 10px;" onclick="viewPDF('${file.name}')">View PDF</button>
+            </div>
+        `;
             }
         }
 
-        function handleBack() {
-            if (
-                confirm(
-                    "Are you sure you want to go back? Any unsaved changes will be lost."
-                )
-            ) {
-                window.history.back();
+        function viewPDF(fileName) {
+            const fileInput = document.getElementById("additionalDocument");
+            if (fileInput.files[0]) {
+                const fileURL = URL.createObjectURL(fileInput.files[0]);
+                window.open(fileURL, '_blank');
             }
         }
 
-        // Auto-save functionality (optional)
-        let autoSaveTimer;
-        document
-            .getElementById("proposalForm")
-            .addEventListener("input", function () {
-                clearTimeout(autoSaveTimer);
-                autoSaveTimer = setTimeout(() => {
-                    // Auto-save logic here
-                    console.log("Auto-saving form data...");
-                }, 5000);
+        function showPreviewMessage() {
+            Swal.fire({
+                icon: 'info',
+                title: 'Feature Coming Soon!',
+                text: 'Currently this feature hasn\'t been completed yet, for future it will be. Thank you #sharwinsk',
+                confirmButtonText: 'Understood',
+                confirmButtonColor: '#ac73ff'
             });
+        }
+        function handleBack() {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "Any unsaved changes will be lost!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#6c757d',
+                cancelButtonColor: '#ac73ff',
+                confirmButtonText: 'Yes, go back',
+                cancelButtonText: 'Stay here'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.history.back();
+                }
+            });
+        }
 
         function getTotalEventFlowHours() {
             const hourInputs = document.querySelectorAll(
