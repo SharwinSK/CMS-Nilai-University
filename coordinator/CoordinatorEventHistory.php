@@ -1,7 +1,7 @@
 <?php
 session_start();
 include('../db/dbconfig.php');
-
+$currentPage = 'history';
 if (!isset($_SESSION['Coor_ID'])) {
     header("Location: CoordinatorLogin.php");
     exit();

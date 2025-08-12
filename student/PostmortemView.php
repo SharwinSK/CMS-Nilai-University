@@ -90,7 +90,7 @@ $total_approved = $approved_events_result->num_rows;
                                     <td class="club-name"><?php echo $event['Club_Name']; ?></td>
                                     <td class="event-date"><?php echo date('Y-m-d', strtotime($event['Ev_Date'])); ?></td>
                                     <td>
-                                        <a href="../student/postevent/PostEvent_Form.php?Ev_ID=<?= $event['Ev_ID']; ?>&mode=create"
+                                        <a href="../student/postevent/PostEvent_Form.php?event_id=<?= $event['Ev_ID']; ?>&mode=create"
                                             class="btn-create-report">
                                             <i class="fas fa-file-medical-alt"></i>
                                             Create Report

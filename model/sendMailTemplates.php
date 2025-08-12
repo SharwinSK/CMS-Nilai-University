@@ -1,5 +1,6 @@
 <?php
-include '../auth/sendMail.php';
+// Use $_SERVER['DOCUMENT_ROOT'] for absolute path
+require_once $_SERVER['DOCUMENT_ROOT'] . '/CMSNilaiUniversity/auth/sendMail.php';
 
 // 1. New Proposal → Advisor
 function newProposalToAdvisor($studentName, $eventName, $advisorName, $advisorEmail)

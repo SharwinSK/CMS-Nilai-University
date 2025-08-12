@@ -98,8 +98,8 @@ $calendarQuery = "
 SELECT e.Ev_Name, e.Ev_Date, c.Club_Name
 FROM events e
 JOIN club c ON e.Club_ID = c.Club_ID
-LEFT JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID AND ep.Status_ID = 6
-WHERE e.Status_ID = 5 AND ep.Ev_ID IS NULL
+LEFT JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID
+WHERE e.Status_ID = 5 AND (ep.Ev_ID IS NULL OR ep.Status_ID != 8)
 ";
 
 $calendarResult = $conn->query($calendarQuery);
@@ -123,6 +123,29 @@ $carousel_query = "
 ";
 $carousel_result = $conn->query($carousel_query);
 
+$event_summary_query = "
+SELECT 
+    e.Ev_ID,
+    e.Ev_Name, 
+    e.Ev_Date,
+    COALESCE(eps.Status_Name, es.Status_Name) as Status_Name,
+    c.Club_Name
+FROM events e
+JOIN eventstatus es ON e.Status_ID = es.Status_ID
+JOIN club c ON e.Club_ID = c.Club_ID
+LEFT JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID
+LEFT JOIN eventstatus eps ON ep.Status_ID = eps.Status_ID
+WHERE (e.Status_ID IN (3, 4, 5) AND (ep.Status_ID IS NULL OR ep.Status_ID != 8))
+   OR (ep.Status_ID IN (6, 7))
+ORDER BY e.created_at DESC
+LIMIT 8
+";
+
+$event_summary_result = $conn->query($event_summary_query);
+$event_summary = [];
+while ($row = $event_summary_result->fetch_assoc()) {
+    $event_summary[] = $row;
+}
 ?>
 
 <!DOCTYPE html>
@@ -146,36 +169,12 @@ $carousel_result = $conn->query($carousel_query);
     <div class="main-content">
         <div class="container-fluid">
 
-
-            <!-- Stats Cards -->
-            <div class="row mb-4">
-                <div class="col-md-6">
-                    <div class="stats-card events">
-                        <i class="fas fa-calendar-alt fa-3x mb-3" style="color: var(--primary-color)"></i>
-                        <div class="stats-number" style="color: var(--primary-color)">
-                            <?= $totalEvents ?>
-                        </div>
-
-                        <div class="stats-label">Total Events</div>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="stats-card clubs">
-                        <i class="fas fa-users fa-3x mb-3" style="color: var(--secondary-color)"></i>
-                        <div class="stats-number" style="color: var(--primary-color)">
-                            <?= $totalClubs ?>
-                        </div>
-                        <div class="stats-label">Total Clubs</div>
-                    </div>
-                </div>
-            </div>
-
             <!-- Dashboard Content -->
             <div class="row">
                 <!-- Left Column -->
                 <div class="col-lg-8">
                     <!-- Poster Carousel -->
-                    <div class="dashboard-card">
+                    <div class="dashboard-card carousel-container">
                         <?php include('../components/carousel.php'); ?>
                     </div>
 
@@ -183,7 +182,7 @@ $carousel_result = $conn->query($carousel_query);
                     <div class="dashboard-card">
                         <div class="card-header">
                             <i class="fas fa-chart-bar"></i>
-                            Event Statistics
+                            Event Statistics (still in Development)
                         </div>
                         <div class="graph-controls">
                             <select id="monthFilter">
@@ -262,6 +261,77 @@ $carousel_result = $conn->query($carousel_query);
                         <?php endforeach; ?>
                     </div>
 
+
+                    <!-- Event Summary Panel for Coordinator Dashboard -->
+                    <div class="dashboard-card">
+                        <div class="event-summary-header">
+                            <h4 class="section-title">
+                                <i class="fas fa-list-ul me-2"></i>
+                                Event Summary
+                            </h4>
+                            <a href="CoordinatorProgressView.php" class="view-btn">
+                                <i class="fas fa-eye me-1"></i>View All
+                            </a>
+                        </div>
+                        <div class="event-summary-list">
+                            <?php if (empty($event_summary)): ?>
+                                <div class="no-events-message">
+                                    <p class="text-muted text-center">No events to display</p>
+                                </div>
+                            <?php else: ?>
+                                <?php foreach ($event_summary as $event): ?>
+                                    <div class="event-list-item">
+                                        <div class="event-info">
+                                            <div class="event-name">
+                                                <?= htmlspecialchars($event['Ev_Name']) ?>
+                                            </div>
+                                            <div class="event-meta">
+                                                <small class="text-muted">
+                                                    <?= htmlspecialchars($event['Club_Name']) ?> •
+                                                    <?= date('M j, Y', strtotime($event['Ev_Date'])) ?>
+                                                </small>
+                                            </div>
+                                        </div>
+                                        <div class="event-status">
+                                            <?php
+                                            $status_class = '';
+                                            $status_short = '';
+                                            switch ($event['Status_Name']) {
+                                                case 'Approved by Advisor (Pending Coordinator Review)':
+                                                    $status_class = 'status-pending';
+                                                    $status_short = 'Pending Review';
+                                                    break;
+                                                case 'Rejected by Coordinator':
+                                                    $status_class = 'status-rejected';
+                                                    $status_short = 'Rejected';
+                                                    break;
+                                                case 'Approved by Coordinator':
+                                                    $status_class = 'status-approved';
+                                                    $status_short = 'Approved';
+                                                    break;
+                                                case 'Postmortem Pending Review':
+                                                    $status_class = 'status-pending';
+                                                    $status_short = 'PM Pending';
+                                                    break;
+                                                case 'Postmortem Approved':
+                                                    $status_class = 'status-completed';
+                                                    $status_short = 'Completed';
+                                                    break;
+                                                default:
+                                                    $status_class = 'status-pending';
+                                                    $status_short = 'Pending';
+                                            }
+                                            ?>
+                                            <span class="status-badge-small <?= $status_class ?>">
+                                                <?= $status_short ?>
+                                            </span>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+
                     <!-- Calendar View -->
                     <div class="dashboard-card">
                         <div class="card-header">
@@ -328,24 +398,6 @@ $carousel_result = $conn->query($carousel_query);
         </div>
     </div>
 
-    <!-- Logout Modal -->
-    <div class="modal fade" id="logoutModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Confirm Logout</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">Are you sure you want to log out?</div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        Cancel
-                    </button>
-                    <button type="button" class="btn btn-danger">Log Out</button>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>

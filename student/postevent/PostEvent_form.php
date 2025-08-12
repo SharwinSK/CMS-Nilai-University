@@ -56,7 +56,7 @@ $stmt->close();
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Post Event Form</title>
-    <link href="postevnt.css" rel="stylesheet" />
+    <link href="postevnt.css?v=<?= time() ?>" rel="stylesheet" />
 
 
 </head>
@@ -120,14 +120,15 @@ $stmt->close();
                                                     required />
                                             </td>
                                             <td>
+                                                <!-- REMOVED: pattern="[A-Za-z\s]+" and title="Only alphabetic characters allowed" -->
                                                 <input type="text" name="eventDescription[]"
-                                                    value="<?= htmlspecialchars($row['Flow_Desc']) ?>" pattern="[A-Za-z\s]+"
-                                                    title="Only alphabetic characters allowed" <?= $isDisabled ?> required />
+                                                    value="<?= htmlspecialchars($row['Flow_Desc']) ?>" <?= $isDisabled ?>
+                                                    required />
                                             </td>
                                             <td>
                                                 <?php if (empty($isDisabled)): ?>
                                                     <button type="button" class="btn btn-danger"
-                                                        onclick="removeEventFlowRow(this)">Delete</button>
+                                                        onclick="removeEventFlowRow(this)">🗑️</button>
                                                 <?php endif; ?>
                                             </td>
                                         </tr>
@@ -136,25 +137,36 @@ $stmt->close();
                                     <!-- Default empty row -->
                                     <tr>
                                         <td><input type="time" name="eventTime[]" required /></td>
-                                        <td><input type="text" name="eventDescription[]" pattern="[A-Za-z\s]+"
-                                                title="Only alphabetic characters allowed" required /></td>
-                                        <td><button type="button" class="btn btn-danger"
-                                                onclick="removeEventFlowRow(this)">Delete</button></td>
+                                        <!-- REMOVED: pattern="[A-Za-z\s]+" and title="Only alphabetic characters allowed" -->
+                                        <td><input type="text" name="eventDescription[]" placeholder="Enter description"
+                                                required /></td>
+                                        <td>
+                                            <?php if (empty($isDisabled)): ?>
+                                                <button type="button" class="btn btn-danger"
+                                                    onclick="removeEventFlowRow(this)">Delete</button>
+                                            <?php endif; ?>
+                                        </td>
                                     </tr>
                                 <?php endif; ?>
-
                             </tbody>
-
                         </table>
                     </div>
                     <button type="button" class="btn btn-secondary" onclick="addEventFlowRow()">
                         Add Row
                     </button>
                 </div>
-
                 <!-- Section 3: Meeting -->
                 <div class="section">
                     <h2 class="section-title">3. Meeting</h2>
+
+                    <div class="file-info"
+                        style="margin-bottom: 15px; background: #fff3cd; padding: 10px; border-radius: 5px; border-left: 4px solid #ffc107;">
+                        📝 <strong>Instructions:</strong>
+                        <ul style="margin: 5px 0 0 20px; color: #666;">
+                            <li>Click "Add" button in Activity Description column to enter detailed activity description
+                            </li>
+                        </ul>
+                    </div>
                     <div class="table-container">
                         <table id="meetingTable">
                             <thead>
@@ -208,8 +220,8 @@ $stmt->close();
                                         <td><input type="date" name="meetingDate[]" <?= $isDisabled ?>></td>
                                         <td><input type="time" name="meetingStartTime[]" <?= $isDisabled ?>></td>
                                         <td><input type="time" name="meetingEndTime[]" <?= $isDisabled ?>></td>
-                                        <td><input type="text" name="meetingLocation[]" pattern="[A-Za-z0-9\s]+"
-                                                <?= $isDisabled ?>></td>
+                                        <td><input type="text" name="meetingLocation[]" placeholder="location"
+                                                pattern="[A-Za-z0-9\s]+" <?= $isDisabled ?>></td>
                                         <td>
                                             <?php if (!$isDisabled): ?>
                                                 <button type="button" class="btn btn-success"
@@ -256,9 +268,15 @@ $stmt->close();
                             <?php endif; ?>
                         </div>
                     </div>
-
                     <div class="form-group">
-                        <label for="budgetStatement">Upload Budget Statement & Receipt (PDF only, max 5MB)</label>
+                        <label for="budgetStatement">
+                            Upload Budget Statement & Receipt (PDF only, max 5MB)
+                            <a href="../../assets/file/sampleStatement.xlsx" download="budgetSample.docx"
+                                style="margin-left: 10px; color: #ac73ff; text-decoration: none; font-size: 14px;"
+                                title="Download Sample Budget Statement">
+                                📥 Download Sample
+                            </a>
+                        </label>
                         <input type="file" id="budgetStatement" name="budgetStatement" accept=".pdf" <?= $isDisabled ?> />
                         <div class="file-preview show" id="budgetPreview">
                             <span class="file-name"><?= htmlspecialchars($budgetFileName) ?></span>
@@ -278,25 +296,34 @@ $stmt->close();
 
                     <div class="form-group">
                         <label for="challenges">Challenges and Difficulties</label>
-                        <textarea id="challenges" name="challenges" <?php echo $isDisabled; ?>><?php echo htmlspecialchars($challenges); ?></textarea>
+                        <textarea id="challenges" name="challenges"
+                            placeholder="Enter the Challenges & Difficulties during the event" <?php echo $isDisabled; ?>><?php echo htmlspecialchars($challenges); ?></textarea>
 
                     </div>
 
                     <div class="form-group">
                         <label for="recommendations">Recommendations</label>
-                        <textarea id="recommendations" name="recommendations" <?php echo $isDisabled; ?>><?= htmlspecialchars($recommendation) ?></textarea>
+                        <textarea id="recommendations" name="recommendations" placeholder="Enter your recommendations"
+                            <?php echo $isDisabled; ?>><?= htmlspecialchars($recommendation) ?></textarea>
                     </div>
 
                     <div class="form-group">
                         <label for="conclusion">Conclusion</label>
-                        <textarea id="conclusion" name="conclusion" <?php echo $isDisabled; ?>><?= htmlspecialchars($conclusion) ?></textarea>
+                        <textarea id="conclusion" name="conclusion" placeholder="Enter your conclusion" <?php echo $isDisabled; ?>><?= htmlspecialchars($conclusion) ?></textarea>
                     </div>
                 </div>
 
 
                 <!-- Section 6: Individual Report -->
                 <div class="section">
-                    <h2 class="section-title">6. Individual Report (COCU Claimers)</h2>
+                    <h2 class="section-title">
+                        6. Individual Report (COCU Claimers)
+                        <a href="../../assets/file/sampleIndividual.docx" download="individualReportSample.docx"
+                            style="margin-left: 15px; color: #ac73ff; text-decoration: none; font-size: 14px;"
+                            title="Download Sample Individual Report">
+                            📥 Download Sample
+                        </a>
+                    </h2>
                     <div class="table-container">
                         <table class="table">
                             <thead>
@@ -379,7 +406,8 @@ $stmt->close();
         ">
             <span class="close" onclick="closeAddModal()">&times;</span>
             <h3>Add Description</h3>
-            <textarea id="addDescriptionTextarea" style="width: 100%; height: 150px"></textarea>
+            <textarea id="addDescriptionTextarea" placeholder="Enter description"
+                style="width: 100%; height: 150px"></textarea>
             <div style="margin-top: 15px; text-align: right">
                 <button class="btn btn-success" onclick="saveMeetingDescription()">
                     Save
@@ -410,6 +438,14 @@ $stmt->close();
           "></div>
         </div>
     </div>
+    <div class="scroll-arrows">
+        <button class="scroll-btn" onclick="scrollToTop()" title="Scroll to Top">
+            ↑
+        </button>
+        <button class="scroll-btn" onclick="scrollToBottom()" title="Scroll to Bottom">
+            ↓
+        </button>
+    </div>
 
     <script>
         // Event Flow Table Functions
@@ -417,10 +453,10 @@ $stmt->close();
             const tableBody = document.querySelector("#eventFlowTable tbody");
             const row = document.createElement("tr");
             row.innerHTML = `
-                <td><input type="time" name="eventTime[]" required></td>
-                <td><input type="text" name="eventDescription[]" pattern="[A-Za-z\s]+" title="Only alphabetic characters allowed" required></td>
-                <td><button type="button" class="btn btn-danger" onclick="removeEventFlowRow(this)">Delete</button></td>
-            `;
+        <td><input type="time" name="eventTime[]" required></td>
+        <td><input type="text" name="eventDescription[]" required></td>
+        <td><button type="button" class="btn btn-danger" onclick="removeEventFlowRow(this)">Delete</button></td>
+    `;
             tableBody.appendChild(row);
         }
 
@@ -636,18 +672,48 @@ $stmt->close();
 
         // Navigation Functions
         function goBack() {
-            if (
-                confirm(
-                    "Are you sure you want to go back? Unsaved changes will be lost."
-                )
-            ) {
-                window.history.back();
-            }
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "You want to go back? Unsaved changes will be lost.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ac73ff',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, go back!',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.history.back();
+                }
+            });
+        }
+        function scrollToTop() {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
         }
 
+        function scrollToBottom() {
+            window.scrollTo({
+                top: document.body.scrollHeight,
+                behavior: 'smooth'
+            });
+        }
+
+        // Updated Preview Function
         function previewForm() {
-            // This would open a preview modal or new window
-            alert("Preview functionality would be implemented here");
+            showPreviewMessage();
+        }
+
+        function showPreviewMessage() {
+            Swal.fire({
+                icon: 'info',
+                title: 'Feature Coming Soon!',
+                text: 'Currently this feature hasn\'t been completed yet, for future it will be. Thank you #sharwinsk',
+                confirmButtonText: 'Understood',
+                confirmButtonColor: '#ac73ff'
+            });
         }
 
 
@@ -667,11 +733,8 @@ $stmt->close();
                 });
             });
 
-        // Input validation for alphabetic only fields
         document.addEventListener("input", function (e) {
-            if (e.target.pattern === "[A-Za-z\\s]+") {
-                e.target.value = e.target.value.replace(/[^A-Za-z\s]/g, "");
-            }
+            // Only keep validation for location fields (meeting table)
             if (e.target.pattern === "[A-Za-z0-9\\s]+") {
                 e.target.value = e.target.value.replace(/[^A-Za-z0-9\s]/g, "");
             }

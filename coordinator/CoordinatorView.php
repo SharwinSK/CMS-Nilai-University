@@ -1,7 +1,7 @@
 <?php
 session_start();
 include('../db/dbconfig.php'); // adjust path if needed
-
+$currentPage = 'proposal';
 if (!isset($_SESSION['Coor_ID'])) {
     header("Location: CoordinatorLogin.php");
     exit();

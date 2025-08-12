@@ -52,12 +52,22 @@ $meet_stmt->bind_param("s", $rep_id);
 $meet_stmt->execute();
 $meeting_result = $meet_stmt->get_result();
 
-// 🔁 Fetch COCU Individual Reports
+// ✅ Individual Reports: only COCU claimers for this report (Rep_ID)
 $report_stmt = $conn->prepare("
-    SELECT ir.*, c.Com_Name, c.Com_Position, c.Com_ID
-    FROM individualreport ir
-    JOIN committee c ON ir.Com_ID = c.Com_ID
-    WHERE ir.Rep_ID = ?
+  SELECT 
+      c.Com_ID,
+      c.Com_Name,
+      c.Com_Position,
+      ir.IR_File
+  FROM eventpostmortem ep
+  JOIN committee c
+        ON c.Ev_ID = ep.Ev_ID
+       AND c.Com_COCUClaimers = 'yes'          -- << ONLY COCU claimers
+  LEFT JOIN individualreport ir
+        ON ir.Rep_ID = ep.Rep_ID               -- same report
+       AND ir.Com_ID = c.Com_ID                -- same committee member
+  WHERE ep.Rep_ID = ?
+  ORDER BY c.Com_Position, c.Com_Name
 ");
 $report_stmt->bind_param("s", $rep_id);
 $report_stmt->execute();

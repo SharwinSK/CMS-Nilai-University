@@ -1,7 +1,8 @@
 <?php
 session_start();
 include('../../db/dbconfig.php');
-include('../model/sendMailTemplates.php');
+include('../../model/sendMailTemplates.php');
+
 
 $mode = $_GET['mode'] ?? '';
 
@@ -24,13 +25,11 @@ $row = $result->fetch_assoc();
 $report_id = $row['last_id'] ? str_pad((int) $row['last_id'] + 1, 4, '0', STR_PAD_LEFT) : '0001';
 
 // Step 3: Handle file uploads
-
 $photo_paths = $postData['photo_filenames'] ?? [];
 $photos = json_encode($photo_paths); // Store in rep_photo
 
 // 2. Upload Budget Statement
 $budgetFileName = $postData['budget_statement'] ?? null;
-
 
 // Start Transaction
 $conn->begin_transaction();
@@ -84,7 +83,6 @@ try {
             $meeting['location']
         );
 
-
         $stmt->execute();
         $meeting_id = $conn->insert_id;
 
@@ -99,6 +97,7 @@ try {
             $stmt2->execute();
         }
     }
+
     // Step 7: Insert individual reports
     $individualReports = $postData['individual_reports'] ?? [];
     if (!empty($individualReports)) {
@@ -108,7 +107,6 @@ try {
             $stmt->execute();
         }
     }
-
 
     // Step 9: Update Budget Statement path (if uploaded)
     if ($budgetFileName) {
@@ -136,26 +134,26 @@ try {
     $studentName = $result->fetch_assoc()['Stu_Name'];
     $stmt->close();
 
-    // === Fetch coordinator name + email
-    $stmt = $conn->prepare("SELECT coordinator.Coor_Name, coordinator.Coor_Email 
-                        FROM club 
-                        JOIN coordinator ON club.Coor_ID = coordinator.Coor_ID 
-                        WHERE club.Club_ID = ?");
-    $stmt->bind_param("s", $clubID);
+    // === Fetch coordinator email (get the first coordinator as default)
+    $stmt = $conn->prepare("SELECT Coor_Name, Coor_Email FROM coordinator LIMIT 1");
     $stmt->execute();
     $result = $stmt->get_result();
-    $row = $result->fetch_assoc();
-    $coordinatorName = $row['Coor_Name'];
-    $coordinatorEmail = $row['Coor_Email'];
+
+    if ($row = $result->fetch_assoc()) {
+        $coordinatorName = $row['Coor_Name'];
+        $coordinatorEmail = $row['Coor_Email'];
+    } else {
+        // Fallback if no coordinator found
+        $coordinatorName = "Coordinator";
+        $coordinatorEmail = "coordinator@university.edu"; // Set your default coordinator email
+    }
     $stmt->close();
 
     // ✅ Send email
     postEventSubmitted($coordinatorName, $eventName, $studentName, $coordinatorEmail);
 
-
     $conn->commit();
     unset($_SESSION['post_event_data']);
-
 
     // Return JSON
     header("Location: ../../model/confirmationPage.php?rep_id=$report_id&event_id=$event_id");
@@ -169,6 +167,4 @@ try {
     ]);
     exit;
 }
-
-
 ?>

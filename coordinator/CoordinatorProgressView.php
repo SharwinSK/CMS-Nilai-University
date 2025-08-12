@@ -1,6 +1,7 @@
 <?php
 session_start();
 include('../db/dbconfig.php');
+$currentPage = 'ongoing';
 
 if (!isset($_SESSION['Coor_ID'])) {
     header("Location: CoordinatorLogin.php");

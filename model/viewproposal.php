@@ -418,7 +418,15 @@ $summary = $summary_result->fetch_assoc();
             📄 Export PDF
         </a>
     </div>
-
+    <!-- Scroll Arrow Buttons -->
+    <div class="scroll-arrows">
+        <button class="scroll-btn" id="scrollUpBtn" onclick="scrollToTop()" title="Scroll to Top">
+            ↑
+        </button>
+        <button class="scroll-btn" id="scrollDownBtn" onclick="scrollToBottom()" title="Scroll to Bottom">
+            ↓
+        </button>
+    </div>
 
     <script>
         // Set current date for print
@@ -452,6 +460,37 @@ $summary = $summary_result->fetch_assoc();
                 }
             });
         }
+        // Scroll functions and event listeners
+        function scrollToTop() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function scrollToBottom() {
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        }
+
+        function updateScrollButtons() {
+            const scrollUpBtn = document.getElementById('scrollUpBtn');
+            const scrollDownBtn = document.getElementById('scrollDownBtn');
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            const scrollHeight = document.body.scrollHeight;
+            const clientHeight = window.innerHeight;
+
+            if (scrollTop > 200) {
+                scrollUpBtn.classList.remove('hidden');
+            } else {
+                scrollUpBtn.classList.add('hidden');
+            }
+
+            if (scrollTop + clientHeight >= scrollHeight - 100) {
+                scrollDownBtn.classList.add('hidden');
+            } else {
+                scrollDownBtn.classList.remove('hidden');
+            }
+        }
+
+        window.addEventListener('scroll', updateScrollButtons);
+        window.addEventListener('load', updateScrollButtons);
 
         function goBack() {
             Swal.fire({

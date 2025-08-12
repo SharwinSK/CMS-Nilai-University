@@ -533,6 +533,51 @@ $stmt->close();
             font-style: italic;
         }
 
+        .scroll-arrows {
+            position: fixed;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 999;
+        }
+
+        .scroll-btn {
+            background: var(--primary-purple);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .scroll-btn:hover {
+            background: #9a5bff;
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            .scroll-arrows {
+                right: 10px;
+            }
+
+            .scroll-btn {
+                width: 40px;
+                height: 40px;
+                font-size: 16px;
+            }
+        }
+
         @media (max-width: 768px) {
             .info-row {
                 flex-direction: column;
@@ -831,7 +876,15 @@ $stmt->close();
         <span class="close" onclick="closeModal()">&times;</span>
         <img class="modal-content" id="modalImage">
     </div>
-
+    <!-- Scroll Arrow Buttons -->
+    <div class="scroll-arrows">
+        <button class="scroll-btn" onclick="scrollToTop()" title="Scroll to top">
+            ↑
+        </button>
+        <button class="scroll-btn" onclick="scrollToBottom()" title="Scroll to bottom">
+            ↓
+        </button>
+    </div>
     <script>
         function openModal(imageSrc) {
             const modal = document.getElementById("imageModal");
@@ -839,7 +892,19 @@ $stmt->close();
             modal.style.display = "block";
             modalImg.src = imageSrc;
         }
+        function scrollToTop() {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        }
 
+        function scrollToBottom() {
+            window.scrollTo({
+                top: document.body.scrollHeight,
+                behavior: 'smooth'
+            });
+        }
         function closeModal() {
             document.getElementById("imageModal").style.display = "none";
         }

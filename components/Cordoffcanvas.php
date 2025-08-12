@@ -33,7 +33,7 @@
                 <i class="fas fa-history"></i>
                 <span>History</span>
             </a>
-            <a class="sidebar-item <?= ($currentPage == 'contact') ? 'active' : '' ?>" href="CoordinatorContact.php">
+            <a class="sidebar-item <?= ($currentPage == 'contact') ? 'active' : '' ?>" href="contactus.php">
                 <i class="fas fa-envelope"></i>
                 <span>Contact Us</span>
             </a>

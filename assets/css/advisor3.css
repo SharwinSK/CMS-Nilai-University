@@ -391,3 +391,97 @@
                 max-height: 70vh;
             }
         }
+
+
+         /* NEW: Floating Scroll Navigation Styles */
+        .scroll-navigation {
+            position: fixed;
+            right: 30px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 1000;
+        }
+
+        .scroll-btn {
+            width: 50px;
+            height: 50px;
+            border: none;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+            opacity: 0.8;
+        }
+
+        .scroll-btn:hover {
+            opacity: 1;
+            transform: scale(1.1);
+            box-shadow: 0 8px 25px rgba(52, 152, 219, 0.5);
+        }
+
+        .scroll-btn:active {
+            transform: scale(0.95);
+        }
+
+        .scroll-btn.up {
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+        }
+
+        .scroll-btn.down {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+        }
+
+        /* Show/hide buttons based on scroll position */
+        .scroll-btn.hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(-50%) scale(0.5);
+        }
+
+        /* Progress indicator */
+        .scroll-progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            z-index: 999;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #3498db, #2ecc71);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+       
+
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            .scroll-navigation {
+                right: 15px;
+                gap: 8px;
+            }
+
+            .scroll-btn {
+                width: 40px;
+                height: 40px;
+                font-size: 1rem;
+            }
+        }
+
+        /* Smooth scroll behavior */
+        html {
+            scroll-behavior: smooth;
+        }

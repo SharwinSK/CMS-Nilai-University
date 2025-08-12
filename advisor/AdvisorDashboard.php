@@ -49,12 +49,17 @@ $pending_proposals = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
 // Get event summary for advisor's club (Status ID: 3, 4, 5 for proposals and 6 for post-events)
 $event_summary_query = "
-    SELECT e.Ev_ID, e.Ev_Name, e.Ev_Date, es.Status_Name, es.Status_Type, s.Stu_Name
+    SELECT e.Ev_ID, e.Ev_Name, e.Ev_Date, 
+           COALESCE(eps.Status_Name, es.Status_Name) as Status_Name, 
+           es.Status_Type, s.Stu_Name
     FROM events e
     JOIN student s ON e.Stu_ID = s.Stu_ID
     JOIN eventstatus es ON e.Status_ID = es.Status_ID
+    LEFT JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID
+    LEFT JOIN eventstatus eps ON ep.Status_ID = eps.Status_ID
     WHERE e.Club_ID = ? 
-      AND e.Status_ID IN (3, 4, 5, 6)
+      AND ((e.Status_ID IN (3, 4, 5) AND (ep.Status_ID IS NULL OR ep.Status_ID != 8))
+           OR ep.Status_ID IN (6, 7))
     ORDER BY e.Ev_Date DESC, e.created_at DESC
     LIMIT 10
 ";
@@ -129,7 +134,7 @@ while ($row = $calendar_result->fetch_assoc()) {
                 <!-- Graph Panel -->
                 <div class="dashboard-card">
                     <h4 class="section-title">
-                        <i class="fas fa-chart-bar me-2"></i> Event Summary Chart
+                        <i class="fas fa-chart-bar me-2"></i> Event Summary Chart (still in Development)
                     </h4>
                     <!-- Filter Section -->
                     <div class="filter-section">
@@ -185,7 +190,7 @@ while ($row = $calendar_result->fetch_assoc()) {
                     <div class="notification-panel">
                         <h4 class="section-title">
                             <i class="fas fa-bell me-2"></i>
-                            *Notification//check with advisor*
+                            Notification
                         </h4>
                         <?php include('../components/Advnotifypanel.php'); ?>
                     </div>

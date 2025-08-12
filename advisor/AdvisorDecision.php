@@ -523,6 +523,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <input type="hidden" name="Ev_AdvisorComments" id="Ev_AdvisorComments">
     </form>
 
+    <!-- Scroll Progress Bar -->
+    <div class="scroll-progress">
+        <div class="progress-bar" id="progressBar"></div>
+    </div>
+
+    <!-- Floating Scroll Navigation -->
+    <div class="scroll-navigation">
+        <button class="scroll-btn up" id="scrollToTop" onclick="scrollToTop()" title="Scroll to Top">
+            <i class="fas fa-chevron-up"></i>
+        </button>
+        <button class="scroll-btn down" id="scrollToBottom" onclick="scrollToBottom()" title="Scroll to Bottom">
+            <i class="fas fa-chevron-down"></i>
+        </button>
+    </div>
 
 
     <script>
@@ -648,6 +662,154 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 });
             });
         });
+
+        function scrollToTop() {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        }
+
+        // Smooth scroll to bottom function
+        function scrollToBottom() {
+            window.scrollTo({
+                top: document.body.scrollHeight,
+                behavior: 'smooth'
+            });
+        }
+
+        // Update scroll progress and button visibility
+        function updateScrollElements() {
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+            const scrollPercent = (scrollTop / scrollHeight) * 100;
+
+            // Update progress bar
+            const progressBar = document.getElementById('progressBar');
+            progressBar.style.width = scrollPercent + '%';
+
+            // Show/hide buttons based on scroll position
+            const scrollToTopBtn = document.getElementById('scrollToTop');
+            const scrollToBottomBtn = document.getElementById('scrollToBottom');
+
+            // Show/hide top button
+            if (scrollTop > 300) {
+                scrollToTopBtn.classList.remove('hidden');
+            } else {
+                scrollToTopBtn.classList.add('hidden');
+            }
+
+            // Show/hide bottom button
+            if (scrollTop < scrollHeight - 300) {
+                scrollToBottomBtn.classList.remove('hidden');
+            } else {
+                scrollToBottomBtn.classList.add('hidden');
+            }
+        }
+
+        // Enhanced scroll functionality with section navigation
+        function scrollToSection(direction) {
+            const sections = document.querySelectorAll('.demo-section, .section');
+            const currentScroll = window.pageYOffset;
+            let targetSection = null;
+
+            if (direction === 'next') {
+                // Find next section below current scroll position
+                for (let section of sections) {
+                    if (section.offsetTop > currentScroll + 100) {
+                        targetSection = section;
+                        break;
+                    }
+                }
+                // If no next section, scroll to bottom
+                if (!targetSection) {
+                    scrollToBottom();
+                    return;
+                }
+            } else if (direction === 'prev') {
+                // Find previous section above current scroll position
+                for (let i = sections.length - 1; i >= 0; i--) {
+                    if (sections[i].offsetTop < currentScroll - 100) {
+                        targetSection = sections[i];
+                        break;
+                    }
+                }
+                // If no previous section, scroll to top
+                if (!targetSection) {
+                    scrollToTop();
+                    return;
+                }
+            }
+
+            // Scroll to target section
+            if (targetSection) {
+                targetSection.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        }
+
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', function (e) {
+            // Home key - scroll to top
+            if (e.key === 'Home') {
+                e.preventDefault();
+                scrollToTop();
+            }
+            // End key - scroll to bottom
+            else if (e.key === 'End') {
+                e.preventDefault();
+                scrollToBottom();
+            }
+            // Page Up - scroll to previous section
+            else if (e.key === 'PageUp') {
+                e.preventDefault();
+                scrollToSection('prev');
+            }
+            // Page Down - scroll to next section
+            else if (e.key === 'PageDown') {
+                e.preventDefault();
+                scrollToSection('next');
+            }
+        });
+
+        // Event listeners
+        window.addEventListener('scroll', updateScrollElements);
+        window.addEventListener('resize', updateScrollElements);
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function () {
+            updateScrollElements();
+
+            // Add smooth hover effects
+            const scrollBtns = document.querySelectorAll('.scroll-btn');
+            scrollBtns.forEach(btn => {
+                btn.addEventListener('mouseenter', function () {
+                    this.style.transform = 'scale(1.1)';
+                });
+
+                btn.addEventListener('mouseleave', function () {
+                    this.style.transform = 'scale(1)';
+                });
+            });
+        });
+
+        // Optional: Auto-hide navigation after inactivity
+        let hideTimeout;
+        function resetHideTimeout() {
+            clearTimeout(hideTimeout);
+            document.querySelector('.scroll-navigation').style.opacity = '1';
+
+            hideTimeout = setTimeout(() => {
+                if (window.pageYOffset > 100) {
+                    document.querySelector('.scroll-navigation').style.opacity = '0.3';
+                }
+            }, 3000);
+        }
+
+        window.addEventListener('mousemove', resetHideTimeout);
+        window.addEventListener('scroll', resetHideTimeout);
     </script>
 </body>
 

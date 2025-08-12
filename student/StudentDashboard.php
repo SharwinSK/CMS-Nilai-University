@@ -14,7 +14,9 @@ $carousel_query = "
     SELECT e.Ev_ID, e.Ev_Name, e.Ev_Poster, e.Ev_Date, c.Club_Name
     FROM events e
     LEFT JOIN club c ON c.Club_ID = e.Club_ID
+    LEFT JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID
     WHERE e.Status_ID = 5
+      AND (ep.Ev_ID IS NULL OR ep.Status_ID != 8)
     ORDER BY e.Ev_Date DESC
 ";
 $carousel_result = $conn->query($carousel_query);
@@ -104,7 +106,9 @@ $calendar_event_query = "
     SELECT e.Ev_ID, e.Ev_Name, e.Ev_Date, c.Club_Name
     FROM events e
     LEFT JOIN club c ON e.Club_ID = c.Club_ID
+    LEFT JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID
     WHERE e.Status_ID = 5
+      AND (ep.Ev_ID IS NULL OR ep.Status_ID != 8)
 ";
 
 $calendar_event_result = $conn->query($calendar_event_query);
@@ -259,19 +263,6 @@ $notification_result->data_seek(0);
                 nextBtn.addEventListener("click", nextMonth);
             }
         });
-        // Auto-slide carousel
-        document.addEventListener('DOMContentLoaded', function () {
-            const carousel = document.getElementById('eventCarousel');
-            if (carousel) {
-                const bsCarousel = new bootstrap.Carousel(carousel, {
-                    interval: 3000, // 3 seconds
-                    wrap: true,
-                    pause: 'hover'
-                });
-            }
-        });
-
-
     </script>
 
 </body>
