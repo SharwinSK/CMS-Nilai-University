@@ -7,9 +7,9 @@ use setasign\Fpdi\Tcpdf\Fpdi;
  */
 
 // ─────────────────────────────
-// 1. Enhanced PDF Append Function
+// 1. Enhanced PDF Append Function (without individual separator pages)
 // ─────────────────────────────
-function appendPDF($fpdi, $filePath, $description = "Unknown PDF")
+function appendPDF($fpdi, $filePath, $description = "Unknown PDF", $addSeparator = false)
 {
     try {
         // Validate file existence
@@ -31,12 +31,22 @@ function appendPDF($fpdi, $filePath, $description = "Unknown PDF")
             return false;
         }
 
-        // Add a separator page for appendices
-        $fpdi->AddPage();
-        $fpdi->SetFont('times', 'B', 14);
-        $fpdi->Cell(0, 20, '', 0, 1); // spacing
-        $fpdi->Cell(0, 10, 'APPENDIX: ' . strtoupper($description), 0, 1, 'C');
-        $fpdi->Line(15, $fpdi->GetY() + 2, 195, $fpdi->GetY() + 2);
+        // Add separator only if requested (only for first appendix)
+        if ($addSeparator) {
+            $fpdi->AddPage();
+            $fpdi->SetFont('times', 'B', 16);
+            $fpdi->Cell(0, 30, '', 0, 1); // spacing from top
+            $fpdi->Cell(0, 15, 'APPENDIX', 0, 1, 'C');
+            $fpdi->SetLineWidth(0.5);
+            $fpdi->Line(50, $fpdi->GetY() + 5, 160, $fpdi->GetY() + 5); // Centered line
+            $fpdi->Ln(20);
+
+            // Add description of appendix contents
+            $fpdi->SetFont('times', '', 12);
+            $fpdi->Cell(0, 8, 'This section contains:', 0, 1, 'L');
+            $fpdi->Cell(0, 6, '• COCU Statements from committee members', 0, 1, 'L');
+            $fpdi->Cell(0, 6, '• Additional event information and documents', 0, 1, 'L');
+        }
 
         // Import and append PDF pages
         $pageCount = $fpdi->setSourceFile($filePath);
@@ -91,55 +101,43 @@ function mergeAppendices($temp_file, $event, $budget_summary, $cocu_pdfs)
             $finalPdf->useTemplate($tplId);
         }
 
-        // Track successful appendices
+        // Track if any appendices were added
         $appendix_count = 0;
+        $first_appendix = true;
 
         // Append Additional Information PDF if exists
         if (!empty($event['Ev_AdditionalInfo'])) {
             $additional_info_path = $event['Ev_AdditionalInfo'];
-            if (appendPDF($finalPdf, $additional_info_path, "Additional Event Information")) {
+            if (appendPDF($finalPdf, $additional_info_path, "Additional Event Information", $first_appendix)) {
                 $appendix_count++;
+                $first_appendix = false; // Only show separator page once
             }
         }
 
         // Append COCU Statement PDFs
         if (!empty($cocu_pdfs) && is_array($cocu_pdfs)) {
-            $cocu_counter = 1;
             foreach ($cocu_pdfs as $cocu_file) {
                 if (!empty($cocu_file)) {
-                    $description = "COCU Statement " . $cocu_counter;
-                    if (appendPDF($finalPdf, $cocu_file, $description)) {
+                    if (appendPDF($finalPdf, $cocu_file, "COCU Statement", $first_appendix)) {
                         $appendix_count++;
-                        $cocu_counter++;
+                        $first_appendix = false; // Only show separator page once
                     }
                 }
             }
         }
 
-        // Add appendices summary page if any were added
-        if ($appendix_count > 0) {
+        // If no appendices were added, add a note
+        if ($appendix_count == 0) {
             $finalPdf->AddPage();
-            $finalPdf->SetFont('times', 'B', 14);
-            $finalPdf->Cell(0, 20, 'APPENDICES SUMMARY', 0, 1, 'C');
+            $finalPdf->SetFont('times', 'B', 16);
+            $finalPdf->Cell(0, 30, '', 0, 1); // spacing from top
+            $finalPdf->Cell(0, 15, 'APPENDIX', 0, 1, 'C');
+            $finalPdf->SetLineWidth(0.5);
+            $finalPdf->Line(50, $finalPdf->GetY() + 5, 160, $finalPdf->GetY() + 5);
+            $finalPdf->Ln(20);
+
             $finalPdf->SetFont('times', '', 12);
-            $finalPdf->Cell(0, 10, "Total appendices included: $appendix_count", 0, 1, 'L');
-            $finalPdf->Ln(5);
-
-            // List appendices
-            $summary_text = "This document contains the following appendices:\n";
-            if (!empty($event['Ev_AdditionalInfo']) && file_exists($event['Ev_AdditionalInfo'])) {
-                $summary_text .= "• Additional Event Information\n";
-            }
-
-            $cocu_count = count(array_filter($cocu_pdfs ?? [], function ($file) {
-                return !empty($file) && file_exists($file);
-            }));
-
-            if ($cocu_count > 0) {
-                $summary_text .= "• COCU Statements ($cocu_count documents)\n";
-            }
-
-            $finalPdf->MultiCell(0, 6, $summary_text, 0, 'L');
+            $finalPdf->Cell(0, 10, 'No additional documents or COCU statements attached.', 0, 1, 'C');
         }
 
         // Generate safe filename

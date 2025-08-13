@@ -21,6 +21,8 @@ if ($result->num_rows === 0) {
 $row = $result->fetch_assoc();
 $ev_id = $row['Ev_ID'];
 $status_id = (int) $row['Status_ID'];
+$isLocked = ($status_id === 8);
+
 
 // Get status name and class
 $statusName = '';
@@ -197,6 +199,12 @@ $stmt->close();
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+        }
+
+        .floating-btn.is-disabled {
+            pointer-events: none;
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
         body {
@@ -609,10 +617,17 @@ $stmt->close();
 <body>
     <!-- Fixed Navigation Buttons -->
     <div class="floating-nav">
-        <a href="../student/postevent/PostEventEdit_form.php?mode=edit&rep_id=<?= htmlspecialchars($rep_id) ?>"
-            class="floating-btn">
-            ✏️ Edit
-        </a>
+        <?php if ($isLocked): ?>
+            <a class="floating-btn is-disabled" aria-disabled="true" title="Approved reports cannot be edited">
+                ✏️ Edit
+            </a>
+        <?php else: ?>
+            <a href="../student/postevent/PostEventEdit_form.php?mode=edit&rep_id=<?= htmlspecialchars($rep_id) ?>"
+                class="floating-btn">
+                ✏️ Edit
+            </a>
+        <?php endif; ?>
+
         <a href="../components/pdf/reportgeneratepdf.php?id=<?= urlencode($rep_id) ?>" target="_blank"
             class="floating-btn floating-btn-secondary">
             📄 Export PDF

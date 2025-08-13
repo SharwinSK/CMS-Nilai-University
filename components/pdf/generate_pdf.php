@@ -102,6 +102,21 @@ try {
         $alt_venue_name = $alt_venue_result['Venue_Name'] ?? 'Not specified';
     }
 
+    // Fetch advisor name from advisor table
+    $advisor_query = "SELECT Adv_Name FROM advisor WHERE Club_ID = ?";
+    $advisor_stmt = $conn->prepare($advisor_query);
+    $advisor_stmt->bind_param("i", $event['Club_ID']);
+    $advisor_stmt->execute();
+    $advisor_result = $advisor_stmt->get_result()->fetch_assoc();
+    $event['Advisor_Name'] = $advisor_result['Adv_Name'] ?? 'Advisor Name';
+
+    // Fetch coordinator name from coordinator table
+    $coordinator_query = "SELECT Coor_Name FROM coordinator LIMIT 1";
+    $coordinator_stmt = $conn->prepare($coordinator_query);
+    $coordinator_stmt->execute();
+    $coordinator_result = $coordinator_stmt->get_result()->fetch_assoc();
+    $event['Coordinator_Name'] = $coordinator_result['Coor_Name'] ?? 'Coordinator Name';
+
     // Budget details
     $budget_query = "SELECT * FROM budget WHERE Ev_ID = ? ORDER BY Bud_Type DESC, Bud_Amount DESC";
     $budget_stmt = $conn->prepare($budget_query);
@@ -117,17 +132,19 @@ try {
     die("Database error: " . $e->getMessage());
 }
 
-// === GENERATE PDF WITH ENHANCED STYLING ===
+// === GENERATE PDF WITH ENHANCED STYLING AND NEW STRUCTURE ===
 try {
     $pdf = new MYPDF();
 
-    // Set default font for the entire document
-    $pdf->SetDefaultMonospacedFont(PDF_FONT_MONOSPACED);
+    // Set default font to Times New Roman with proper sizing
+    $pdf->SetDefaultMonospacedFont('times');
     $pdf->SetFont('times', '', 12);
     $pdf->SetAutoPageBreak(TRUE, PDF_MARGIN_BOTTOM);
-    $pdf->SetMargins(15, 40, 15);
+
+    // UPDATED: Better margins for professional look - reduced from 25 to 20
+    $pdf->SetMargins(20, 40, 20); // Left, Top, Right - reduced all margins
     $pdf->SetHeaderMargin(5);
-    $pdf->SetFooterMargin(10);
+    $pdf->SetFooterMargin(15);
 
     // Set document information
     $pdf->SetCreator('Nilai University CMS');
@@ -136,7 +153,7 @@ try {
     $pdf->SetSubject('Event Proposal Document');
     $pdf->SetKeywords('Event, Proposal, Nilai University, ' . $event['Club_Name']);
 
-    // Page 1: Event Summary
+    // Page 1: Event Summary (with signatures)
     $pdf->AddPage();
     renderEventSummary($pdf, $event, $pic);
 
@@ -144,29 +161,34 @@ try {
     $pdf->AddPage();
     renderCoverPage($pdf, $event, $student, $event['Club_Logo'] ?? null);
 
-    // Page 3: Event Overview
+    // Page 3: 1.0 Introduction & 2.0 Objectives (combined on one page)
     $pdf->AddPage();
-    renderEventOverview($pdf, $event);
+    renderIntroductionAndObjectives($pdf, $event);
 
-    // Page 4: Event Flow
+    // Page 4: 3.0 Purpose of Event
     $pdf->AddPage();
-    renderEventFlow($pdf, $eventflow_result);
+    renderPurposeOfEvent($pdf, $event);
 
-    // Page 5: Committee Details
+    // Page 5: 4.0 Event Details
+    $pdf->AddPage();
+    renderEventDetails($pdf, $eventflow_result);
+
+    // Page 6: 5.0 Committee Details
     $pdf->AddPage();
     $cocu_pdfs = [];
     renderCommitteeDetails($pdf, $committee_result, $cocu_pdfs);
 
-    // Page 6: Logistics
+    // Page 7: 6.0 Event
     $pdf->AddPage();
-    renderLogistics($pdf, $event);
+    renderEvent($pdf, $event);
 
-    // Page 7: Event Poster
+    // Page 8: 7.0 Event Poster
     $pdf->AddPage();
     renderEventPoster($pdf, $event['Ev_Poster'] ?? null);
 
-    // Page 8: Budget
+    // Page 9: 8.0 Budget
     $pdf->AddPage();
+    $pdf->setBudgetPage(true); // Set budget page flag BEFORE adding the page
     renderBudgetSection($pdf, $budget_result, $budget_summary);
 
 } catch (Exception $e) {
@@ -174,7 +196,7 @@ try {
 }
 
 // === SAVE TCPDF OUTPUT TO TEMPORARY FILE ===
-$temp_file = tempnam(sys_get_temp_dir(), 'enhanced_proposal_') . '.pdf';
+$temp_file = tempnam(sys_get_temp_dir(), 'redesigned_proposal_') . '.pdf';
 
 try {
     $pdf->Output($temp_file, 'F');

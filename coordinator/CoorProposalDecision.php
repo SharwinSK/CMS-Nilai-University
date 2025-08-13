@@ -276,7 +276,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                         </div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">Event Details</div>
+                        <div class="detail-label">Purpose of Event</div>
                         <div class="detail-value">
                             <?= nl2br($details['Ev_Details']) ?>
                         </div>

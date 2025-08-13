@@ -22,6 +22,11 @@ if ($result->num_rows === 0) {
 $row = $result->fetch_assoc();
 $ev_id = $row['Ev_ID'];
 $status_id = (int) $row['Status_ID'];
+// after you load $rep_id and query eventpostmortem
+if ((int) $status_id === 8) {
+    http_response_code(403);
+    die('This post-event report is approved and cannot be edited.');
+}
 
 // Access control
 if (($mode === 'edit' && $status_id !== 6) || ($mode === 'modify' && $status_id !== 7)) {
