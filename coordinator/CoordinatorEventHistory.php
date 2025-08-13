@@ -7,6 +7,7 @@ if (!isset($_SESSION['Coor_ID'])) {
     exit();
 }
 
+
 $coordinator_id = $_SESSION['Coor_ID'];
 $query_name = "SELECT Coor_Name FROM coordinator WHERE Coor_ID = ?";
 $stmt_name = $conn->prepare($query_name);
@@ -22,7 +23,7 @@ $offset = ($current_page - 1) * $records_per_page;
 
 // Base query
 $query = "
-    SELECT e.Ev_ID, e.Ev_Name, e.Ev_RefNum, e.Ev_TypeCode, e.Ev_Date, c.Club_Name
+    SELECT e.Ev_ID, e.Ev_Name, e.Ev_RefNum, e.Ev_TypeCode, e.Ev_Date, c.Club_Name, ep.Rep_ID
     FROM events e
     JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID
     JOIN club c ON e.Club_ID = c.Club_ID
@@ -305,16 +306,19 @@ $showing_to = min($offset + $records_per_page, $total_records);
                                         <td><span class="event-type-badge <?= $badgeClass ?>"><?= $type ?></span></td>
                                         <td><?= date('d M Y', strtotime($row['Ev_Date'])) ?></td>
                                         <td>
-                                            <button class="btn action-btn btn-view-proposal"
-                                                onclick="window.open('viewProposal.php?event_id=<?= urlencode($row['Ev_ID']) ?>', '_blank')"
+                                            <button class="btn action-btn btn-view-proposal me-1"
+                                                onclick="location.href='../model/viewproposal.php?id=<?= urlencode($row['Ev_ID']) ?>'"
                                                 data-bs-toggle="tooltip" data-bs-placement="top" title="View Proposal">
                                                 <i class="fas fa-file-alt"></i>
                                             </button>
+
+
                                             <button class="btn action-btn btn-view-post"
-                                                onclick="window.open('viewPostEvent.php?event_id=<?= urlencode($row['Ev_ID']) ?>', '_blank')"
+                                                onclick="location.href='../model/viewpostevent.php?rep_id=<?= urlencode($row['Rep_ID']) ?>'"
                                                 data-bs-toggle="tooltip" data-bs-placement="top" title="View Post Event">
                                                 <i class="fas fa-chart-line"></i>
                                             </button>
+
                                         </td>
                                     </tr>
                                 <?php endwhile; ?>

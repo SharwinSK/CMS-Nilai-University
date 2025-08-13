@@ -75,9 +75,7 @@
             <a href="auth/advisorlogin.php">ADVISOR</a>
             <a href="auth/coordinatorlogin.php">COORDINATOR</a>
             <a href="auth/adminlogin.php">ADMIN</a>
-
         </div>
-
         <div class="footer">
             <p>&copy; 2025 Cocurricular Management System</p>
         </div>

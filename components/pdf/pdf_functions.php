@@ -111,7 +111,6 @@ function renderEventSummary($pdf, $event, $pic)
     <table class="summary">
         <tr><td class="label">Event ID</td><td class="content">' . htmlspecialchars($event['Ev_ID']) . '</td></tr>
         <tr><td class="label">Reference Number</td><td class="content">' . htmlspecialchars($ref_num) . '</td></tr>
-        <tr><td class="label">Event Type</td><td class="content">' . htmlspecialchars($type_code) . '</td></tr>
         <tr><td class="label">Date of Submission</td><td class="content">' . date('d F Y') . '</td></tr>
         <tr><td class="label">Club</td><td class="content">' . htmlspecialchars($event['Club_Name']) . '</td></tr>
         <tr><td class="label">Event Name</td><td class="content">' . htmlspecialchars($event['Ev_Name']) . '</td></tr>

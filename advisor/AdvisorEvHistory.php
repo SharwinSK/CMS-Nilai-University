@@ -10,7 +10,6 @@ if (!isset($_SESSION['Adv_ID']) || !isset($_SESSION['Club_ID'])) {
 $adv_id = $_SESSION['Adv_ID'];
 $club_id = $_SESSION['Club_ID'];
 
-// Get advisor name for navbar
 $advisor_name = 'Advisor';
 if (isset($_SESSION['Adv_ID'])) {
   $stmt = $conn->prepare("SELECT Adv_Name FROM advisor WHERE Adv_ID = ?");
@@ -20,8 +19,7 @@ if (isset($_SESSION['Adv_ID'])) {
   $advisor_name = $result->fetch_assoc()['Adv_Name'] ?? 'Advisor';
 }
 
-
-$filter_type = $_GET['type'] ?? '';       // CSR / USR / SDG
+$filter_type = $_GET['type'] ?? '';
 $filter_year = $_GET['year'] ?? '';
 $filter_month = $_GET['month'] ?? '';
 $filter_student = $_GET['student'] ?? '';
@@ -49,7 +47,7 @@ $query = "
 ";
 
 $params = [$club_id];
-$types = 'i'; // for Club_ID (int)
+$types = 'i';
 
 if (!empty($filter_type)) {
   $query .= " AND e.Ev_TypeCode = ?";
@@ -121,7 +119,6 @@ if ($row = $studentResult->fetch_assoc()) {
 }
 $showingStart = $offset + 1;
 $showingEnd = min($offset + $event_result->num_rows, $totalEvents);
-// ✅ PHP Setup Complete – Ready for HTML rendering below
 ?>
 
 
@@ -273,21 +270,28 @@ $showingEnd = min($offset + $event_result->num_rows, $totalEvents);
                     </span>
                   </td>
                   <td><?php echo htmlspecialchars($row['Ev_RefNum']); ?></td>
-                  <td>
-                    <a href="EventDetails.php?Ev_ID=<?php echo urlencode($row['Ev_ID']); ?>" class="btn btn-view">
-                      <i class="fas fa-eye me-1"></i> View
-                    </a>
-                  </td>
-                  <td>
-                    <a href="generate_pdf.php?Ev_ID=<?php echo urlencode($row['Ev_ID']); ?>"
-                      class="btn btn-proposal btn-export">
+                  <td class="text-nowrap">
+                    <a href="../model/viewproposal.php?id=<?= urlencode($row['Ev_ID']) ?>" class="btn btn-view me-1">
                       <i class="fas fa-file-alt me-1"></i> Proposal
                     </a>
-                    <a href="reportgeneratepdf.php?Rep_ID=<?php echo urlencode($row['Rep_ID']); ?>"
-                      class="btn btn-post btn-export">
-                      <i class="fas fa-file-pdf me-1"></i> Post Event
+
+                    <a href="../model/viewpostevent.php?rep_id=<?= urlencode($row['Rep_ID']) ?>" class="btn btn-view">
+                      <i class="fas fa-clipboard-list me-1"></i> Post-Event
                     </a>
                   </td>
+
+                  <td class="text-nowrap">
+                    <a href="../components/pdf/generate_pdf.php?id=<?= urlencode($row['Ev_ID']) ?>"
+                      class="btn btn-proposal btn-export me-1" target="_blank">
+                      <i class="fas fa-file-pdf me-1"></i> Proposal
+                    </a>
+
+                    <a href="../components/pdf/reportgeneratepdf.php?id=<?= urlencode($row['Rep_ID']) ?>"
+                      class="btn btn-post btn-export" target="_blank">
+                      <i class="fas fa-file-pdf me-1"></i> Post-Event
+                    </a>
+                  </td>
+
                 </tr>
               <?php endwhile; ?>
             <?php else: ?>

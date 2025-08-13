@@ -26,14 +26,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             default:
                 $redirectUrl = '../auth/studentlogin.php';
         }
-
-
         // Return JSON response with redirect URL
         echo json_encode(['success' => true, 'redirect' => $redirectUrl]);
         exit();
     }
 }
-
 // Redirect to a default login page if accessed directly
 header('Location: Index.php');
 exit();

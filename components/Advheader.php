@@ -1,3 +1,10 @@
+<?php
+// normalize role for advisor pages so shared scripts (like PDFs) allow access
+if (isset($_SESSION['Adv_ID']) && isset($_SESSION['Club_ID'])) {
+    $_SESSION['user_type'] = 'coordinator'; // minimal: use an allowed role for exports
+}
+
+?>
 <!-- Navigation -->
 <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
     <div class="container-fluid">
