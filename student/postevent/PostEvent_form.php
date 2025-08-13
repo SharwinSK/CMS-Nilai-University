@@ -454,7 +454,7 @@ $stmt->close();
             const row = document.createElement("tr");
             row.innerHTML = `
         <td><input type="time" name="eventTime[]" required></td>
-        <td><input type="text" name="eventDescription[]" required></td>
+        <td><input type="text" name="eventDescription[]" placeholder="Enter description" required></td>
         <td><button type="button" class="btn btn-danger" onclick="removeEventFlowRow(this)">Delete</button></td>
     `;
             tableBody.appendChild(row);
@@ -474,7 +474,7 @@ $stmt->close();
         <td><input type="date" name="meetingDate[]" required></td>
         <td><input type="time" name="meetingStartTime[]" required></td>
         <td><input type="time" name="meetingEndTime[]" required></td>
-        <td><input type="text" name="meetingLocation[]" pattern="[A-Za-z0-9\\s]+" title="Only alphabetic characters and numbers allowed" required></td>
+        <td><input type="text" name="meetingLocation[]" pattern="[A-Za-z0-9\\s]+" title="Only alphabetic characters and numbers allowed" placeholder="Enter location" required></td>
         <td>
             <button type="button" class="btn btn-success" onclick="showAddModal(this)" data-description="">Add</button>
             <button type="button" class="btn btn-secondary" onclick="showViewModal(this)" data-description="">View</button>
