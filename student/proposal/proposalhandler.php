@@ -53,7 +53,6 @@ if (!empty($_FILES["additionalDocument"]["name"])) {
     $unique_name = time() . '_' . $safe_name;
     $target_path = $target_dir . $unique_name;
 
-
     if (move_uploaded_file($_FILES["additionalDocument"]["tmp_name"], $target_path)) {
         $additional_info_path = $target_path;
     } else {
@@ -205,14 +204,7 @@ $stmt->bind_param("sddds", $event_id, $total_income, $total_expense, $surplus, $
 $stmt->execute();
 $stmt->close();
 
-
-
-
-
-
-
 //Email Notifcation for the Advisor 
-
 $advisorQuery = $conn->prepare("SELECT Adv_ID, Adv_Name, Adv_Email 
                                 FROM advisor 
                                 WHERE Club_ID = ?");
@@ -239,26 +231,584 @@ $studentName = $studentData['Stu_Name'];
 // ✅ Send Email Notification to Advisor
 newProposalToAdvisor($studentName, $ev_name, $advisorName, $advisorEmail);
 
+// Store event details for PDF generation
+$_SESSION['last_event'] = [
+    'event_id' => $event_id,
+    'event_name' => $ev_name,
+    'event_date' => $ev_date,
+    'student_name' => $studentName,
+    'submission_date' => date('Y-m-d H:i:s')
+];
 ?>
 
-<!-- ✅ Success Page -->
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
-    <title>Proposal Submitted</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proposal Submitted Successfully</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        .background-animation {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 0;
+        }
+
+        .floating-shapes {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .shape-1 {
+            top: 10%;
+            left: 10%;
+            animation-delay: 0s;
+        }
+
+        .shape-2 {
+            top: 20%;
+            right: 10%;
+            animation-delay: 2s;
+        }
+
+        .shape-3 {
+            bottom: 20%;
+            left: 15%;
+            animation-delay: 4s;
+        }
+
+        .shape-4 {
+            bottom: 10%;
+            right: 20%;
+            animation-delay: 1s;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0px) rotate(0deg);
+            }
+
+            50% {
+                transform: translateY(-20px) rotate(180deg);
+            }
+        }
+
+        .success-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 3rem;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+            position: relative;
+            z-index: 1;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            animation: slideUp 0.6s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .success-icon {
+            width: 120px;
+            height: 120px;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 2rem;
+            animation: pulse 2s infinite;
+            box-shadow: 0 15px 35px rgba(79, 172, 254, 0.3);
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .success-icon i {
+            font-size: 3rem;
+            color: white;
+            animation: checkMark 0.8s ease-in-out 0.3s both;
+        }
+
+        @keyframes checkMark {
+            0% {
+                opacity: 0;
+                transform: scale(0.3);
+            }
+
+            50% {
+                opacity: 1;
+                transform: scale(1.2);
+            }
+
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .success-title {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #2d3436;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .success-message {
+            font-size: 1.1rem;
+            color: #636e72;
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+
+        .event-details {
+            background: linear-gradient(135deg, #f8f9ff 0%, #e8f4f8 100%);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            border-left: 4px solid #667eea;
+        }
+
+        .event-id {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #2d3436;
+            margin-bottom: 0.5rem;
+        }
+
+        .event-name {
+            font-size: 1rem;
+            color: #636e72;
+            margin-bottom: 0.3rem;
+        }
+
+        .submission-time {
+            font-size: 0.9rem;
+            color: #74b9ff;
+            font-weight: 500;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 2rem;
+        }
+
+        .btn-custom {
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 140px;
+            justify-content: center;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 25px rgba(102, 126, 234, 0.4);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #fd79a8 0%, #fdcb6e 100%);
+            color: white;
+            box-shadow: 0 8px 20px rgba(253, 121, 168, 0.3);
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 25px rgba(253, 121, 168, 0.4);
+            color: white;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: linear-gradient(135deg, #00b894 0%, #00cec9 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-bottom: 1rem;
+        }
+
+        @media (max-width: 576px) {
+            .success-container {
+                padding: 2rem 1.5rem;
+                margin: 1rem;
+            }
+
+            .success-title {
+                font-size: 1.8rem;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .btn-custom {
+                width: 100%;
+            }
+        }
+
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .loading-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
 </head>
 
-<body class="d-flex justify-content-center align-items-center" style="height:100vh; background-color:#f0ffe6">
-    <div class="text-center p-4 shadow rounded" style="background:#D2FF72;">
-        <img src="https://cdn-icons-png.flaticon.com/512/845/845646.png" alt="Success" width="100">
-        <h2 class="mt-3 text-success">Proposal Submitted!</h2>
-        <p>Your event has been submitted successfully.</p>
-        <p><strong>Event ID: <?= $event_id ?></strong></p>
-        <a href="../StudentDashboard.php" class="btn btn-success">Back to Dashboard</a>
+<body>
+    <div class="background-animation">
+        <div class="floating-shapes shape-1"></div>
+        <div class="floating-shapes shape-2"></div>
+        <div class="floating-shapes shape-3"></div>
+        <div class="floating-shapes shape-4"></div>
     </div>
+
+    <div class="success-container">
+        <div class="success-icon">
+            <i class="fas fa-check"></i>
+        </div>
+
+        <div class="status-badge">
+            <i class="fas fa-paper-plane"></i>
+            Submitted Successfully
+        </div>
+
+        <h1 class="success-title">Proposal Submitted!</h1>
+
+        <p class="success-message">
+            Your event proposal has been successfully submitted and is now pending advisor approval.
+        </p>
+
+        <div class="event-details">
+            <div class="event-id">
+                <i class="fas fa-hashtag me-2"></i>
+                Event ID: <?= htmlspecialchars($event_id) ?>
+            </div>
+            <div class="event-name">
+                <i class="fas fa-calendar-alt me-2"></i>
+                <?= htmlspecialchars($ev_name) ?>
+            </div>
+            <div class="submission-time">
+                <i class="fas fa-clock me-2"></i>
+                Submitted on <?= date('F j, Y \a\t g:i A') ?>
+            </div>
+        </div>
+
+        <div class="action-buttons">
+            <a href="../StudentDashboard.php" class="btn-custom btn-primary">
+                <i class="fas fa-home"></i>
+                Back to Dashboard
+            </a>
+            <button onclick="exportToPDF()" class="btn-custom btn-secondary">
+                <i class="fas fa-file-pdf"></i>
+                Export PDF
+            </button>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p>Generating PDF...</p>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script>
+        function exportToPDF() {
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            loadingOverlay.style.display = 'flex';
+
+            // Create new PDF instance
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF();
+
+            // PDF styling
+            const primaryColor = [102, 126, 234];
+            const secondaryColor = [118, 75, 162];
+            const textColor = [45, 52, 54];
+            const lightGray = [99, 110, 114];
+
+            // Header
+            pdf.setFillColor(...primaryColor);
+            pdf.rect(0, 0, 210, 40, 'F');
+
+            pdf.setTextColor(255, 255, 255);
+            pdf.setFontSize(24);
+            pdf.setFont(undefined, 'bold');
+            pdf.text('Event Proposal Submission', 105, 25, { align: 'center' });
+
+            // Success badge
+            pdf.setFillColor(0, 184, 148);
+            pdf.roundedRect(15, 50, 60, 10, 2, 2, 'F');
+            pdf.setTextColor(255, 255, 255);
+            pdf.setFontSize(10);
+            pdf.setFont(undefined, 'bold');
+            pdf.text('✓ SUBMITTED SUCCESSFULLY', 45, 57, { align: 'center' });
+
+            // Main content
+            pdf.setTextColor(...textColor);
+            pdf.setFontSize(18);
+            pdf.setFont(undefined, 'bold');
+            pdf.text('Proposal Confirmation', 20, 80);
+
+            pdf.setFontSize(12);
+            pdf.setFont(undefined, 'normal');
+            pdf.text('Your event proposal has been successfully submitted and is now pending advisor approval.', 20, 95);
+
+            // Event details box
+            pdf.setDrawColor(102, 126, 234);
+            pdf.setLineWidth(0.5);
+            pdf.rect(20, 110, 170, 50);
+
+            pdf.setFillColor(248, 249, 255);
+            pdf.rect(20, 110, 170, 50, 'F');
+
+            // Event details content
+            pdf.setTextColor(...textColor);
+            pdf.setFontSize(14);
+            pdf.setFont(undefined, 'bold');
+            pdf.text('Event Details', 25, 125);
+
+            pdf.setFontSize(12);
+            pdf.setFont(undefined, 'normal');
+            pdf.text(`Event ID: <?= htmlspecialchars($event_id) ?>`, 25, 140);
+            pdf.text(`Event Name: <?= htmlspecialchars($ev_name) ?>`, 25, 150);
+            pdf.text(`Submitted by: <?= htmlspecialchars($studentName) ?>`, 25, 160);
+
+            // Submission details
+            pdf.setTextColor(...lightGray);
+            pdf.setFontSize(10);
+            pdf.text(`Submission Date: ${new Date().toLocaleDateString()}`, 25, 175);
+            pdf.text(`Submission Time: ${new Date().toLocaleTimeString()}`, 25, 185);
+
+            // Next steps section
+            pdf.setTextColor(...textColor);
+            pdf.setFontSize(14);
+            pdf.setFont(undefined, 'bold');
+            pdf.text('Next Steps', 20, 210);
+
+            pdf.setFontSize(11);
+            pdf.setFont(undefined, 'normal');
+            const nextSteps = [
+                '1. Your proposal will be reviewed by the assigned advisor',
+                '2. You will receive an email notification about the approval status',
+                '3. If approved, you can proceed with event planning',
+                '4. If revisions are needed, you will receive feedback for improvements'
+            ];
+
+            nextSteps.forEach((step, index) => {
+                pdf.text(step, 25, 225 + (index * 10));
+            });
+
+            // Footer
+            pdf.setFillColor(...secondaryColor);
+            pdf.rect(0, 270, 210, 27, 'F');
+
+            pdf.setTextColor(255, 255, 255);
+            pdf.setFontSize(10);
+            pdf.text('Event Management System', 105, 283, { align: 'center' });
+            pdf.text(`Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}`, 105, 290, { align: 'center' });
+
+            // Hide loading overlay
+            setTimeout(() => {
+                loadingOverlay.style.display = 'none';
+
+                // Save the PDF
+                const filename = `Event_Proposal_<?= htmlspecialchars($event_id) ?>.pdf`;
+                pdf.save(filename);
+
+                // Show success message
+                showToast('PDF exported successfully!', 'success');
+            }, 1500);
+        }
+
+        function showToast(message, type) {
+            const toast = document.createElement('div');
+            toast.className = `toast-notification toast-${type}`;
+            toast.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+                ${message}
+            `;
+
+            // Add toast styles
+            const style = document.createElement('style');
+            style.textContent = `
+                .toast-notification {
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: white;
+                    padding: 15px 20px;
+                    border-radius: 8px;
+                    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    z-index: 10000;
+                    animation: slideInRight 0.3s ease;
+                }
+                .toast-success {
+                    border-left: 4px solid #00b894;
+                    color: #00b894;
+                }
+                @keyframes slideInRight {
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+            `;
+            document.head.appendChild(style);
+            document.body.appendChild(toast);
+
+            // Remove toast after 3 seconds
+            setTimeout(() => {
+                toast.remove();
+                style.remove();
+            }, 3000);
+        }
+
+        // Add some interactive effects
+        document.addEventListener('DOMContentLoaded', function () {
+            // Add hover effect to buttons
+            const buttons = document.querySelectorAll('.btn-custom');
+            buttons.forEach(button => {
+                button.addEventListener('mouseenter', function () {
+                    this.style.transform = 'translateY(-2px)';
+                });
+
+                button.addEventListener('mouseleave', function () {
+                    this.style.transform = 'translateY(0)';
+                });
+            });
+
+            // Add click effect
+            buttons.forEach(button => {
+                button.addEventListener('mousedown', function () {
+                    this.style.transform = 'translateY(0) scale(0.98)';
+                });
+
+                button.addEventListener('mouseup', function () {
+                    this.style.transform = 'translateY(-2px) scale(1)';
+                });
+            });
+        });
+    </script>
 </body>
 
 </html>

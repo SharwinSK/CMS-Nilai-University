@@ -1,6 +1,7 @@
 <?php
 require_once('../../TCPDF-main/tcpdf.php');
 require_once('../../fpdi/src/autoload.php');
+
 include('../../db/dbconfig.php');
 session_start();
 
@@ -52,7 +53,15 @@ class POSTMYPDF extends TCPDF
         $this->SetY(-15);
         $this->SetFont('times', 'I', 8);
         $this->SetTextColor(128, 128, 128);
-        $this->Cell(0, 10, 'Page ' . $this->getAliasNumPage() . ' of ' . $this->getAliasNbPages(), 0, 0, 'C');
+
+        // Add the new footer text on the left
+        $this->Cell(0, 10, 'NU/CFS/PER/2025', 0, 0, 'L');
+
+        // Add page number on the right
+        $this->Cell(0, 10, 'Page ' . $this->getAliasNumPage() . ' of ' . $this->getAliasNbPages(), 0, 0, 'R');
+
+        // Reset text color
+        $this->SetTextColor(0, 0, 0);
     }
 }
 
@@ -152,6 +161,8 @@ while ($row = $committee_result->fetch_assoc()) {
     ];
 }
 
+
+
 // Create PDF
 $pdf = new POSTMYPDF();
 $pdf->SetMargins(20, 40, 20);
@@ -181,22 +192,22 @@ if (!empty($club_logo) && file_exists($club_logo)) {
 
 $pdf->Ln(55);
 
-// Title styling
+// Title styling - Only headings are bold
 $pdf->SetFont('times', 'B', 14);
 $pdf->Cell(0, 10, 'POST EVENT REPORT', 0, 1, 'C');
 $pdf->Ln(6);
 
-// Club name
+// Club name - heading so bold
 $pdf->SetFont('times', 'B', 14);
 $pdf->Cell(0, 8, strtoupper($report['Club_Name']), 0, 1, 'C');
 $pdf->Ln(6);
 
-// Event name
+// Event name - heading so bold
 $pdf->SetFont('times', 'B', 14);
 $pdf->MultiCell(0, 6, '"' . $report['Ev_Name'] . '"', 0, 'C');
 $pdf->Ln(12);
 
-// Student information section
+// Student information section - regular text (not bold)
 $proposerName = $report['Stu_Name'] ?? '-';
 $proposerID = $report['Stu_ID'] ?? '-';
 $program = $report['Stu_Program'] ?? '-';
@@ -211,7 +222,6 @@ $info_html = '
     <p><span style="font-weight: bold;">Program:</span> ' . htmlspecialchars($program) . '</p>
     <p><span style="font-weight: bold;">School:</span> ' . htmlspecialchars($school) . '</p>
     <p><span style="font-weight: bold;">Event Date:</span> ' . $date . '</p>
-    <p><span style="font-weight: bold;">Report Date:</span> ' . date('d F Y') . '</p>
 </div>';
 
 $pdf->writeHTML($info_html, true, false, true, false, '');
@@ -219,7 +229,7 @@ $pdf->writeHTML($info_html, true, false, true, false, '');
 // === PAGE 2: OBJECTIVES & EVENT FLOW ===
 $pdf->AddPage();
 
-// 1.0 OBJECTIVES
+// 1.0 OBJECTIVES - only heading is bold
 $pdf->SetFont('times', 'B', 14);
 $pdf->Cell(0, 12, '1.0 OBJECTIVES', 0, 1, 'L');
 $pdf->Ln(3);
@@ -228,16 +238,16 @@ $objectives = $report['Ev_Objectives'] ?? 'No objectives specified.';
 $objectives_html = '
 <style>
     body { font-family: "times"; font-size: 12pt; line-height: 1.5; }
-    p { text-align: justify; margin-bottom: 8px; }
+    p { text-align: justify; margin-bottom: 8px; font-weight: normal; }
 </style>
 <p>' . nl2br(htmlspecialchars($objectives)) . '</p>';
 
 $pdf->writeHTML($objectives_html, true, false, true, false, '');
 
-// 2.0 EVENT FLOW
+// 2.0 EVENT DAY FLOW - Changed title and only heading is bold
 $pdf->Ln(10);
 $pdf->SetFont('times', 'B', 14);
-$pdf->Cell(0, 12, '2.0 EVENT FLOW', 0, 1, 'L');
+$pdf->Cell(0, 12, '2.0 EVENT DAY FLOW', 0, 1, 'L');
 $pdf->Ln(5);
 
 if ($eventflow_result->num_rows > 0) {
@@ -261,6 +271,7 @@ if ($eventflow_result->num_rows > 0) {
             border: 1px solid #000;
             padding: 6px;
             vertical-align: top;
+            font-weight: normal;
         }
         .flow .time-col { width: 20%; text-align: center; }
         .flow .desc-col { width: 80%; text-align: justify; }
@@ -288,16 +299,24 @@ if ($eventflow_result->num_rows > 0) {
     $flow_html .= '
         </tbody>
     </table>';
+
+    $pdf->writeHTML($flow_html, true, false, true, false, '');
+
+    // Add Table 1 description centered below the table
+    $pdf->Ln(5);
+    $pdf->SetFont('times', '', 11);
+    $pdf->Cell(0, 6, 'Table 1: Shows the event flow of the event day', 0, 1, 'C');
+
 } else {
     $flow_html = '
     <style>
         body { font-family: "times"; font-size: 12pt; line-height: 1.5; }
-        p { text-align: justify; }
+        p { text-align: justify; font-weight: normal; }
     </style>
     <p>No event flow information available.</p>';
-}
 
-$pdf->writeHTML($flow_html, true, false, true, false, '');
+    $pdf->writeHTML($flow_html, true, false, true, false, '');
+}
 
 // === PAGE 3: POST EVENT MEETINGS ===
 $pdf->AddPage();
@@ -326,6 +345,7 @@ if ($meeting_result->num_rows > 0) {
             border: 1px solid #000;
             padding: 6px;
             vertical-align: top;
+            font-weight: normal;
         }
         .meeting .date-col { width: 15%; text-align: center; }
         .meeting .time-col { width: 20%; text-align: center; }
@@ -363,68 +383,131 @@ if ($meeting_result->num_rows > 0) {
     $meeting_html .= '
         </tbody>
     </table>';
+
+    $pdf->writeHTML($meeting_html, true, false, true, false, '');
+
+    // Add Table 2 description centered below the table
+    $pdf->Ln(5);
+    $pdf->SetFont('times', '', 11);
+    $pdf->Cell(0, 6, 'Table 2: Shows Meeting Description', 0, 1, 'C');
+
 } else {
     $meeting_html = '
     <style>
         body { font-family: "times"; font-size: 12pt; line-height: 1.5; }
-        p { text-align: justify; }
+        p { text-align: justify; font-weight: normal; }
     </style>
     <p>No post event meetings were conducted.</p>';
-}
 
-$pdf->writeHTML($meeting_html, true, false, true, false, '');
+    $pdf->writeHTML($meeting_html, true, false, true, false, '');
+}
 
 // === PAGE 4: CHALLENGES, RECOMMENDATIONS, CONCLUSION ===
 $pdf->AddPage();
 
-// 4.0 Challenges and Difficulties
+// 4.0 Challenges and Difficulties - only heading bold, content justified
 $pdf->SetFont('times', 'B', 14);
 $pdf->Cell(0, 12, '4.0 GROUP CHALLENGES / DIFFICULTIES', 0, 1, 'L');
 $pdf->Ln(3);
 
 $challenges = $report['Rep_ChallengesDifficulties'] ?? 'No challenges reported.';
+$challenges = trim($challenges);
+
+// Process challenges text to ensure proper justified formatting
+if (!empty($challenges)) {
+    $paragraphs = preg_split('/\n\s*\n/', $challenges);
+    $formatted_challenges = '';
+
+    foreach ($paragraphs as $paragraph) {
+        $paragraph = trim($paragraph);
+        if (!empty($paragraph)) {
+            // Remove excessive spaces and line breaks
+            $paragraph = preg_replace('/\s+/', ' ', $paragraph);
+            $formatted_challenges .= '<p style="text-align: justify; text-indent: 20px; margin-bottom: 10px; font-weight: normal;">' . htmlspecialchars($paragraph) . '</p>';
+        }
+    }
+} else {
+    $formatted_challenges = '<p style="text-align: justify; text-indent: 20px; font-weight: normal;">No challenges reported.</p>';
+}
+
 $challenges_html = '
 <style>
     body { font-family: "times"; font-size: 12pt; line-height: 1.5; }
-    p { text-align: justify; text-indent: 20px; margin-bottom: 10px; }
+    p { text-align: justify; text-indent: 20px; margin-bottom: 10px; font-weight: normal; }
 </style>
-<p>' . nl2br(htmlspecialchars($challenges)) . '</p>';
+' . $formatted_challenges;
 
 $pdf->writeHTML($challenges_html, true, false, true, false, '');
 
-// 4.1 Recommendations
+// 4.1 Recommendations - only heading bold, content justified
 $pdf->Ln(10);
 $pdf->SetFont('times', 'B', 14);
 $pdf->Cell(0, 12, '4.1 RECOMMENDATIONS', 0, 1, 'L');
 $pdf->Ln(3);
 
 $recommendations = $report['Rep_recomendation'] ?? 'No recommendations provided.';
+$recommendations = trim($recommendations);
+
+// Process recommendations text to ensure proper justified formatting
+if (!empty($recommendations)) {
+    $paragraphs = preg_split('/\n\s*\n/', $recommendations);
+    $formatted_recommendations = '';
+
+    foreach ($paragraphs as $paragraph) {
+        $paragraph = trim($paragraph);
+        if (!empty($paragraph)) {
+            $paragraph = preg_replace('/\s+/', ' ', $paragraph);
+            $formatted_recommendations .= '<p style="text-align: justify; text-indent: 20px; margin-bottom: 10px; font-weight: normal;">' . htmlspecialchars($paragraph) . '</p>';
+        }
+    }
+} else {
+    $formatted_recommendations = '<p style="text-align: justify; text-indent: 20px; font-weight: normal;">No recommendations provided.</p>';
+}
+
 $recommendations_html = '
 <style>
     body { font-family: "times"; font-size: 12pt; line-height: 1.5; }
-    p { text-align: justify; text-indent: 20px; margin-bottom: 10px; }
+    p { text-align: justify; text-indent: 20px; margin-bottom: 10px; font-weight: normal; }
 </style>
-<p>' . nl2br(htmlspecialchars($recommendations)) . '</p>';
+' . $formatted_recommendations;
 
 $pdf->writeHTML($recommendations_html, true, false, true, false, '');
 
-// 4.2 Conclusion
+// 4.2 Conclusion - only heading bold, content justified
 $pdf->Ln(10);
 $pdf->SetFont('times', 'B', 14);
 $pdf->Cell(0, 12, '4.2 CONCLUSION', 0, 1, 'L');
 $pdf->Ln(3);
 
 $conclusion = $report['Rep_Conclusion'] ?? 'No conclusion provided.';
+$conclusion = trim($conclusion);
+
+// Process conclusion text to ensure proper justified formatting
+if (!empty($conclusion)) {
+    $paragraphs = preg_split('/\n\s*\n/', $conclusion);
+    $formatted_conclusion = '';
+
+    foreach ($paragraphs as $paragraph) {
+        $paragraph = trim($paragraph);
+        if (!empty($paragraph)) {
+            $paragraph = preg_replace('/\s+/', ' ', $paragraph);
+            $formatted_conclusion .= '<p style="text-align: justify; text-indent: 20px; margin-bottom: 10px; font-weight: normal;">' . htmlspecialchars($paragraph) . '</p>';
+        }
+    }
+} else {
+    $formatted_conclusion = '<p style="text-align: justify; text-indent: 20px; font-weight: normal;">No conclusion provided.</p>';
+}
+
 $conclusion_html = '
 <style>
     body { font-family: "times"; font-size: 12pt; line-height: 1.5; }
-    p { text-align: justify; text-indent: 20px; margin-bottom: 10px; }
+    p { text-align: justify; text-indent: 20px; margin-bottom: 10px; font-weight: normal; }
 </style>
-<p>' . nl2br(htmlspecialchars($conclusion)) . '</p>';
+' . $formatted_conclusion;
 
 $pdf->writeHTML($conclusion_html, true, false, true, false, '');
 
-// Submitted by section - NO SIGNATURE LINE, JUST NAME
+// Submitted by section - regular text, not bold
 $pdf->Ln(15);
 $pdf->SetFont('times', '', 12);
 $pdf->Cell(0, 8, 'Submitted by: ' . htmlspecialchars($report['Stu_Name']), 0, 1, 'L');
@@ -434,14 +517,14 @@ $pdf->Cell(0, 8, 'Date: ' . date('d F Y'), 0, 1, 'L');
 if (!empty($valid_photos)) {
     $pdf->AddPage();
     $pdf->SetFont('times', 'B', 14);
-    $pdf->Cell(0, 12, '5.0 EVENT PHOTOS', 0, 1, 'C');
+    $pdf->Cell(0, 12, '5.0 EVENT PHOTOS', 0, 1, 'L'); // Changed from 'C' to 'L'
     $pdf->Ln(10);
 
     $x = 30;  // Starting X position
     $y = $pdf->GetY();
-    $photo_width = 75;
-    $photo_height = 60;
-    $spacing = 10;
+    $photo_width = 75;  // Width of each photo
+    $photo_height = 60; // Height of each photo
+    $spacing = 10;      // Spacing between photos
     $photos_per_row = 2;
     $photo_count = 0;
 
@@ -475,7 +558,7 @@ if (!empty($valid_photos)) {
 if (!empty($attendance)) {
     $pdf->AddPage();
     $pdf->SetFont('times', 'B', 14);
-    $pdf->Cell(0, 12, '6.0 COCU CLAIMER ATTENDANCE', 0, 1, 'C');
+    $pdf->Cell(0, 12, '6.0 COCU CLAIMER ATTENDANCE', 0, 1, 'L'); // Changed from 'C' to 'L'
     $pdf->Ln(8);
 
     $attendance_html = '
@@ -498,6 +581,7 @@ if (!empty($attendance)) {
             border: 1px solid #000;
             padding: 8px;
             vertical-align: top;
+            font-weight: normal;
         }
         .attendance .name-col { width: 35%; text-align: left; }
         .attendance .position-col { width: 30%; text-align: center; }
@@ -531,11 +615,21 @@ if (!empty($attendance)) {
     </table>';
 
     $pdf->writeHTML($attendance_html, true, false, true, false, '');
+
+    // Add Table 3 description and note centered below the table
+    $pdf->Ln(5);
+    $pdf->SetFont('times', '', 11);
+    $pdf->Cell(0, 6, 'Table 3: Shows the attendance of the COCU Claimers', 0, 1, 'C');
+    $pdf->Ln(3);
+    $pdf->SetFont('times', 'B', 11);
+    $pdf->Cell(0, 6, 'Note: Refer Table 2 for total meeting', 0, 1, 'C');
 }
 
 // === SAVE PDF TO TEMPORARY FILE ===
 $temp_file = tempnam(sys_get_temp_dir(), 'postevent_report_') . '.pdf';
 $pdf->Output($temp_file, 'F');
+
+
 
 // === MERGE WITH APPENDICES (7.0 APPENDIX) ===
 try {
@@ -559,11 +653,42 @@ try {
     // Add appendix section
     $appendix_added = false;
 
-    // Add budget summary statement if exists
+    // Check if we have budget statement OR individual reports
     $statement_file = $report['statement'];
-    if (!empty($statement_file) && file_exists($statement_file)) {
+    $has_statement = !empty($statement_file) && file_exists($statement_file);
+    $has_individual_reports = $individual_result->num_rows > 0;
+
+    if ($has_statement || $has_individual_reports) {
+        // Add appendix title page
+        $finalPdf->AddPage();
+        $finalPdf->SetFont('times', 'B', 16);
+        $finalPdf->Cell(0, 30, '', 0, 1);
+        $finalPdf->Cell(0, 15, '7.0 APPENDIX', 0, 1, 'C');
+        $finalPdf->SetLineWidth(0.5);
+        $finalPdf->Line(50, $finalPdf->GetY() + 5, 160, $finalPdf->GetY() + 5);
+        $finalPdf->Ln(20);
+
+        $finalPdf->SetFont('times', '', 12);
+        $finalPdf->Cell(0, 8, 'This section contains:', 0, 1, 'L');
+
+        if ($has_statement) {
+            $finalPdf->Cell(0, 6, '• Budget Summary Statement', 0, 1, 'L');
+        }
+        if ($has_individual_reports) {
+            $finalPdf->Cell(0, 6, '• Individual Committee Reports', 0, 1, 'L');
+        }
+
+        $appendix_added = true;
+    }
+    // === ADD BUDGET STATEMENT USING CONFIRMED PATH ===
+// Build the exact found path (one level up from components/pdf/)
+    $statement_found_path = realpath(__DIR__ . '/../../uploads/statements/' . (string) ($report['statement'] ?? ''));
+    error_log('Budget path try: ' . $statement_found_path);
+
+    // guard: only proceed if it's a real file
+    if ($statement_found_path && is_file($statement_found_path)) {
+        // Ensure "7.0 APPENDIX" title page exists only once
         if (!$appendix_added) {
-            // Add appendix title page
             $finalPdf->AddPage();
             $finalPdf->SetFont('times', 'B', 16);
             $finalPdf->Cell(0, 30, '', 0, 1);
@@ -573,49 +698,42 @@ try {
             $finalPdf->Ln(20);
             $finalPdf->SetFont('times', '', 12);
             $finalPdf->Cell(0, 8, 'This section contains:', 0, 1, 'L');
-            $finalPdf->Cell(0, 6, '• Budget Summary Statement', 0, 1, 'L');
-            $finalPdf->Cell(0, 6, '• Individual Committee Reports', 0, 1, 'L');
             $appendix_added = true;
         }
+
+        // List item under appendix
+        $finalPdf->SetFont('times', '', 12);
+        $finalPdf->Cell(0, 6, '• Budget Summary Statement', 0, 1, 'L');
 
         // Import statement pages
         try {
-            $statementPages = $finalPdf->setSourceFile($statement_file);
-            for ($i = 1; $i <= $statementPages; $i++) {
+            $pages = $finalPdf->setSourceFile($statement_found_path);
+            for ($i = 1; $i <= $pages; $i++) {
                 $tpl = $finalPdf->importPage($i);
-                $finalPdf->AddPage();
+                $size = $finalPdf->getTemplateSize($tpl);
+                $finalPdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
                 $finalPdf->useTemplate($tpl);
             }
         } catch (Exception $e) {
-            error_log("Error adding budget statement: " . $e->getMessage());
+            error_log("Budget statement import error: {$statement_found_path} - " . $e->getMessage());
         }
+    } else {
+        error_log("Budget statement not found at resolved path.");
     }
+    // === END ADD BUDGET STATEMENT ===
 
-    // Add individual reports - Fix the file path issue
-    if ($individual_result->num_rows > 0) {
-        if (!$appendix_added) {
-            // Add appendix title page
-            $finalPdf->AddPage();
-            $finalPdf->SetFont('times', 'B', 16);
-            $finalPdf->Cell(0, 30, '', 0, 1);
-            $finalPdf->Cell(0, 15, '7.0 APPENDIX', 0, 1, 'C');
-            $finalPdf->SetLineWidth(0.5);
-            $finalPdf->Line(50, $finalPdf->GetY() + 5, 160, $finalPdf->GetY() + 5);
-            $finalPdf->Ln(20);
-            $finalPdf->SetFont('times', '', 12);
-            $finalPdf->Cell(0, 8, 'This section contains:', 0, 1, 'L');
-            $finalPdf->Cell(0, 6, '• Individual Committee Reports', 0, 1, 'L');
-            $appendix_added = true;
-        }
 
+
+    // Add individual reports - AFTER budget statement
+    if ($has_individual_reports) {
         $individual_result->data_seek(0);
         while ($ind = $individual_result->fetch_assoc()) {
             // Try multiple possible paths for individual reports
             $possible_report_paths = [
                 $ind['IR_File'],
-                'uploads/individual_reports/' . $ind['IR_File'],
-                '../../uploads/individualeports/' . $ind['IR_File'],
                 'uploads/individual_reports/' . basename($ind['IR_File']),
+                '../../uploads/individual_reports/' . basename($ind['IR_File']),
+                'uploads/individualreports/' . basename($ind['IR_File']),
                 '../../uploads/individualreports/' . basename($ind['IR_File'])
             ];
 
@@ -626,13 +744,14 @@ try {
                         $pages = $finalPdf->setSourceFile($file_path);
                         for ($p = 1; $p <= $pages; $p++) {
                             $tpl = $finalPdf->importPage($p);
-                            $finalPdf->AddPage();
+                            $size = $finalPdf->getTemplateSize($tpl);
+                            $finalPdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
                             $finalPdf->useTemplate($tpl);
                         }
                         $report_found = true;
                         break;
                     } catch (Exception $e) {
-                        error_log("Error adding individual report: " . $file_path . " - " . $e->getMessage());
+                        error_log("Error adding individual report from path: " . $file_path . " - " . $e->getMessage());
                     }
                 }
             }

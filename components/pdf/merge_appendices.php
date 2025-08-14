@@ -113,6 +113,30 @@ function mergeAppendices($temp_file, $event, $budget_summary, $cocu_pdfs)
                 $first_appendix = false; // Only show separator page once
             }
         }
+        // Append Budget Statement PDF (Post-Event)
+        if (!empty($event['statement'])) {
+            $statement_file = basename((string) $event['statement']); // ensure plain filename
+
+            // Use the confirmed working base: one level up from components/pdf/
+            $paths = [
+                __DIR__ . "/../uploads/statements/{$statement_file}",          // ✅ your confirmed working path
+                __DIR__ . "/../uploads/budget_statements/{$statement_file}",   // optional: second location if you ever move it
+                // Try the original value as-is (if DB ever stores a full/relative path)
+                (string) $event['statement'],
+            ];
+
+            foreach ($paths as $path) {
+                if (is_file($path)) {
+                    if (appendPDF($finalPdf, $path, "Budget Statement", $first_appendix)) {
+                        $appendix_count++;
+                        $first_appendix = false; // Only show separator once
+                        break; // stop after first found file
+                    }
+                } else {
+                    error_log("Budget Statement not found at: {$path}");
+                }
+            }
+        }
 
         // Append COCU Statement PDFs
         if (!empty($cocu_pdfs) && is_array($cocu_pdfs)) {
@@ -124,7 +148,11 @@ function mergeAppendices($temp_file, $event, $budget_summary, $cocu_pdfs)
                     }
                 }
             }
+
         }
+
+
+
 
         // If no appendices were added, add a note
         if ($appendix_count == 0) {
