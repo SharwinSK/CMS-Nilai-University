@@ -363,6 +363,105 @@ $action = 'ProposalHandler.php?mode=create';
             background: #f8f9ff;
         }
 
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .loading-content {
+            background: white;
+            padding: 3rem;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 400px;
+            animation: loadingFadeIn 0.5s ease-out;
+        }
+
+        @keyframes loadingFadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #ac73ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1.5rem;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading-progress {
+            width: 100%;
+            height: 6px;
+            background: #f0f0f0;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 1rem;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(135deg, #ac73ff, #8b5cf6);
+            width: 0%;
+            border-radius: 3px;
+            animation: progressAnimation 3s ease-in-out;
+        }
+
+        @keyframes progressAnimation {
+            0% {
+                width: 0%;
+            }
+
+            50% {
+                width: 70%;
+            }
+
+            100% {
+                width: 100%;
+            }
+        }
+
+        #loadingTitle {
+            color: #ac73ff;
+            margin-bottom: 0.5rem;
+            font-size: 1.5rem;
+        }
+
+        #loadingMessage {
+            color: #666;
+            margin: 0;
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+
         .upload-area:hover {
             background: #aca8ff;
             color: white;
@@ -1296,7 +1395,17 @@ $action = 'ProposalHandler.php?mode=create';
             </button>
         </div>
     </div>
-
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <h3 id="loadingTitle">Processing Your Proposal</h3>
+            <p id="loadingMessage">Please wait while we submit your proposal to the advisor...</p>
+            <div class="loading-progress">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+        </div>
+    </div>
     <!-- Scroll Buttons -->
     <div class="scroll-buttons">
         <button class="scroll-btn" id="scrollTopBtn" onclick="scrollToTop()" title="Scroll to Top">
@@ -1942,35 +2051,57 @@ $action = 'ProposalHandler.php?mode=create';
             return total;
         }
 
-        document
-            .getElementById("proposalForm")
-            .addEventListener("submit", function (e) {
-                e.preventDefault(); // Prevent auto-submit
+        document.getElementById("proposalForm").addEventListener("submit", function (e) {
+            e.preventDefault(); // Prevent auto-submit
 
-                const totalHours = calculateTotalHours(); // Use our own function
-                if (totalHours < 40) {
-                    Swal.fire({
-                        icon: "error",
-                        title: "Minimum 40 Hours Required",
-                        text: `You only have ${totalHours} hours. Minimum 40 hours needed.`,
-                    });
-                    return; // Stop here if not enough hours
-                }
-
-                // SweetAlert confirmation
+            const totalHours = calculateTotalHours();
+            if (totalHours < 40) {
                 Swal.fire({
-                    title: "Submit Proposal?",
-                    text: "Once submitted, you can only modify it if rejected.",
-                    icon: "question",
-                    showCancelButton: true,
-                    confirmButtonText: "Yes, Submit",
-                    cancelButtonText: "Cancel",
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        document.getElementById("proposalForm").submit(); // Proceed to submit
-                    }
+                    icon: "error",
+                    title: "Minimum 40 Hours Required",
+                    text: `You only have ${totalHours} hours. Minimum 40 hours needed.`,
                 });
+                return;
+            }
+
+            // SweetAlert confirmation
+            Swal.fire({
+                title: "Submit Proposal?",
+                text: "Once submitted, you can only modify it if rejected.",
+                icon: "question",
+                showCancelButton: true,
+                confirmButtonText: "Yes, Submit",
+                cancelButtonText: "Cancel",
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Show loading overlay immediately after confirmation
+                    showLoadingScreen();
+
+                    // Add a small delay to show the loading screen, then submit
+                    setTimeout(() => {
+                        document.getElementById("proposalForm").submit();
+                    }, 500);
+                }
             });
+        });
+
+        function showLoadingScreen() {
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            loadingOverlay.style.display = 'flex';
+
+            // Update loading messages progressively
+            setTimeout(() => {
+                document.getElementById('loadingMessage').textContent = 'Validating proposal details...';
+            }, 1000);
+
+            setTimeout(() => {
+                document.getElementById('loadingMessage').textContent = 'Uploading files and documents...';
+            }, 2000);
+
+            setTimeout(() => {
+                document.getElementById('loadingMessage').textContent = 'Sending notification to advisor...';
+            }, 3000);
+        }
 
         function calculateTotalHours() {
             let total = 0;

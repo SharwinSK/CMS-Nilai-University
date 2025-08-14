@@ -148,8 +148,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // === Send Emails Based on Decision ===
     if ($decision === 'approve') {
         advisorApproved($studentName, $eventName, $studentEmail, $coordinatorEmail, $clubName);
+
+        echo "<script>
+        setTimeout(() => {
+            window.location.href = 'AdvisorDashboard.php';
+        }, 3000); // Wait 3 seconds for loading screen effect
+    </script>";
     } elseif ($decision === 'send_back') {
         advisorRejected($studentName, $eventName, $studentEmail);
+
+        echo "<script>
+        setTimeout(() => {
+            window.location.href = 'AdvisorDashboard.php';
+        }, 3000); // Wait 3 seconds for loading screen effect
+    </script>";
     }
 
 
@@ -538,7 +550,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </button>
     </div>
 
-
+    <!-- Loading Modal -->
+    <div id="loadingModal" class="modal">
+        <div class="modal-content loading-content">
+            <div class="loading-spinner"></div>
+            <h2 id="loadingTitle">Processing...</h2>
+            <p id="loadingMessage">Please wait while we process your request.</p>
+        </div>
+    </div>
     <script>
         // Modal functions
         function enlargePoster() {
@@ -565,13 +584,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 return;
             }
 
+            // Close reject modal first
+            closeRejectModal();
+
+            // Show loading screen
+            showLoadingScreen("Proposal Rejected!", "Sending feedback to student...");
+
             // Fill the hidden input and submit form
             document.getElementById("Ev_AdvisorComments").value = reason;
-
-            // Show success modal first (optional)
-            alert("Proposal has been rejected and sent back to the student.");
-
-            // Submit the form
             document.getElementById("rejectForm").submit();
         }
 
@@ -583,14 +603,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         function closeSuccessModal() {
             document.getElementById("successModal").style.display = "none";
 
-            // Submit the hidden approve form
+            // Show loading screen
+            showLoadingScreen("Proposal Approved!", "Sending notification to coordinator...");
+
+            // Submit the form
             document.getElementById("approveForm").submit();
         }
 
         function viewCOCUStatement(filename) {
             window.open('../uploads/statements/' + filename, '_blank');
         }
+        function showLoadingScreen(title, message) {
+            document.getElementById("loadingTitle").textContent = title;
+            document.getElementById("loadingMessage").textContent = message;
+            document.getElementById("loadingModal").style.display = "block";
+        }
 
+        function hideLoadingScreen() {
+            document.getElementById("loadingModal").style.display = "none";
+        }
         function viewAdditionalDoc() {
             const filePath = "<?php echo isset($proposal['Ev_AdditionalInfo']) ? $proposal['Ev_AdditionalInfo'] : ''; ?>";
             if (filePath) {

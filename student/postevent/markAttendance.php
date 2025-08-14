@@ -660,31 +660,19 @@ $meetings = is_array($meetings) ? $meetings : [];
                         body: JSON.stringify({ attendance: attendanceData })
                     })
                         .then(response => {
-                            const contentType = response.headers.get("content-type");
-
+                            // If server redirects to the HTML success page, just go there
                             if (response.redirected) {
                                 window.location.href = response.url;
                                 return;
                             }
-
-                            if (contentType && contentType.includes("application/json")) {
-                                return response.json();
-                            } else {
-                                return response.text().then(text => {
-                                    throw new Error("Invalid JSON: " + text);
-                                });
-                            }
+                            // Otherwise, just load HTML directly
+                            return response.text();
                         })
-                        .then(data => {
-                            if (data?.success === false) {
-                                Swal.fire({
-                                    icon: "error",
-                                    title: "Submission Failed",
-                                    text: data.error || "Something went wrong",
-                                    background: '#1e293b',
-                                    color: '#f8fafc'
-                                });
-                            }
+                        .then(html => {
+                            // Replace page content with the success HTML
+                            document.open();
+                            document.write(html);
+                            document.close();
                         })
                         .catch(err => {
                             Swal.fire({
@@ -695,6 +683,7 @@ $meetings = is_array($meetings) ? $meetings : [];
                                 color: '#f8fafc'
                             });
                         });
+
                 }
             });
         }

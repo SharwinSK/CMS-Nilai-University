@@ -175,6 +175,7 @@ try {
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -182,7 +183,7 @@ try {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
+
     <style>
         * {
             margin: 0;
@@ -221,14 +222,44 @@ try {
             animation: float 6s ease-in-out infinite;
         }
 
-        .shape-1 { top: 10%; left: 10%; animation-delay: 0s; transform: scale(1.2); }
-        .shape-2 { top: 20%; right: 10%; animation-delay: 2s; transform: scale(0.8); }
-        .shape-3 { bottom: 20%; left: 15%; animation-delay: 4s; transform: scale(1.5); }
-        .shape-4 { bottom: 10%; right: 20%; animation-delay: 1s; transform: scale(0.9); }
+        .shape-1 {
+            top: 10%;
+            left: 10%;
+            animation-delay: 0s;
+            transform: scale(1.2);
+        }
+
+        .shape-2 {
+            top: 20%;
+            right: 10%;
+            animation-delay: 2s;
+            transform: scale(0.8);
+        }
+
+        .shape-3 {
+            bottom: 20%;
+            left: 15%;
+            animation-delay: 4s;
+            transform: scale(1.5);
+        }
+
+        .shape-4 {
+            bottom: 10%;
+            right: 20%;
+            animation-delay: 1s;
+            transform: scale(0.9);
+        }
 
         @keyframes float {
-            0%, 100% { transform: translateY(0px) rotate(0deg); }
-            50% { transform: translateY(-20px) rotate(180deg); }
+
+            0%,
+            100% {
+                transform: translateY(0px) rotate(0deg);
+            }
+
+            50% {
+                transform: translateY(-20px) rotate(180deg);
+            }
         }
 
         .success-container {
@@ -251,6 +282,7 @@ try {
                 opacity: 0;
                 transform: translateY(30px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -271,9 +303,17 @@ try {
         }
 
         @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+
+            100% {
+                transform: scale(1);
+            }
         }
 
         .success-icon i {
@@ -283,9 +323,20 @@ try {
         }
 
         @keyframes checkMark {
-            0% { opacity: 0; transform: scale(0.3); }
-            50% { opacity: 1; transform: scale(1.2); }
-            100% { opacity: 1; transform: scale(1); }
+            0% {
+                opacity: 0;
+                transform: scale(0.3);
+            }
+
+            50% {
+                opacity: 1;
+                transform: scale(1.2);
+            }
+
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
         }
 
         .success-title {
@@ -399,15 +450,15 @@ try {
                 padding: 2rem 1.5rem;
                 margin: 1rem;
             }
-            
+
             .success-title {
                 font-size: 1.8rem;
             }
-            
+
             .action-buttons {
                 flex-direction: column;
             }
-            
+
             .btn-custom {
                 width: 100%;
             }
@@ -444,8 +495,13 @@ try {
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         .info-grid {
@@ -500,18 +556,18 @@ try {
         <div class="success-icon">
             <i class="fas fa-clipboard-check"></i>
         </div>
-        
+
         <div class="status-badge">
             <i class="fas fa-paper-plane"></i>
             Report Submitted Successfully
         </div>
-        
+
         <h1 class="success-title">Post-Event Report Submitted!</h1>
-        
+
         <p class="success-message">
             Your post-event report has been successfully submitted and is now pending coordinator review.
         </p>
-        
+
         <div class="report-details">
             <div class="report-id">
                 <i class="fas fa-file-alt me-2"></i>
@@ -521,25 +577,10 @@ try {
                 <i class="fas fa-calendar-check me-2"></i>
                 <?= htmlspecialchars($eventName) ?>
             </div>
-            <div class="submission-time">
-                <i class="fas fa-clock me-2"></i>
-                Submitted on <?= date('F j, Y \a\t g:i A') ?>
-            </div>
         </div>
 
-        <div class="info-grid">
-            <div class="info-item">
-                <i class="fas fa-user-check fa-lg"></i>
-                <h6>Status</h6>
-                <p>Pending Review</p>
-            </div>
-            <div class="info-item">
-                <i class="fas fa-eye fa-lg"></i>
-                <h6>Reviewer</h6>
-                <p><?= htmlspecialchars($coordinatorName) ?></p>
-            </div>
-        </div>
-        
+
+
         <div class="action-buttons">
             <a href="../StudentDashboard.php" class="btn-custom btn-primary">
                 <i class="fas fa-home"></i>
@@ -562,120 +603,23 @@ try {
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script>
-        function exportReportPDF() {
-            const loadingOverlay = document.getElementById('loadingOverlay');
-            loadingOverlay.style.display = 'flex';
 
-            // Create new PDF instance
-            const { jsPDF } = window.jspdf;
-            const pdf = new jsPDF();
-            
-            // PDF styling for post-event report
-            const primaryColor = [240, 147, 251];
-            const secondaryColor = [245, 87, 108];
-            const textColor = [45, 52, 54];
-            const lightGray = [99, 110, 114];
-            
-            // Header
-            pdf.setFillColor(...primaryColor);
-            pdf.rect(0, 0, 210, 40, 'F');
-            
-            pdf.setTextColor(255, 255, 255);
-            pdf.setFontSize(24);
-            pdf.setFont(undefined, 'bold');
-            pdf.text('Post-Event Report Submission', 105, 25, { align: 'center' });
-            
-            // Success badge
-            pdf.setFillColor(253, 121, 168);
-            pdf.roundedRect(15, 50, 70, 10, 2, 2, 'F');
-            pdf.setTextColor(255, 255, 255);
-            pdf.setFontSize(10);
-            pdf.setFont(undefined, 'bold');
-            pdf.text('✓ REPORT SUBMITTED SUCCESSFULLY', 50, 57, { align: 'center' });
-            
-            // Main content
-            pdf.setTextColor(...textColor);
-            pdf.setFontSize(18);
-            pdf.setFont(undefined, 'bold');
-            pdf.text('Report Submission Confirmation', 20, 80);
-            
-            pdf.setFontSize(12);
-            pdf.setFont(undefined, 'normal');
-            pdf.text('Your post-event report has been successfully submitted and is now pending coordinator review.', 20, 95);
-            
-            // Report details box
-            pdf.setDrawColor(240, 147, 251);
-            pdf.setLineWidth(0.5);
-            pdf.rect(20, 110, 170, 65);
-            
-            pdf.setFillColor(254, 247, 255);
-            pdf.rect(20, 110, 170, 65, 'F');
-            
-            // Report details content
-            pdf.setTextColor(...textColor);
-            pdf.setFontSize(14);
-            pdf.setFont(undefined, 'bold');
-            pdf.text('Report Details', 25, 125);
-            
-            pdf.setFontSize(12);
-            pdf.setFont(undefined, 'normal');
-            pdf.text(`Report ID: <?= htmlspecialchars($report_id) ?>`, 25, 140);
-            pdf.text(`Event ID: <?= htmlspecialchars($event_id) ?>`, 25, 150);
-            pdf.text(`Event Name: <?= htmlspecialchars($eventName) ?>`, 25, 160);
-            pdf.text(`Submitted by: <?= htmlspecialchars($studentName) ?>`, 25, 170);
-            
-            // Status and reviewer info
-            pdf.setFontSize(11);
-            pdf.text(`Status: Pending Review`, 25, 185);
-            pdf.text(`Reviewer: <?= htmlspecialchars($coordinatorName) ?>`, 25, 195);
-            
-            // Submission details
-            pdf.setTextColor(...lightGray);
-            pdf.setFontSize(10);
-            pdf.text(`Submission Date: ${new Date().toLocaleDateString()}`, 25, 210);
-            pdf.text(`Submission Time: ${new Date().toLocaleTimeString()}`, 25, 220);
-            
-            // Next steps section
-            pdf.setTextColor(...textColor);
-            pdf.setFontSize(14);
-            pdf.setFont(undefined, 'bold');
-            pdf.text('Review Process', 20, 245);
-            
-            pdf.setFontSize(11);
-            pdf.setFont(undefined, 'normal');
-            const reviewSteps = [
-                '1. Your post-event report will be reviewed by the coordinator',
-                '2. The coordinator may request additional information or clarifications',
-                '3. You will receive an email notification about the review outcome',
-                '4. Upon approval, your event will be marked as completed'
-            ];
-            
-            reviewSteps.forEach((step, index) => {
-                pdf.text(step, 25, 260 + (index * 10));
-            });
-            
-            // Footer
-            pdf.setFillColor(...secondaryColor);
-            pdf.rect(0, 270, 210, 27, 'F');
-            
-            pdf.setTextColor(255, 255, 255);
-            pdf.setFontSize(10);
-            pdf.text('Event Management System - Post-Event Reports', 105, 283, { align: 'center' });
-            pdf.text(`Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}`, 105, 290, { align: 'center' });
-            
-            // Hide loading overlay
-            setTimeout(() => {
-                loadingOverlay.style.display = 'none';
-                
-                // Save the PDF
-                const filename = `Post_Event_Report_<?= htmlspecialchars($report_id) ?>.pdf`;
-                pdf.save(filename);
-                
-                // Show success message
-                showToast('Report PDF exported successfully!', 'success');
-            }, 1500);
+        function exportReportPDF() {
+            // Use the report_id stored in session last_report (PHP echo) if available
+            const reportId = "<?= isset($_SESSION['last_report']['report_id']) ? $_SESSION['last_report']['report_id'] : '' ?>";
+
+            if (!reportId) {
+                alert("Report ID not found. Cannot export PDF.");
+                return;
+            }
+
+            // Build the PDF URL
+            const pdfUrl = `../../components/pdf/reportgeneratepdf.php?id=${encodeURIComponent(reportId)}`;
+
+            // Open in a new tab
+            window.open(pdfUrl, "_blank");
         }
-        
+
         function showToast(message, type) {
             const toast = document.createElement('div');
             toast.className = `toast-notification toast-${type}`;
@@ -683,7 +627,7 @@ try {
                 <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
                 ${message}
             `;
-            
+
             // Add toast styles
             const style = document.createElement('style');
             style.textContent = `
@@ -712,39 +656,40 @@ try {
             `;
             document.head.appendChild(style);
             document.body.appendChild(toast);
-            
+
             // Remove toast after 3 seconds
             setTimeout(() => {
                 toast.remove();
                 style.remove();
             }, 3000);
         }
-        
+
         // Add interactive effects
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             // Add hover effect to buttons
             const buttons = document.querySelectorAll('.btn-custom');
             buttons.forEach(button => {
-                button.addEventListener('mouseenter', function() {
+                button.addEventListener('mouseenter', function () {
                     this.style.transform = 'translateY(-2px)';
                 });
-                
-                button.addEventListener('mouseleave', function() {
+
+                button.addEventListener('mouseleave', function () {
                     this.style.transform = 'translateY(0)';
                 });
             });
-            
+
             // Add click effect
             buttons.forEach(button => {
-                button.addEventListener('mousedown', function() {
+                button.addEventListener('mousedown', function () {
                     this.style.transform = 'translateY(0) scale(0.98)';
                 });
-                
-                button.addEventListener('mouseup', function() {
+
+                button.addEventListener('mouseup', function () {
                     this.style.transform = 'translateY(-2px) scale(1)';
                 });
             });
         });
     </script>
 </body>
+
 </html>

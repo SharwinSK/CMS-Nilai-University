@@ -220,7 +220,7 @@ $stmt->close();
                                         <td><input type="date" name="meetingDate[]" <?= $isDisabled ?>></td>
                                         <td><input type="time" name="meetingStartTime[]" <?= $isDisabled ?>></td>
                                         <td><input type="time" name="meetingEndTime[]" <?= $isDisabled ?>></td>
-                                        <td><input type="text" name="meetingLocation[]" placeholder="location"
+                                        <td><input type="text" name="meetingLocation[]" placeholder="Enter location"
                                                 pattern="[A-Za-z0-9\s]+" <?= $isDisabled ?>></td>
                                         <td>
                                             <?php if (!$isDisabled): ?>

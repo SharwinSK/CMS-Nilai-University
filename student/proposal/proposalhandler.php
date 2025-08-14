@@ -603,10 +603,7 @@ $_SESSION['last_event'] = [
                 <i class="fas fa-calendar-alt me-2"></i>
                 <?= htmlspecialchars($ev_name) ?>
             </div>
-            <div class="submission-time">
-                <i class="fas fa-clock me-2"></i>
-                Submitted on <?= date('F j, Y \a\t g:i A') ?>
-            </div>
+
         </div>
 
         <div class="action-buttons">
@@ -632,112 +629,10 @@ $_SESSION['last_event'] = [
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script>
         function exportToPDF() {
-            const loadingOverlay = document.getElementById('loadingOverlay');
-            loadingOverlay.style.display = 'flex';
-
-            // Create new PDF instance
-            const { jsPDF } = window.jspdf;
-            const pdf = new jsPDF();
-
-            // PDF styling
-            const primaryColor = [102, 126, 234];
-            const secondaryColor = [118, 75, 162];
-            const textColor = [45, 52, 54];
-            const lightGray = [99, 110, 114];
-
-            // Header
-            pdf.setFillColor(...primaryColor);
-            pdf.rect(0, 0, 210, 40, 'F');
-
-            pdf.setTextColor(255, 255, 255);
-            pdf.setFontSize(24);
-            pdf.setFont(undefined, 'bold');
-            pdf.text('Event Proposal Submission', 105, 25, { align: 'center' });
-
-            // Success badge
-            pdf.setFillColor(0, 184, 148);
-            pdf.roundedRect(15, 50, 60, 10, 2, 2, 'F');
-            pdf.setTextColor(255, 255, 255);
-            pdf.setFontSize(10);
-            pdf.setFont(undefined, 'bold');
-            pdf.text('✓ SUBMITTED SUCCESSFULLY', 45, 57, { align: 'center' });
-
-            // Main content
-            pdf.setTextColor(...textColor);
-            pdf.setFontSize(18);
-            pdf.setFont(undefined, 'bold');
-            pdf.text('Proposal Confirmation', 20, 80);
-
-            pdf.setFontSize(12);
-            pdf.setFont(undefined, 'normal');
-            pdf.text('Your event proposal has been successfully submitted and is now pending advisor approval.', 20, 95);
-
-            // Event details box
-            pdf.setDrawColor(102, 126, 234);
-            pdf.setLineWidth(0.5);
-            pdf.rect(20, 110, 170, 50);
-
-            pdf.setFillColor(248, 249, 255);
-            pdf.rect(20, 110, 170, 50, 'F');
-
-            // Event details content
-            pdf.setTextColor(...textColor);
-            pdf.setFontSize(14);
-            pdf.setFont(undefined, 'bold');
-            pdf.text('Event Details', 25, 125);
-
-            pdf.setFontSize(12);
-            pdf.setFont(undefined, 'normal');
-            pdf.text(`Event ID: <?= htmlspecialchars($event_id) ?>`, 25, 140);
-            pdf.text(`Event Name: <?= htmlspecialchars($ev_name) ?>`, 25, 150);
-            pdf.text(`Submitted by: <?= htmlspecialchars($studentName) ?>`, 25, 160);
-
-            // Submission details
-            pdf.setTextColor(...lightGray);
-            pdf.setFontSize(10);
-            pdf.text(`Submission Date: ${new Date().toLocaleDateString()}`, 25, 175);
-            pdf.text(`Submission Time: ${new Date().toLocaleTimeString()}`, 25, 185);
-
-            // Next steps section
-            pdf.setTextColor(...textColor);
-            pdf.setFontSize(14);
-            pdf.setFont(undefined, 'bold');
-            pdf.text('Next Steps', 20, 210);
-
-            pdf.setFontSize(11);
-            pdf.setFont(undefined, 'normal');
-            const nextSteps = [
-                '1. Your proposal will be reviewed by the assigned advisor',
-                '2. You will receive an email notification about the approval status',
-                '3. If approved, you can proceed with event planning',
-                '4. If revisions are needed, you will receive feedback for improvements'
-            ];
-
-            nextSteps.forEach((step, index) => {
-                pdf.text(step, 25, 225 + (index * 10));
-            });
-
-            // Footer
-            pdf.setFillColor(...secondaryColor);
-            pdf.rect(0, 270, 210, 27, 'F');
-
-            pdf.setTextColor(255, 255, 255);
-            pdf.setFontSize(10);
-            pdf.text('Event Management System', 105, 283, { align: 'center' });
-            pdf.text(`Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}`, 105, 290, { align: 'center' });
-
-            // Hide loading overlay
-            setTimeout(() => {
-                loadingOverlay.style.display = 'none';
-
-                // Save the PDF
-                const filename = `Event_Proposal_<?= htmlspecialchars($event_id) ?>.pdf`;
-                pdf.save(filename);
-
-                // Show success message
-                showToast('PDF exported successfully!', 'success');
-            }, 1500);
+            const id = encodeURIComponent("<?= $event_id ?>"); // handle the slash in Ev_ID like "01/25"
+            window.open("../../components/pdf/generate_pdf.php?id=" + id, "_blank");
         }
+
 
         function showToast(message, type) {
             const toast = document.createElement('div');

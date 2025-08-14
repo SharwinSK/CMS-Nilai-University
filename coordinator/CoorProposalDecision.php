@@ -626,7 +626,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             </div>
         </div>
     </div>
+    <!-- Loading Screen for Approval -->
+    <div id="approvalLoadingModal" class="loading-overlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <div class="loading-message">Processing Approval...</div>
+            <div class="loading-submessage">Please wait while we send notifications</div>
+        </div>
+    </div>
 
+    <!-- Success Screen for Approval -->
+    <div id="approvalSuccessModal" class="loading-overlay">
+        <div class="loading-content">
+            <div class="success-icon">✅</div>
+            <div class="loading-message">Event Approved Successfully!</div>
+            <div class="loading-submessage">Redirecting to dashboard...</div>
+        </div>
+    </div>
+
+    <!-- Loading Screen for Rejection -->
+    <div id="rejectionLoadingModal" class="loading-overlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <div class="loading-message">Processing Rejection...</div>
+            <div class="loading-submessage">Please wait while we send notifications</div>
+        </div>
+    </div>
+
+    <!-- Success Screen for Rejection -->
+    <div id="rejectionSuccessModal" class="loading-overlay">
+        <div class="loading-content">
+            <div class="reject-icon">📋</div>
+            <div class="loading-message">Rejection Submitted Successfully!</div>
+            <div class="loading-submessage">Redirecting to dashboard...</div>
+        </div>
+    </div>
     <script>
         // Track rejected sections
         let rejectedSections = [];
@@ -743,11 +777,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         }
 
         // Update approval status based on checkboxes
+        // Update approval status based on checkboxes
         function updateApprovalStatus() {
             const allApproveCheckboxes =
                 document.querySelectorAll(".approve-checkbox");
             const approveBtn = document.getElementById("approveBtn");
             const rejectBtn = document.getElementById("rejectBtn");
+            const eventTypeDropdown = document.getElementById("eventType"); // Add this line
 
             // Get unique sections
             const sections = [
@@ -772,6 +808,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
             const allSectionsReviewed = reviewedSections === sections.length;
             const hasRejectedSections = rejectedSections.length > 0;
+
+            // Enable/disable event type dropdown based on rejected sections
+            if (hasRejectedSections) {
+                eventTypeDropdown.disabled = true;
+                eventTypeDropdown.style.background = "#f5f5f5";
+                eventTypeDropdown.style.color = "#999";
+                eventTypeDropdown.style.cursor = "not-allowed";
+            } else {
+                eventTypeDropdown.disabled = false;
+                eventTypeDropdown.style.background = "white";
+                eventTypeDropdown.style.color = "black";
+                eventTypeDropdown.style.cursor = "pointer";
+            }
 
             // Enable/disable buttons
             if (allSectionsReviewed) {
@@ -843,9 +892,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             document.getElementById("rejectModal").style.display = "none";
         }
 
+        // Updated Submit Feedback Function
         function submitFeedback() {
             const feedback = document.getElementById("feedbackText").value.trim();
             const rejectedList = rejectedSections.join(', ');
+
+            // Hide the reject modal first
+            document.getElementById("rejectModal").style.display = "none";
+
+            // Show loading screen
+            document.getElementById("rejectionLoadingModal").style.display = "flex";
 
             fetch(window.location.href, {
                 method: "POST",
@@ -858,21 +914,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             })
                 .then(res => res.json())
                 .then(data => {
+                    // Hide loading screen
+                    document.getElementById("rejectionLoadingModal").style.display = "none";
+
                     if (data.status === 'rejected') {
-                        alert("Rejection submitted successfully!");
-                        window.location.href = 'CoordinatorDashboard.php';
+                        // Show success screen
+                        document.getElementById("rejectionSuccessModal").style.display = "flex";
+
+                        // Redirect after 3 seconds
+                        setTimeout(() => {
+                            window.location.href = 'CoordinatorDashboard.php';
+                        }, 3000);
+                    } else {
+                        alert("Error occurred. Please try again.");
                     }
+                })
+                .catch(error => {
+                    // Hide loading screen on error
+                    document.getElementById("rejectionLoadingModal").style.display = "none";
+                    alert("Network error. Please try again.");
+                    console.error('Error:', error);
                 });
         }
-
-
         // Approve Event Function
+        // Updated Approve Event Function
         function approveEvent() {
             const eventType = document.getElementById("eventType").value;
             if (!eventType) {
                 alert("Please select an event type first!");
                 return;
             }
+
+            // Show loading screen
+            document.getElementById("approvalLoadingModal").style.display = "flex";
 
             fetch(window.location.href, {
                 method: "POST",
@@ -884,13 +958,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             })
                 .then(res => res.json())
                 .then(data => {
+                    // Hide loading screen
+                    document.getElementById("approvalLoadingModal").style.display = "none";
+
                     if (data.status === 'success') {
-                        document.getElementById("successModal").style.display = "flex";
+                        // Show success screen
+                        document.getElementById("approvalSuccessModal").style.display = "flex";
+
+                        // Redirect after 3 seconds
                         setTimeout(() => {
                             window.location.href = 'CoordinatorDashboard.php';
-                        }, 2000); // 2-second delay before redirect
+                        }, 3000);
+                    } else {
+                        alert("Error occurred. Please try again.");
                     }
-
+                })
+                .catch(error => {
+                    // Hide loading screen on error
+                    document.getElementById("approvalLoadingModal").style.display = "none";
+                    alert("Network error. Please try again.");
+                    console.error('Error:', error);
                 });
         }
 
