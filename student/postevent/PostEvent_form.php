@@ -271,7 +271,7 @@ $stmt->close();
                     <div class="form-group">
                         <label for="budgetStatement">
                             Upload Budget Statement & Receipt (PDF only, max 5MB)
-                            <a href="../../assets/file/sampleStatement.xlsx" download="budgetSample.docx"
+                            <a href="../../assets/file/sampleStatement.xlsx" download="budgetSample.xlsx"
                                 style="margin-left: 10px; color: #ac73ff; text-decoration: none; font-size: 14px;"
                                 title="Download Sample Budget Statement">
                                 📥 Download Sample
@@ -448,6 +448,17 @@ $stmt->close();
     </div>
 
     <script>
+        const swalConfig = {
+            confirmButtonColor: '#2DD627',
+            cancelButtonColor: '#FF7A30',
+            customClass: {
+                popup: 'custom-swal-popup',
+                title: 'custom-swal-title',
+                content: 'custom-swal-content',
+                confirmButton: 'custom-swal-confirm',
+                cancelButton: 'custom-swal-cancel'
+            }
+        };
         // Event Flow Table Functions
         function addEventFlowRow() {
             const tableBody = document.querySelector("#eventFlowTable tbody");
@@ -677,10 +688,15 @@ $stmt->close();
                 text: "You want to go back? Unsaved changes will be lost.",
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonColor: '#ac73ff',
-                cancelButtonColor: '#d33',
+                confirmButtonColor: '#A2AF9B',
+                cancelButtonColor: '#FF7A30',
                 confirmButtonText: 'Yes, go back!',
-                cancelButtonText: 'Cancel'
+                cancelButtonText: 'Cancel',
+                customClass: {
+                    popup: 'custom-swal-popup',
+                    title: 'custom-swal-title',
+                    content: 'custom-swal-content'
+                }
             }).then((result) => {
                 if (result.isConfirmed) {
                     window.history.back();
@@ -712,10 +728,15 @@ $stmt->close();
                 title: 'Feature Coming Soon!',
                 text: 'Currently this feature hasn\'t been completed yet, for future it will be. Thank you #sharwinsk',
                 confirmButtonText: 'Understood',
-                confirmButtonColor: '#ac73ff'
+                confirmButtonColor: '#B6F500',
+                customClass: {
+                    popup: 'custom-swal-popup',
+                    title: 'custom-swal-title',
+                    content: 'custom-swal-content',
+                    confirmButton: 'custom-swal-preview'
+                }
             });
         }
-
 
 
         // Add event listener for individual report file inputs
@@ -848,6 +869,66 @@ $stmt->close();
                 }
             });
         });
+        // Add custom styles for SweetAlert2
+        const style = document.createElement('style');
+        style.textContent = `
+    .custom-swal-popup {
+        border: 3px solid #FF7A30 !important;
+        border-radius: 15px !important;
+    }
+    
+    .custom-swal-title {
+        color: #FF7A30 !important;
+        font-weight: bold !important;
+    }
+    
+    .custom-swal-content {
+        color: #333 !important;
+    }
+    
+    .custom-swal-confirm {
+        background-color: #2DD627 !important;
+        border: none !important;
+        border-radius: 8px !important;
+        font-weight: 500 !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    .custom-swal-confirm:hover {
+        background-color: #FF7A30 !important;
+        transform: translateY(-1px) !important;
+    }
+    
+    .custom-swal-cancel {
+        background-color: #FF7A30 !important;
+        border: none !important;
+        border-radius: 8px !important;
+        font-weight: 500 !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    .custom-swal-cancel:hover {
+        background-color: #2DD627 !important;
+        transform: translateY(-1px) !important;
+    }
+    
+    .custom-swal-preview {
+        background-color: #B6F500 !important;
+        color: #333 !important;
+        border: none !important;
+        border-radius: 8px !important;
+        font-weight: 500 !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    .custom-swal-preview:hover {
+        background-color: #FF7A30 !important;
+        color: white !important;
+        transform: translateY(-1px) !important;
+    }
+`;
+
+        document.head.appendChild(style);
 
     </script>
     <!-- SweetAlert2 CDN -->

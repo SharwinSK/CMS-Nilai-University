@@ -157,7 +157,8 @@ while ($row = $event_summary_result->fetch_assoc()) {
     <title>Coordinator Dashboard - Nilai University CMS</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
-    <link href="../assets/css/coordinator.css?v=<?= time() ?>" rel="stylesheet" />
+    <link href="../assets/css/coordinator/dashboard.css?v=<?= time() ?>" rel="stylesheet" />
+    <link href="../assets/css/main.css?v=<?= time() ?>" rel="stylesheet" />
 </head>
 
 <body>
@@ -222,6 +223,35 @@ while ($row = $event_summary_result->fetch_assoc()) {
                         </div>
                         <div class="graph-container">
                             <canvas id="eventChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="dashboard-card future-placeholder">
+                        <div class="card-header">
+                            <i class="fas fa-chart-pie"></i>
+                            Coming Soon
+                        </div>
+                        <div class="placeholder-content">
+                            <div class="placeholder-icon">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <h4>Analytics Dashboard</h4>
+                            <p class="placeholder-text">
+                                Advanced event analytics and insights will be available here in future updates.
+                            </p>
+                            <div class="feature-list">
+                                <div class="feature-item">
+                                    <i class="fas fa-check-circle"></i>
+                                    Event Performance Metrics
+                                </div>
+                                <div class="feature-item">
+                                    <i class="fas fa-check-circle"></i>
+                                    Club Activity Analytics
+                                </div>
+                                <div class="feature-item">
+                                    <i class="fas fa-check-circle"></i>
+                                    Attendance Tracking
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -349,10 +379,12 @@ while ($row = $event_summary_result->fetch_assoc()) {
                             </div>
                         </div>
                     </div>
+
                 </div>
             </div>
         </div>
     </div>
+
 
     <!-- Event Details Modal -->
     <div class="modal fade" id="eventModal" tabindex="-1">
@@ -398,6 +430,30 @@ while ($row = $event_summary_result->fetch_assoc()) {
         </div>
     </div>
 
+<div class="modal fade poster-modal" id="posterModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Event Poster</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img id="posterModalImage" src="" alt="Event Poster" class="poster-image">
+                <div class="event-details">
+                    <div class="event-name" id="posterEventName"></div>
+                    <div class="event-date" id="posterEventDate">
+                        <i class="fas fa-calendar-alt"></i>
+                        <span></span>
+                    </div>
+                    <div class="event-club" id="posterEventClub">
+                        <i class="fas fa-users"></i>
+                        <span></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>

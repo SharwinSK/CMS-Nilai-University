@@ -1,31 +1,41 @@
 <style>
     /* Customize modal header */
     .modal-header.bg-danger {
-        background-color: #dc3545 !important;
-        /* Bootstrap danger color */
+        background-color: #2DD627 !important;
+        /* Header green color */
+        color: white;
+    }
+
+    .modal-header {
+        background-color: #2DD627 !important;
+        /* Header green color */
         color: white;
     }
 
     /* Customize buttons */
     .btn-danger {
-        background-color: #dc3545 !important;
-        border-color: #dc3545 !important;
+        background-color: #2DD627 !important;
+        border-color: #2DD627 !important;
+        color: white;
     }
 
     .btn-secondary {
-        background-color: #6c757d !important;
-        border-color: #6c757d !important;
+        background-color: #A2AF9B !important;
+        border-color: #A2AF9B !important;
+        color: white;
     }
 
     /* Add hover effect for buttons */
     .btn-danger:hover {
-        background-color: #c82333 !important;
-        /* Darker red */
+        background-color: #FF7A30 !important;
+        border-color: #FF7A30 !important;
+        color: white;
     }
 
     .btn-secondary:hover {
-        background-color: #5a6268 !important;
-        /* Darker gray */
+        background-color: #FF7A30 !important;
+        border-color: #FF7A30 !important;
+        color: white;
     }
 
     /* Center modal vertically */
@@ -39,10 +49,31 @@
     .modal-content {
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
         border-radius: 10px;
+        background-color: #DDDAD0;
+    }
+
+    /* Modal body styling */
+    .modal-body {
+        background-color: #DDDAD0;
+        color: #333;
+    }
+
+    /* Modal footer styling */
+    .modal-footer {
+        background-color: #DDDAD0;
+        border-top: 1px solid #ccc;
+    }
+
+    /* Modal title styling */
+    .modal-title {
+        font-weight: bold;
+    }
+
+    /* Close button styling */
+    .btn-close-white {
+        filter: invert(1);
     }
 </style>
-
-
 
 <!-- Logout Modal -->
 <div class="modal fade" id="logoutModal" tabindex="-1">

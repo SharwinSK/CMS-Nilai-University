@@ -1,98 +1,111 @@
 <?php
 session_start();
-include __DIR__ . '/../dbconfig.php';
-
-
-
-
-/* ─── SECURITY ───────────────────────────────────────── */
-if (
-    !isset($_SESSION['Admin_ID']) ||
-    !isset($_SESSION['user_type']) ||
-    $_SESSION['user_type'] !== 'admin'
-) {
-    header("Location: adminlogin.php");
+include '../db/dbconfig.php';
+$currentPage = 'dashboard';
+// Check if user is logged in and is an admin
+if (!isset($_SESSION['Admin_ID']) || $_SESSION['user_type'] !== 'admin') {
+    header("Location: ../auth/adminlogin.php");
     exit();
 }
 
+// Get admin details for navbar
+$admin_query = "SELECT Admin_Name FROM admin WHERE Admin_ID = ?";
+$admin_stmt = mysqli_prepare($conn, $admin_query);
+mysqli_stmt_bind_param($admin_stmt, "i", $_SESSION['Admin_ID']);
+mysqli_stmt_execute($admin_stmt);
+$admin_result = mysqli_stmt_get_result($admin_stmt);
+$admin_data = mysqli_fetch_assoc($admin_result);
+$admin_name = $admin_data['Admin_Name'] ?? 'Admin';
+mysqli_stmt_close($admin_stmt);
 
-/* ─── QUICK METRICS ──────────────────────────────────── */
-$totalStudents = 0;
-$totalAdvisors = 0;
-$pendingProposals = 0;
-$completedEvents = 0;
+// Fetch events with their posters (exclude events that have postmortem with status 6 or higher)
+$poster_query = "SELECT e.Ev_Name, e.Ev_Poster, c.Club_Name 
+                FROM events e 
+                JOIN club c ON e.Club_ID = c.Club_ID 
+                LEFT JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID
+                WHERE e.Ev_Poster IS NOT NULL AND e.Ev_Poster != '' 
+                AND (ep.Status_ID IS NULL OR ep.Status_ID < 6)
+                ORDER BY e.created_at DESC 
+                LIMIT 5";
+$poster_result = mysqli_query($conn, $poster_query);
 
-/* Students */
-$res = $conn->query("SELECT COUNT(*) AS n FROM student");
-if ($row = $res->fetch_assoc())
-    $totalStudents = $row['n'];
+// Fetch latest 10 students data
+$student_query = "SELECT Stu_ID, Stu_Name, Stu_Program FROM student ORDER BY Stu_ID DESC LIMIT 10";
+$student_result = mysqli_query($conn, $student_query);
 
+// Fetch events for calendar and main dashboard (exclude approved proposals - status 5, and exclude events with postmortem status 6+)
+$events_query = "SELECT e.Ev_ID, e.Ev_Name, e.Ev_Date, e.Stu_ID, s.Stu_Name, c.Club_Name, es.Status_Name,
+                        CASE 
+                            WHEN es.Status_ID = 5 THEN 'Approved'
+                            WHEN es.Status_ID = 1 THEN 'Pending'
+                            WHEN es.Status_ID IN (2,4) THEN 'Rejected'
+                            WHEN es.Status_ID = 8 THEN 'Completed'
+                            ELSE 'Unknown'
+                        END as Status_Display
+                 FROM events e 
+                 LEFT JOIN student s ON e.Stu_ID = s.Stu_ID
+                 LEFT JOIN club c ON e.Club_ID = c.Club_ID
+                 LEFT JOIN eventstatus es ON e.Status_ID = es.Status_ID
+                 LEFT JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID
+                 WHERE e.Status_ID != 5 
+                 AND (ep.Status_ID IS NULL OR ep.Status_ID < 6)
+                 ORDER BY e.Ev_Date DESC";
+$events_result = mysqli_query($conn, $events_query);
 
+// Fetch post-event reports (exclude approved reports - status 8)
+$postevent_query = "SELECT e.Ev_ID, e.Ev_Name, ep.Rep_ID, ep.created_at as submitted_date, es.Status_Name,
+                           CASE 
+                               WHEN es.Status_ID = 6 THEN 'Pending'
+                               WHEN es.Status_ID = 7 THEN 'Rejected'
+                               WHEN es.Status_ID = 8 THEN 'Approved'
+                               ELSE 'Unknown'
+                           END as Status_Display
+                    FROM eventpostmortem ep
+                    JOIN events e ON ep.Ev_ID = e.Ev_ID
+                    LEFT JOIN eventstatus es ON ep.Status_ID = es.Status_ID
+                    WHERE ep.Status_ID != 8
+                    ORDER BY ep.created_at DESC";
+$postevent_result = mysqli_query($conn, $postevent_query);
 
-/* Advisors */
-$res = $conn->query("SELECT COUNT(*) AS n FROM advisor");
-if ($row = $res->fetch_assoc())
-    $totalAdvisors = $row['n'];
+// Fetch advisors data with event completion count - ordered by events done
+$advisor_query = "SELECT a.Adv_Name, c.Club_Name, a.Adv_Email,
+                  COUNT(CASE WHEN ep.Status_ID = 8 THEN 1 END) as events_done
+                 FROM advisor a 
+                 JOIN club c ON a.Club_ID = c.Club_ID 
+                 LEFT JOIN events e ON c.Club_ID = e.Club_ID
+                 LEFT JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID
+                 GROUP BY a.Adv_ID, a.Adv_Name, c.Club_Name, a.Adv_Email
+                 ORDER BY events_done DESC, a.Adv_Name 
+                 LIMIT 10";
+$advisor_result = mysqli_query($conn, $advisor_query);
 
-// Total Events Ongoing  
+// Process events for calendar
+$calendar_events = [];
+$main_events = [];
+$post_events = [];
+while ($event = mysqli_fetch_assoc($events_result)) {
+    // For calendar
+    $date_key = $event['Ev_Date'];
+    if (!isset($calendar_events[$date_key])) {
+        $calendar_events[$date_key] = [];
+    }
+    $calendar_events[$date_key][] = [
+        'name' => $event['Ev_Name'],
+        'club' => $event['Club_Name'],
+        'student' => $event['Stu_Name'],
+        'student_id' => $event['Stu_ID']
+    ];
 
-$res = $conn->query("SELECT COUNT(*) AS n FROM events WHERE Status_ID = 5");
-if ($row = $res->fetch_assoc()) {
-    $ongoingEvents = $row['n'];
-} else {
-    $ongoingEvents = 0;
+    // For main events table
+    $main_events[] = $event;
+}
+
+// Process post-event reports
+while ($post_event = mysqli_fetch_assoc($postevent_result)) {
+    $post_events[] = $post_event;
 }
 
 
-/* Completed events  (Status_ID = 5 = ‘Approved by Coordinator’) */
-
-$res = $conn->query("
-    SELECT COUNT(*) AS n 
-    FROM events e
-    JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID
- 
-");
-if ($row = $res->fetch_assoc())
-    $completedEvents = $row['n'];
-
-/* ─── EVENT HIGHLIGHTS (latest 3 posters) ────────────── */
-$highlights = [];
-$sql = "
-    SELECT e.Ev_Name, e.Ev_Poster
-    FROM events e
-    LEFT JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID
-    WHERE e.Ev_Poster IS NOT NULL
-      AND e.Status_ID = 5
-      AND ep.Rep_ID IS NULL  -- No post-event report yet
-    ORDER BY e.Updated_At DESC
-    LIMIT 3
-";
-
-$result = $conn->query($sql);
-while ($row = $result->fetch_assoc())
-    $highlights[] = $row;
-
-/* ─── CALENDAR EVENTS (dates for current & next month) ─ */
-$calendarEvents = [];           // 'YYYY-MM-DD' => [ titles ]
-$monthStart = date('Y-m-01');
-$nextMonthEnd = date('Y-m-t', strtotime('+1 month'));
-
-$sql = "
-    SELECT Ev_Date, Ev_Name
-    FROM events
-    WHERE Ev_Date BETWEEN '$monthStart' AND '$nextMonthEnd'
-      AND Status_ID = 5
-";
-$res = $conn->query($sql);
-while ($row = $res->fetch_assoc()) {
-    $date = $row['Ev_Date'];
-    if (!isset($calendarEvents[$date]))
-        $calendarEvents[$date] = [];
-    $calendarEvents[$date][] = $row['Ev_Name'];
-}
-
-/* Pass calendar data to JS */
-$calendarJs = json_encode($calendarEvents, JSON_HEX_TAG);
 ?>
 
 <!DOCTYPE html>
@@ -101,452 +114,382 @@ $calendarJs = json_encode($calendarEvents, JSON_HEX_TAG);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nilai University - Admin Dashboard</title>
+    <title>Dashboard</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tooltip.js/1.3.3/tooltip.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/2.11.6/umd/popper.min.js"></script>
-
-    <style>
-        :root {
-            --primary-color: #03a791;
-            --secondary-color: #81e7af;
-            --accent-color: #e9f5be;
-            --warm-color: #f1ba88;
-            --light-bg: #f8f9fa;
-        }
-
-        body {
-            background: linear-gradient(135deg, var(--accent-color), var(--light-bg));
-            min-height: 100vh;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        /* Sidebar Styling */
-        .offcanvas-start {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            width: 280px;
-        }
-
-        .offcanvas-header {
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 1.5rem;
-        }
-
-        .offcanvas-title {
-            color: white;
-            font-weight: bold;
-            font-size: 1.4rem;
-        }
-
-        .nav-link {
-            color: rgba(255, 255, 255, 0.9) !important;
-            padding: 0.8rem 1.5rem;
-            margin: 0.2rem 0;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-        }
-
-        .nav-link:hover {
-            background-color: rgba(255, 255, 255, 0.1);
-            color: white !important;
-            transform: translateX(5px);
-        }
-
-        .nav-link.active {
-            background-color: var(--warm-color);
-            color: var(--primary-color) !important;
-            font-weight: bold;
-        }
-
-        /* Main Content */
-        .main-content {
-            margin-left: 0;
-            padding: 2rem;
-        }
-
-        /* Stats Cards */
-        .stats-card {
-            background: white;
-            border-radius: 15px;
-            padding: 1.5rem;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            border-left: 4px solid var(--primary-color);
-            transition: transform 0.3s ease;
-        }
-
-        .stats-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-        }
-
-        .stats-number {
-            font-size: 2.5rem;
-            font-weight: bold;
-            color: var(--primary-color);
-        }
-
-        .stats-label {
-            color: #666;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .stats-icon {
-            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
-            color: white;
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-        }
-
-        /* Carousel Styling */
-        .carousel-container {
-            background: white;
-            border-radius: 15px;
-            padding: 1.5rem;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            margin-bottom: 2rem;
-        }
-
-        .carousel-item img {
-            border-radius: 10px;
-            object-fit: cover;
-        }
-
-        .carousel-caption {
-            background: rgba(3, 167, 145, 0.9);
-            border-radius: 8px;
-            padding: 1rem;
-        }
-
-        /* Calendar Styling */
-        .calendar-container {
-            background: white;
-            border-radius: 15px;
-            padding: 1.5rem;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        }
-
-        .calendar-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem;
-            padding-bottom: 1rem;
-            border-bottom: 2px solid var(--secondary-color);
-        }
-
-        .calendar-nav {
-            background: var(--primary-color);
-            color: white;
-            border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 25px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .calendar-nav:hover {
-            background: var(--warm-color);
-            transform: scale(1.05);
-        }
-
-        .calendar-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 1px;
-            background: #e0e0e0;
-            border-radius: 8px;
-            overflow: hidden;
-        }
-
-        .calendar-day {
-            background: white;
-            padding: 0.8rem;
-            min-height: 80px;
-            position: relative;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-
-        .calendar-day:hover {
-            background: var(--accent-color);
-        }
-
-        .calendar-day.other-month {
-            background: #f8f9fa;
-            color: #ccc;
-        }
-
-        .calendar-day.today {
-            background: var(--warm-color);
-            color: white;
-            font-weight: bold;
-        }
-
-        .calendar-day.has-event {
-            background: linear-gradient(135deg, var(--accent-color), var(--secondary-color));
-        }
-
-        .calendar-day.has-event::after {
-            content: '';
-            position: absolute;
-            bottom: 5px;
-            right: 5px;
-            width: 8px;
-            height: 8px;
-            background: var(--primary-color);
-            border-radius: 50%;
-        }
-
-        .event-indicator {
-            font-size: 0.7rem;
-            background: var(--primary-color);
-            color: white;
-            padding: 2px 6px;
-            border-radius: 10px;
-            margin-top: 2px;
-            display: inline-block;
-            max-width: 100%;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            font-size: 0.75rem;
-            background: var(--primary-color);
-            color: white;
-            padding: 2px 8px;
-            border-radius: 12px;
-            cursor: pointer;
-        }
-
-        .section-title {
-            color: var(--primary-color);
-            font-weight: bold;
-            margin-bottom: 1.5rem;
-            font-size: 1.3rem;
-        }
-
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            .main-content {
-                padding: 1rem;
-            }
-
-            .stats-card {
-                margin-bottom: 1rem;
-            }
-        }
-    </style>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link href="../assets/css/main.css?v=<?= time() ?>" rel="stylesheet" />
+    <link href="../assets/css/admin/dashboard.css?v=<?= time() ?>" rel="stylesheet" />
 </head>
 
 <body>
-    <!-- Navigation Bar -->
-    <nav class="navbar navbar-expand-lg"
-        style="background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));">
-        <div class="container-fluid">
-            <button class="btn btn-outline-light me-3" type="button" data-bs-toggle="offcanvas"
-                data-bs-target="#adminSidebar">
-                <i class="fas fa-bars"></i>
-            </button>
-            <a class="navbar-brand text-white fw-bold" href="#">
-                <i class="fas fa-university me-2"></i>Nilai University CMS
-            </a>
-            <div class="navbar-nav ms-auto">
-                <div class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle text-white" href="#" role="button" data-bs-toggle="dropdown">
-                        <i class="fas fa-user-circle me-1"></i>Admin
-                    </a>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i>Profile</a></li>
-                        <li>
-                            <hr class="dropdown-divider">
-                        </li>
-                        <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#logoutModal"><i
-                                    class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
-                    </ul>
+
+    <?php include('../model/LogoutDesign.php'); ?>
+    <?php include('../components/AdmHeader.php'); ?>
+    <?php include('../components/AdmOffcanvas.php'); ?>
+
+
+
+    <!-- Poster Modal -->
+    <div class="modal fade" id="posterModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="posterModalTitle">Event Poster</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <img id="posterModalImage" src="" alt="Event Poster" class="img-fluid"
+                        style="max-width: 100%; height: auto;">
+                    <div class="mt-3">
+                        <h6 id="posterModalEventName"></h6>
+                        <p id="posterModalClubName" class="text-muted"></p>
+                    </div>
                 </div>
             </div>
         </div>
-    </nav>
+    </div>
 
-    <!-- Offcanvas Sidebar -->
-    <div class="offcanvas offcanvas-start" tabindex="-1" id="adminSidebar">
-        <div class="offcanvas-header">
-            <h5 class="offcanvas-title">
-                <i class="fas fa-tachometer-alt me-2"></i>Admin Panel
-            </h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
-        </div>
-        <div class="offcanvas-body p-0">
-            <nav class="nav flex-column">
-                <a class="nav-link active" href="dashboard.php" data-section="dashboard">
-                    <i class="fas fa-home me-2"></i>Admin Dashboard
-                </a>
-                <a class="nav-link" href="eventmanagement.php" data-section="events">
-                    <i class="fas fa-calendar-alt me-2"></i>Event Management
-                </a>
-                <a class="nav-link" href="clubmanagement.php" data-section="clubs">
-                    <i class="fas fa-users me-2"></i>Club Management
-                </a>
-                <a class="nav-link" href="advisormanagement.php" data-section="advisors">
-                    <i class="fas fa-user-tie me-2"></i>Advisor Management
-                </a>
-                <a class="nav-link" href="coordinatormanagement.php" data-section="coordinators">
-                    <i class="fas fa-user-cog me-2"></i>Coordinator Management
-                </a>
-                <a class="nav-link" href="usermanagement.php" data-section="users">
-                    <i class="fas fa-user-friends me-2"></i>User Management
-                </a>
-                <a class="nav-link" href="reportexport.php" data-section="reports">
-                    <i class="fas fa-chart-bar me-2"></i>Report & Export
-                </a>
-            </nav>
+    <!-- Event Details Modal -->
+    <div class="modal fade event-modal" id="eventModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-calendar-alt me-2"></i>Event Details</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="eventModalBody">
+                    <!-- Event details will be populated here -->
+                </div>
+            </div>
         </div>
     </div>
 
     <!-- Main Content -->
     <div class="container-fluid main-content">
-        <div class="row mb-4">
-            <div class="col-12">
-                <h2 class="section-title">
-                    <i class="fas fa-tachometer-alt me-2"></i>Admin Dashboard
-                </h2>
-            </div>
-        </div>
-
-        <!-- Statistics Cards -->
-        <div class="row mb-4">
-            <div class="col-lg-3 col-md-6 mb-3">
-                <div class="stats-card">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="stats-number"><?= number_format($totalStudents) ?></div>
-                            <div class="stats-label">Total Students</div>
-                        </div>
-                        <div class="stats-icon">
-                            <i class="fas fa-user-graduate"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6 mb-3">
-                <div class="stats-card">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="stats-number"><?= number_format($totalAdvisors) ?></div>
-                            <div class="stats-label">Total Advisors</div>
-                        </div>
-                        <div class="stats-icon">
-                            <i class="fas fa-chalkboard-teacher"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6 mb-3">
-                <div class="stats-card">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="stats-number"><?= number_format($ongoingEvents) ?></div>
-                            <div class="stats-label">Total Event Ongoing</div>
-                        </div>
-                        <div class="stats-icon">
-                            <i class="fas fa-clock"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6 mb-3">
-                <div class="stats-card">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="stats-number"><?= number_format($completedEvents) ?></div>
-                            <div class="stats-label">Events Completed</div>
-                        </div>
-                        <div class="stats-icon">
-                            <i class="fas fa-check-circle"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <div class="row">
-            <!-- Event Carousel -->
-            <div class="col-lg-8">
-                <div class="carousel-container">
-                    <h4 class="section-title">
-                        <i class="fas fa-images me-2"></i>Event Highlights
-                    </h4>
-                    <?php if (empty($highlights)): ?>
-                        <div class="p-4 text-center text-muted" style="font-style: italic;">
-                            No event highlights currently.
-                        </div>
-                    <?php endif; ?>
-                    <div id="eventCarousel" class="carousel slide" data-bs-ride="carousel">
-                        <div class="carousel-indicators">
-                            <button type="button" data-bs-target="#eventCarousel" data-bs-slide-to="0"
-                                class="active"></button>
-                            <button type="button" data-bs-target="#eventCarousel" data-bs-slide-to="1"></button>
-                            <button type="button" data-bs-target="#eventCarousel" data-bs-slide-to="2"></button>
-                        </div>
-                        <div class="carousel-inner">
-                            <?php foreach ($highlights as $index => $ev): ?>
-                                <?php
-                                $posterPath = $ev['Ev_Poster'];
-
-                                // Fix path if it's relative (like "uploads/...")
-                                if ($posterPath && !preg_match('#^https?://#', $posterPath)) {
-                                    if (!str_starts_with($posterPath, '../')) {
-                                        $posterPath = '../' . ltrim($posterPath, '/');
-                                    }
-                                }
-                                ?>
-                                <div class="carousel-item <?= $index === 0 ? 'active' : '' ?>">
-
-                                    <img src="<?= htmlspecialchars($posterPath) ?>" class="d-block w-100"
-                                        alt="<?= htmlspecialchars($ev['Ev_Name']) ?>"
-                                        style="height: 400px; width: 100%; object-fit: contain; background: #fff;">
-                                </div>
-                            <?php endforeach; ?>
-
-
-                        </div>
-                        <button class="carousel-control-prev" type="button" data-bs-target="#eventCarousel"
-                            data-bs-slide="prev">
-                            <span class="carousel-control-prev-icon"></span>
-                        </button>
-                        <button class="carousel-control-next" type="button" data-bs-target="#eventCarousel"
-                            data-bs-slide="next">
-                            <span class="carousel-control-next-icon"></span>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Calendar -->
+            <!-- Left Column -->
             <div class="col-lg-4">
-                <div class="calendar-container">
-                    <h4 class="section-title">
-                        <i class="fas fa-calendar me-2"></i>Event Calendar
-                    </h4>
+                <!-- Poster Section -->
+                <div class="poster-carousel mb-3">
+                    <h5 class="section-title">
+                        <i class="fas fa-image me-2"></i>Ongoing Events
+                    </h5>
+                    <?php if (mysqli_num_rows($poster_result) > 0): ?>
+                            <?php
+                            // Convert result to array for reuse
+                            $poster_items = [];
+                            mysqli_data_seek($poster_result, 0);
+                            while ($row = mysqli_fetch_assoc($poster_result)) {
+                                $poster_items[] = $row;
+                            }
+                            ?>
+                            <div id="posterCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="4000">
+                                <div class="carousel-indicators">
+                                    <?php foreach ($poster_items as $i => $_): ?>
+                                            <button type="button" data-bs-target="#posterCarousel" data-bs-slide-to="<?= $i ?>"
+                                                class="<?= $i === 0 ? 'active' : '' ?>"
+                                                aria-current="<?= $i === 0 ? 'true' : 'false' ?>"
+                                                aria-label="Slide <?= $i + 1 ?>"></button>
+                                    <?php endforeach; ?>
+                                </div>
+
+                                <div class="carousel-inner">
+                                    <?php foreach ($poster_items as $i => $poster):
+                                        $poster_path = '../uploads/posters/' . basename($poster['Ev_Poster']);
+                                        $safe_alt = htmlspecialchars($poster['Ev_Name'] ?? 'Event Poster', ENT_QUOTES, 'UTF-8');
+                                        ?>
+                                            <div class="carousel-item <?= $i === 0 ? 'active' : '' ?>">
+                                                <div class="poster-slide">
+                                                    <img src="<?= $poster_path ?>" alt="<?= $safe_alt ?>" loading="lazy"
+                                                        style="cursor: pointer; background: transparent;"
+                                                        onclick="showPosterModal('<?= $poster_path ?>', '<?= addslashes($poster['Ev_Name']) ?>', '<?= addslashes($poster['Club_Name']) ?>')"
+                                                        onerror="this.src='../assets/img/PlaceHolder.png';">
+                                                </div>
+                                            </div>
+                                    <?php endforeach; ?>
+                                </div>
+
+                                <button class="carousel-control-prev" type="button" data-bs-target="#posterCarousel"
+                                    data-bs-slide="prev">
+                                    <span class="carousel-control-prev-icon"></span>
+                                    <span class="visually-hidden">Previous</span>
+                                </button>
+                                <button class="carousel-control-next" type="button" data-bs-target="#posterCarousel"
+                                    data-bs-slide="next">
+                                    <span class="carousel-control-next-icon"></span>
+                                    <span class="visually-hidden">Next</span>
+                                </button>
+                            </div>
+                    <?php else: ?>
+                            <div class="text-center">
+                                <img src="../assets/img/PlaceHolder.png" class="img-fluid"
+                                    style="max-height: 200px; background: transparent;" alt="No events">
+                                <p class="mt-2 text-muted">No ongoing events at the moment.</p>
+                            </div>
+                    <?php endif; ?>
+                </div>
+
+                <!-- Calendar Section -->
+                <div class="calendar-container mb-3">
+                    <h5 class="section-title">
+                        <i class="fas fa-calendar me-2"></i>Calendar
+                    </h5>
                     <div class="calendar-header">
                         <button class="calendar-nav" onclick="previousMonth()">
                             <i class="fas fa-chevron-left"></i>
                         </button>
-                        <h5 id="currentMonth" class="mb-0"></h5>
+                        <h6 id="currentMonth" class="mb-0"></h6>
                         <button class="calendar-nav" onclick="nextMonth()">
                             <i class="fas fa-chevron-right"></i>
                         </button>
                     </div>
-                    <div class="calendar-grid" id="calendarGrid">
+                    <div class="calendar-grid-small" id="calendarGrid">
                         <!-- Calendar will be generated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Students Section with Scrolling -->
+                <div class="container-card mb-3" style="padding: 1rem;">
+                    <h5 class="section-title">
+                        <i class="fas fa-user-graduate me-2"></i>Student List
+                    </h5>
+                    <div class="table-container">
+                        <div class="student-list-container">
+                            <table class="table summary-table mb-0">
+                                <thead style="position: sticky; top: 0; z-index: 10;">
+                                    <tr>
+                                        <th style="font-size: 0.8rem;">ID</th>
+                                        <th style="font-size: 0.8rem;">Name</th>
+                                        <th style="font-size: 0.8rem;">Program</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php while ($student = mysqli_fetch_assoc($student_result)): ?>
+                                            <tr>
+                                                <td><strong><?php echo htmlspecialchars($student['Stu_ID']); ?></strong></td>
+                                                <td style="font-size: 0.8rem;">
+                                                    <?php echo htmlspecialchars($student['Stu_Name']); ?>
+                                                </td>
+                                                <td style="font-size: 0.8rem;">
+                                                    <?php echo htmlspecialchars($student['Stu_Program']); ?>
+                                                </td>
+                                            </tr>
+                                    <?php endwhile; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="d-flex justify-content-end mt-2">
+                            <button class="icon-btn small" data-bs-toggle="tooltip" data-bs-placement="top"
+                                title="View All Students" onclick="window.location.href='../admin/usermanagement.php'">
+                                <i class="fas fa-user-graduate"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column -->
+            <div class="col-lg-8">
+                <!-- Main Event Section (Large) -->
+                <div class="container-card" style="padding: 1rem;">
+                    <h4 class="section-title">
+                        <i class="fas fa-calendar-check me-2"></i>Event Management
+                    </h4>
+                    <div class="events-table-container">
+                        <!-- Tab Navigation -->
+                        <ul class="nav nav-tabs" id="eventTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="proposals-tab" data-bs-toggle="tab"
+                                    data-bs-target="#proposals" type="button" role="tab">
+                                    <i class="fas fa-file-alt me-2"></i>Event Proposals
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="reports-tab" data-bs-toggle="tab" data-bs-target="#reports"
+                                    type="button" role="tab">
+                                    <i class="fas fa-clipboard-check me-2"></i>Post-Event Reports
+                                </button>
+                            </li>
+                        </ul>
+
+                        <!-- Tab Content -->
+                        <div class="tab-content" id="eventTabContent">
+                            <!-- Event Proposals Tab -->
+                            <div class="tab-pane fade show active" id="proposals" role="tabpanel">
+                                <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                                    <table class="table summary-table mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Event Name</th>
+                                                <th>Date</th>
+                                                <th>Student</th>
+                                                <th>Club</th>
+                                                <th>Status</th>
+                                                <th class="text-end">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php foreach ($main_events as $event): ?>
+                                                    <tr>
+                                                        <td>
+                                                            <strong><?php echo htmlspecialchars($event['Ev_Name']); ?></strong><br>
+                                                            <small class="text-muted">Event ID:
+                                                                <?php echo htmlspecialchars($event['Ev_ID']); ?></small>
+                                                        </td>
+                                                        <td>
+                                                            <?php echo date('M j, Y', strtotime($event['Ev_Date'])); ?>
+                                                        </td>
+                                                        <td><?php echo htmlspecialchars($event['Stu_Name']); ?><br>
+                                                            <small
+                                                                class="text-muted"><?php echo htmlspecialchars($event['Stu_ID']); ?></small>
+                                                        </td>
+                                                        <td><span
+                                                                class="club-text"><?php echo htmlspecialchars($event['Club_Name']); ?></span>
+                                                        </td>
+                                                        <td>
+                                                            <span
+                                                                class="status-badge status-<?php echo strtolower($event['Status_Display']); ?>">
+                                                                <?php echo htmlspecialchars($event['Status_Display']); ?>
+                                                            </span>
+                                                        </td>
+                                                        <td class="action-buttons">
+                                                            <button class="btn btn-sm btn-outline-primary me-1"
+                                                                data-bs-toggle="tooltip" data-bs-placement="top"
+                                                                title="Edit Event">
+                                                                <i class="fas fa-edit"></i>
+                                                            </button>
+                                                            <button class="btn btn-sm btn-outline-info" data-bs-toggle="tooltip"
+                                                                data-bs-placement="top" title="View Event Details">
+                                                                <i class="fas fa-eye"></i>
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                            <?php endforeach; ?>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Post-Event Reports Tab -->
+                            <div class="tab-pane fade" id="reports" role="tabpanel">
+                                <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                                    <table class="table summary-table mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Event Name</th>
+                                                <th>Report ID</th>
+                                                <th>Submitted Date</th>
+                                                <th>Status</th>
+                                                <th class="text-end">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php if (!empty($post_events)): ?>
+                                                    <?php foreach ($post_events as $post_event): ?>
+                                                            <tr>
+                                                                <td>
+                                                                    <strong><?php echo htmlspecialchars($post_event['Ev_Name']); ?></strong><br>
+                                                                    <small class="text-muted">Event ID:
+                                                                        <?php echo htmlspecialchars($post_event['Ev_ID']); ?></small>
+                                                                </td>
+                                                                <td>
+                                                                    <strong><?php echo htmlspecialchars($post_event['Rep_ID']); ?></strong>
+                                                                </td>
+                                                                <td>
+                                                                    <?php echo date('M j, Y', strtotime($post_event['submitted_date'])); ?><br>
+                                                                    <small
+                                                                        class="text-muted"><?php echo date('H:i', strtotime($post_event['submitted_date'])); ?></small>
+                                                                </td>
+                                                                <td>
+                                                                    <span
+                                                                        class="status-badge status-<?php echo strtolower($post_event['Status_Display']); ?>">
+                                                                        <?php echo htmlspecialchars($post_event['Status_Display']); ?>
+                                                                    </span>
+                                                                </td>
+                                                                <td class="action-buttons">
+                                                                    <button class="btn btn-sm btn-outline-primary me-1"
+                                                                        data-bs-toggle="tooltip" data-bs-placement="top"
+                                                                        title="Edit Report">
+                                                                        <i class="fas fa-edit"></i>
+                                                                    </button>
+                                                                    <button class="btn btn-sm btn-outline-info" data-bs-toggle="tooltip"
+                                                                        data-bs-placement="top" title="View Report">
+                                                                        <i class="fas fa-eye"></i>
+                                                                    </button>
+                                                                </td>
+                                                            </tr>
+                                                    <?php endforeach; ?>
+                                            <?php else: ?>
+                                                    <tr>
+                                                        <td colspan="5" class="text-center text-muted">
+                                                            <i class="fas fa-file-alt fa-2x mb-2"></i><br>
+                                                            No post-event reports submitted yet.
+                                                        </td>
+                                                    </tr>
+                                            <?php endif; ?>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end mt-3">
+                            <button class="icon-btn me-2" onclick="window.location.href='../admin/eventmanagement.php'"
+                                data-bs-toggle="tooltip" data-bs-placement="top" title="View All Events">
+                                <i class="fas fa-list"></i>
+                            </button>
+                            <button class="icon-btn add-btn" onclick="showAddEventAlert()" data-bs-toggle="tooltip"
+                                data-bs-placement="top" title="Add New Event">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Advisor Section -->
+                <div class="container-card" style="padding: 1rem; min-height: 400px;">
+                    <h5 class="section-title">
+                        <i class="fas fa-chalkboard-teacher me-2"></i> Advisors List
+                    </h5>
+                    <div class="table-container" style="min-height: 320px;">
+                        <div class="table-responsive">
+                            <table class="table summary-table mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Advisor Name</th>
+                                        <th>Club</th>
+                                        <th>Email</th>
+                                        <th>Events Completed</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php while ($advisor = mysqli_fetch_assoc($advisor_result)): ?>
+                                            <tr>
+                                                <td><strong><?php echo htmlspecialchars($advisor['Adv_Name']); ?></strong></td>
+                                                <td><span
+                                                        class="club-text"><?php echo htmlspecialchars($advisor['Club_Name']); ?></span>
+                                                </td>
+                                                <td><small><?php echo htmlspecialchars($advisor['Adv_Email']); ?></small></td>
+                                                <td>
+                                                    <span
+                                                        class="badge bg-<?php echo $advisor['events_done'] > 0 ? 'success' : 'secondary'; ?>"
+                                                        style="font-size: 0.9rem; padding: 0.4rem 0.8rem;">
+                                                        <?php echo htmlspecialchars($advisor['events_done']); ?>
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                    <?php endwhile; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="d-flex justify-content-end mt-2">
+                            <button class="icon-btn small" data-bs-toggle="tooltip" data-bs-placement="top"
+                                title="View All Advisors"
+                                onclick="window.location.href='../admin/advisormanagement.php'">
+                                <i class="fas fa-users"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -555,9 +498,8 @@ $calendarJs = json_encode($calendarEvents, JSON_HEX_TAG);
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script>
-
-        // Sample events data
-        const events = <?= $calendarJs ?>;
+        // PHP data to JavaScript
+        const calendarEvents = <?php echo json_encode($calendar_events); ?>;
 
         let currentDate = new Date();
         const monthNames = ["January", "February", "March", "April", "May", "June",
@@ -577,13 +519,13 @@ $calendarJs = json_encode($calendarEvents, JSON_HEX_TAG);
 
             // Add day headers
             dayHeaders.forEach(day => {
-                calendarHTML += `<div class="calendar-day" style="background: var(--primary-color); color: white; font-weight: bold; text-align: center; padding: 0.5rem;">${day}</div>`;
+                calendarHTML += `<div class="calendar-day" style="background: var(--header-green); color: white; font-weight: bold; text-align: center; padding: 0.3rem; font-size: 0.8rem;">${day}</div>`;
             });
 
             // Add empty cells for days before the first day of the month
             for (let i = 0; i < startingDayOfWeek; i++) {
                 const prevDate = new Date(year, month, 0 - (startingDayOfWeek - 1 - i));
-                calendarHTML += `<div class="calendar-day other-month">${prevDate.getDate()}</div>`;
+                calendarHTML += `<div class="calendar-day other-month" style="font-size: 0.8rem;">${prevDate.getDate()}</div>`;
             }
 
             // Add days of the month
@@ -596,22 +538,17 @@ $calendarJs = json_encode($calendarEvents, JSON_HEX_TAG);
 
                 let dayClass = 'calendar-day';
                 if (isToday) dayClass += ' today';
-                if (events[dateStr]) dayClass += ' has-event';
+                if (calendarEvents[dateStr]) dayClass += ' has-event';
 
                 let eventHTML = '';
-                if (events[dateStr]) {
-                    const tooltipText = events[dateStr].length + ' event(s):\n' + events[dateStr].join('\n');
-                    eventHTML = `<div class="event-indicator"
-                    data-bs-toggle="tooltip"
-                    data-bs-placement="top"
-                    title="${tooltipText.replace(/"/g, '&quot;')}">
-                    ${events[dateStr].length} event(s)
-                 </div>`;
+                if (calendarEvents[dateStr]) {
+                    eventHTML = `<div class="event-indicator" onclick="showEventDetails('${dateStr}')">
+                        ${calendarEvents[dateStr].length}
+                     </div>`;
                 }
 
-
-                calendarHTML += `<div class="${dayClass}">
-                    <div style="font-weight: bold; margin-bottom: 4px;">${day}</div>
+                calendarHTML += `<div class="${dayClass}" style="font-size: 0.8rem;">
+                    <div style="font-weight: bold; margin-bottom: 2px;">${day}</div>
                     ${eventHTML}
                 </div>`;
             }
@@ -621,12 +558,52 @@ $calendarJs = json_encode($calendarEvents, JSON_HEX_TAG);
             const remainingCells = totalCells - (daysInMonth + startingDayOfWeek);
 
             for (let i = 1; i <= remainingCells; i++) {
-                calendarHTML += `<div class="calendar-day other-month">${i}</div>`;
+                calendarHTML += `<div class="calendar-day other-month" style="font-size: 0.8rem;">${i}</div>`;
             }
 
-
             document.getElementById('calendarGrid').innerHTML = calendarHTML;
+        }
 
+        function showEventDetails(dateStr) {
+            const events = calendarEvents[dateStr];
+            if (!events || events.length === 0) return;
+
+            let modalContent = `
+                <div class="mb-3">
+                    <h6><i class="fas fa-calendar me-2"></i>Events on ${new Date(dateStr).toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            })}</h6>
+                </div>
+            `;
+
+            events.forEach((event, index) => {
+                modalContent += `
+                    <div class="card mb-2" style="border: 1px solid var(--header-green);">
+                        <div class="card-body">
+                            <h6 class="card-title text-success">
+                                <i class="fas fa-calendar-check me-2"></i>${event.name}
+                            </h6>
+                            <p class="card-text mb-1">
+                                <strong><i class="fas fa-users me-2"></i>Club:</strong> ${event.club}
+                            </p>
+                            <p class="card-text mb-1">
+                                <strong><i class="fas fa-user me-2"></i>Student:</strong> ${event.student}
+                            </p>
+                            <p class="card-text mb-0">
+                                <strong><i class="fas fa-id-card me-2"></i>Student ID:</strong> ${event.student_id}
+                            </p>
+                        </div>
+                    </div>
+                `;
+            });
+
+            document.getElementById('eventModalBody').innerHTML = modalContent;
+
+            const eventModal = new bootstrap.Modal(document.getElementById('eventModal'));
+            eventModal.show();
         }
 
         function previousMonth() {
@@ -639,18 +616,57 @@ $calendarJs = json_encode($calendarEvents, JSON_HEX_TAG);
             generateCalendar(currentDate.getFullYear(), currentDate.getMonth());
         }
 
+        // Show poster in modal
+        function showPosterModal(imageSrc, eventName, clubName) {
+            document.getElementById('posterModalImage').src = imageSrc;
+            document.getElementById('posterModalEventName').textContent = eventName;
+            document.getElementById('posterModalClubName').textContent = clubName;
+            document.getElementById('posterModalTitle').textContent = eventName + ' - Event Poster';
+
+            const posterModal = new bootstrap.Modal(document.getElementById('posterModal'));
+            posterModal.show();
+        }
+
         // Initialize calendar
         generateCalendar(currentDate.getFullYear(), currentDate.getMonth());
 
-
-        // Enable Bootstrap tooltips
-        document.addEventListener('DOMContentLoaded', function () {
-            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-            tooltipTriggerList.map(function (tooltipTriggerEl) {
-                return new bootstrap.Tooltip(tooltipTriggerEl);
-            });
+        // Initialize tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
         });
 
+        // Show add event alert
+        function showAddEventAlert() {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Feature Not Available',
+                text: '⚠️ Sorry! This feature is not available at the moment. It will be included in a future update. Thank you for your understanding.',
+                confirmButtonColor: '#25aa20',
+                confirmButtonText: 'OK'
+            });
+        }
+
+        // Logout functionality using your existing LogoutDesign.php
+        document.getElementById('confirmLogout').addEventListener('click', () => {
+            fetch('../Logout.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'logout' })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        window.location.href = data.redirect;
+                    } else {
+                        alert('Logout failed. Please try again.');
+                    }
+                })
+                .catch(err => {
+                    console.error('Error during logout:', err);
+                    alert('An error occurred. Please try again.');
+                });
+        });
     </script>
 </body>
 

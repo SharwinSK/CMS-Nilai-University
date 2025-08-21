@@ -49,37 +49,9 @@ $postmortems_result = $conn->query($post_query);
     <title>All Submissions - Nilai University CMS</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
-    <link href="../assets/css/coordinator.css?v=<?= time() ?>" rel="stylesheet" />
-    <style>
-        /* Main Content Styles */
-        .main-content {
-            padding: 20px;
-            margin-left: 0;
-            transition: all 0.3s ease;
-        }
+    <link href="../assets/css/coordinator/eventlist.css?v=<?= time() ?>" rel="stylesheet" />
+    <link href="../assets/css/main.css?v=<?= time() ?>" rel="stylesheet" />
 
-        .page-header {
-            background: white;
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 25px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            border-left: 5px solid var(--primary-color);
-        }
-
-        .page-title {
-            color: var(--text-dark);
-            font-weight: bold;
-            margin: 0;
-            display: flex;
-            align-items: center;
-        }
-
-        .page-title i {
-            color: var(--primary-color);
-            margin-right: 15px;
-        }
-    </style>
 </head>
 
 <body>

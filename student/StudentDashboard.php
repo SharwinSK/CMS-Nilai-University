@@ -143,8 +143,11 @@ $notification_result->data_seek(0);
     <title>Student Dashboard</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
-    <link href="../assets/css/student.css?v=<?= time() ?>" rel="stylesheet" />
+    <link href="../assets/css/main.css?v=<?= time() ?>" rel="stylesheet" />
+    <link href="../assets/css/student/dashboard.css?v=<?= time() ?>" rel="stylesheet" />
+    <style>
 
+    </style>
 </head>
 
 <body>
@@ -189,7 +192,7 @@ $notification_result->data_seek(0);
                 top: 20px;
                 right: 20px;
                 font-size: 2rem;
-                color: var(--primary-purple);
+                color: var( );
                 opacity: 0.3;
               "></i>
                 </div>

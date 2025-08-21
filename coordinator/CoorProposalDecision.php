@@ -187,7 +187,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Review Proposal</title>
-    <link href="../assets/css/coorproposal.css?v=<?= time() ?>" rel="stylesheet" />
+    <link href="../assets/css/coordinator/coorproposal.css?v=<?= time() ?>" rel="stylesheet" />
 </head>
 
 <body>

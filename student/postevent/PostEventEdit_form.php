@@ -177,7 +177,10 @@ $stmt->close();
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Post Event Form</title>
-    <link href="posteventedit.css" rel="stylesheet" />
+    <!-- Add SweetAlert2 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert2/11.10.1/sweetalert2.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert2/11.10.1/sweetalert2.min.css">
+    <link href="posteventedit.css?v=<?= time() ?>" rel="stylesheet" />
 </head>
 
 <body>
@@ -528,12 +531,12 @@ $stmt->close();
                 <!-- Navigation Buttons -->
                 <div class="navigation-buttons">
                     <div>
-                        <button type="button" class="btn btn-secondary" onclick="goBack()">
+                        <button type="button" class="btn btn-back" onclick="goBack()">
                             Back
                         </button>
                     </div>
                     <div style="display: flex; gap: 10px">
-                        <button type="button" class="btn btn-secondary" onclick="previewForm()">
+                        <button type="button" class="btn btn-preview" onclick="previewForm()">
                             Preview
                         </button>
                         <button type="submit" class="btn btn-success">Submit Report</button>
@@ -876,13 +879,27 @@ $stmt->close();
 
         // Navigation Functions
         function goBack() {
-            if (confirm("Are you sure you want to go back? Unsaved changes will be lost.")) {
-                window.history.back();
-            }
+            Swal.fire({
+                title: 'Are you sure?',
+                text: 'You want to go back? Unsaved changes will be lost.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, go back',
+                cancelButtonText: 'Stay here'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.history.back();
+                }
+            });
         }
 
         function previewForm() {
-            alert("Preview functionality - This would show a formatted preview of all entered data.");
+            Swal.fire({
+                title: 'Form Preview',
+                text: 'This would show a formatted preview of all entered data.',
+                icon: 'info',
+                confirmButtonText: 'OK'
+            });
         }
 
         // Meeting Description Modal Functions

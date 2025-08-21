@@ -1,0 +1,298 @@
+
+/*history page*/
+.filter-card {
+  background: var(--container-beige);
+  border-radius: 15px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+  border-left: 4px solid var(--header-green);
+}
+
+.filter-btn {
+  background: var(--header-green);
+  border: none;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.filter-btn:hover {
+  background: var(--hover-orange);
+  transform: translateY(-2px);
+}
+
+.reset-btn {
+  background: #6c757d;
+  border: none;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.reset-btn:hover {
+  background: #5a6268;
+  transform: translateY(-2px);
+}
+
+.event-table {
+  background: var(--container-beige);
+  border-radius: 15px;
+  overflow: visible !important;
+  position: relative;
+  z-index: 1;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.table th {
+  background: var(--header-green);
+  color: white;
+  font-weight: 600;
+  padding: 15px;
+  border: none;
+  text-align: center;
+}
+
+.table td {
+  padding: 15px;
+  vertical-align: middle;
+  text-align: center;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.table tbody tr:hover {
+  background-color: rgba(45, 214, 39, 0.1);
+}
+
+.event-badge {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.badge-academic {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.badge-cultural {
+  background: #f3e5f5;
+  color: #7b1fa2;
+}
+
+.badge-sports {
+  background: #e8f5e8;
+  color: #388e3c;
+}
+
+.badge-workshop {
+  background: #fff3e0;
+  color: #f57c00;
+}
+
+.badge-seminar {
+  background: #fce4ec;
+  color: #c2185b;
+}
+
+.action-btn {
+  padding: 8px 15px;
+  border-radius: 8px;
+  border: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  margin: 2px;
+}
+
+.export-btn {
+  background: #dc3545;
+  color: white;
+}
+
+.export-btn:hover {
+  background: #c82333;
+  transform: translateY(-2px);
+}
+
+.page-header {
+  background: var(--container-beige);
+  border-radius: 15px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+}
+
+.page-title {
+  color: var(--header-green);
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.page-subtitle {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+
+
+.pagination {
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.page-link {
+  color: var(--header-green);
+  border: 1px solid var(--header-green);
+  margin: 0 2px;
+  border-radius: 8px;
+}
+
+.page-link:hover {
+  background: var(--header-green);
+  color: white;
+}
+
+.page-item.active .page-link {
+  background: var(--header-green);
+  border-color: var(--header-green);
+}
+
+.search-input {
+  border-radius: 10px;
+  border: 2px solid #e9ecef;
+  padding: 10px 15px;
+  transition: all 0.3s ease;
+}
+
+.search-input:focus {
+  border-color: var(--header-green);
+  box-shadow: 0 0 0 0.2rem rgba(45, 214, 39, 0.25);
+}
+
+.form-select {
+  border-radius: 10px;
+  border: 2px solid #e9ecef;
+  padding: 10px 15px;
+}
+
+.form-select:focus {
+  border-color: var(--header-green);
+  box-shadow: 0 0 0 0.2rem rgba(45, 214, 39, 0.25);
+}
+
+.no-events {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+}
+
+.no-events i {
+  font-size: 4rem;
+  color: var(--header-green);
+  margin-bottom: 20px;
+}
+
+.btn{
+    background: var(--header-green);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+}
+.dropdown-menu.show {
+    background-color: var(--body-orange);
+}
+
+.btn:hover
+{
+    background: var(--hover-orange);
+}
+/* Proposal Button Styles */
+.proposal-btn {
+  background: #28a745;
+  color: white;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  font-size: 0.8rem;
+}
+
+.proposal-btn:hover {
+  background: #218838;
+  color: white;
+  transform: translateY(-2px);
+}
+
+/* Post Event Button Styles */
+.postevent-btn {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  font-size: 0.8rem;
+}
+
+.postevent-btn:hover {
+  background: #c82333;
+  color: white;
+  transform: translateY(-2px);
+}
+
+/* Column width adjustments */
+.table th:nth-child(6) {
+  /* View column */
+  width: 100px;
+  text-align: center;
+}
+
+.table th:nth-child(7) {
+  /* Export Documents column */
+  width: 150px;
+  text-align: center;
+}
+
+.table td:nth-child(6),
+.table td:nth-child(7) {
+  text-align: center;
+  vertical-align: middle;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .table th:nth-child(6),
+  .table th:nth-child(7) {
+    font-size: 0.9rem;
+  }
+
+  .proposal-btn,
+  .postevent-btn {
+    font-size: 0.75rem;
+    padding: 4px 8px;
+  }
+}
+
+.table-responsive {
+    background-color: var(--header-green);
+  overflow: visible !important;
+  padding-top: 30px;
+  /* add space so dropdown can open downward */
+}
+
+.table tbody tr {
+  position: relative;
+  z-index: 1;
+}

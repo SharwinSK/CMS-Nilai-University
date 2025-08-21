@@ -1,0 +1,89 @@
+    :root {
+        --header-green: #25aa20;        /* Header & Offcanvas */
+        --hover-orange: #ff8645;        /* Offcanvas hover */
+        --body-orange: rgb(253, 255, 112);         /* Body background */
+        --container-beige: #DDDAD0;     /* All div containers */
+        --dark-bg: #2c3e50;
+        --text-dark: #333;
+        --success: #28a745;             /* Approved status */
+        --warning: #ffc107;             /* Pending status */
+        --danger: #dc3545;              /* Rejected status */
+        --info: #17a2b8;
+    }
+
+    body {
+        background: var(--body-orange); /* Use body orange background */
+        min-height: 100vh;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    /* Navigation Styles */
+    .navbar {
+        background: var(--header-green); /* Solid header green */
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .navbar-brand {
+        font-weight: bold;
+        color: white !important;
+    }
+
+    /* Offcanvas Styles */
+    .offcanvas {
+        background: var(--header-green); /* Solid header green */
+        border-right: 3px solid var(--hover-orange); /* Orange border */
+           height: 100vh; /* Ensure full height */
+    }
+
+    .offcanvas-title {
+        color: white;
+        font-weight: bold;
+    }
+
+    .sidebar-item {
+        display: flex;
+        align-items: center;
+        padding: 12px 20px;
+        color: white;
+        text-decoration: none;
+        margin: 5px 0;
+        border-radius: 10px;
+        transition: all 0.3s ease;
+        border-left: 4px solid transparent;
+    }
+    .offcanvas-body {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 0; /* Remove default padding if needed */
+}
+
+.sidebar-nav {
+    flex-grow: 1; /* Take up available space */
+}
+
+
+    .sidebar-item:hover {
+        background: var(--hover-orange); /* Orange hover */
+        color: white;
+        border-left-color: white;
+        transform: translateX(5px);
+    }
+
+    .sidebar-item.active {
+        background: var(--hover-orange); /* Orange active */
+        border-left-color: white;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .sidebar-item i {
+        width: 20px;
+        margin-right: 15px;
+    }
+.sidebar-footer {
+    padding: 10px;
+    margin-top: auto; /* This will now work */
+    text-align: center;
+    color: white;
+    border-top: 1px solid rgba(255, 255, 255, 0.1); /* Optional: add a separator */
+}

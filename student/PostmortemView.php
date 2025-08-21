@@ -41,6 +41,7 @@ $total_approved = $approved_events_result->num_rows;
     <title>Post Event</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
+    <link href="../assets/css/main.css?v=<?= time() ?>" rel="stylesheet" />
     <link href="../assets/css/student.css?v=<?= time() ?>" rel="stylesheet" />
 
 </head>

@@ -1,0 +1,389 @@
+:root {
+    --header-green: #2DD627;        /* Header & Offcanvas */
+    --hover-orange: #FF7A30;        /* Offcanvas hover */
+    --body-orange: #FFC947;         /* Body background */
+    --container-beige: #DDDAD0;     /* All div containers */
+    --dark-bg: #2c3e50;
+    --text-dark: #333;
+}
+
+/* Main Content Styles */
+.main-content {
+    margin-left: 0;
+    padding: 2rem;
+    transition: margin-left 0.3s ease;
+    background: var(--body-orange); /* Use body orange */
+}
+
+/* Page Header */
+.page-header {
+    background: var(--container-beige); /* Use container beige */
+    border-radius: 15px;
+    padding: 25px;
+    margin-bottom: 25px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    border-left: 5px solid var(--header-green); /* Green accent */
+}
+
+/* Stats Cards */
+.stats-card {
+    background: var(--container-beige); /* Use container beige */
+    border-radius: 15px;
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 122, 48, 0.2); /* Orange border */
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.stats-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+}
+
+.stats-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+/* Individual stats icon colors */
+.stats-icon[style*="3498db"] {
+    background: var(--header-green) !important; /* Use header green for first icon */
+}
+
+.stats-icon[style*="27ae60"] {
+    background: var(--hover-orange) !important; /* Use hover orange for second icon */
+}
+
+.stats-icon[style*="e74c3c"] {
+    background: var(--header-green) !important; /* Use header green for third icon */
+}
+
+.stats-number {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: var(--text-dark);
+    margin: 0;
+}
+
+.stats-label {
+    color: #666;
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+/* Content Card */
+.content-card {
+    background: var(--container-beige); /* Use container beige */
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 122, 48, 0.3); /* Orange border */
+}
+
+/* Filter Controls */
+.filter-controls {
+    background: var(--header-green); /* Solid header green */
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    color: white;
+}
+
+.search-container {
+    position: relative;
+}
+
+.search-input {
+    border: none;
+    border-radius: 25px;
+    padding: 0.75rem 1rem 0.75rem 3rem;
+    background: rgba(255, 255, 255, 0.9);
+    width: 100%;
+    transition: all 0.3s ease;
+}
+
+.search-input:focus {
+    outline: none;
+    background: white;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+}
+
+.search-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #666;
+}
+
+.filter-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    border-radius: 25px;
+    padding: 0.75rem 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.filter-btn:hover {
+    background: var(--hover-orange); /* Orange hover */
+    color: white;
+    transform: translateY(-2px);
+    border-color: var(--hover-orange);
+}
+
+/* Button Styles */
+.btn-primary {
+    background: var(--header-green); /* Solid header green */
+    border-color: var(--header-green);
+    border-radius: 10px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 500;
+}
+
+.btn-primary:hover {
+    background: var(--hover-orange); /* Orange hover */
+    border-color: var(--hover-orange);
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
+    background: #6c757d;
+    border-color: #6c757d;
+    border-radius: 10px;
+    padding: 0.75rem 1.5rem;
+}
+
+.btn-outline-primary {
+    border: 2px solid var(--header-green);
+    color: var(--header-green);
+    background: transparent;
+    border-radius: 10px;
+}
+
+.btn-outline-primary:hover {
+    background: var(--header-green);
+    border-color: var(--header-green);
+    color: white;
+}
+
+.btn-outline-secondary {
+    border: 2px solid #6c757d;
+    color: #6c757d;
+    background: transparent;
+    border-radius: 10px;
+}
+
+.btn-outline-secondary:hover {
+    background: #6c757d;
+    color: white;
+}
+
+/* Table Styles */
+.table-container {
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.table {
+    margin: 0;
+    background: white;
+}
+
+.table thead th {
+    background: var(--header-green); /* Solid header green */
+    color: white;
+    border: none;
+    padding: 1rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+}
+
+.table tbody td {
+    padding: 1rem;
+    vertical-align: middle;
+    border-color: #f0f0f0;
+}
+
+.table tbody tr:hover {
+    background-color: rgba(255, 122, 48, 0.05); /* Light orange hover */
+}
+
+/* Badge Styles */
+.event-type-badge {
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.badge-sdg {
+    background: #3498db; /* Solid blue */
+    color: white;
+}
+
+.badge-usr {
+    background: #27ae60; /* Solid green */
+    color: white;
+}
+
+.badge-csr {
+    background: #e74c3c; /* Solid red */
+    color: white;
+}
+
+/* Action Buttons */
+.action-btn {
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    margin: 0 0.2rem;
+    transition: all 0.3s ease;
+    font-size: 1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.btn-view-proposal {
+    background: var(--body-orange); /* Use body orange */
+    color: white;
+}
+
+.btn-view-proposal:hover {
+    background: var(--hover-orange); /* Orange hover */
+    color: white;
+    transform: translateY(-3px) scale(1.1);
+    box-shadow: 0 8px 20px rgba(255, 122, 48, 0.4);
+}
+
+.btn-view-post {
+    background: var(--header-green); /* Use header green */
+    color: white;
+}
+
+.btn-view-post:hover {
+    background: var(--hover-orange); /* Orange hover */
+    color: white;
+    transform: translateY(-3px) scale(1.1);
+    box-shadow: 0 8px 20px rgba(255, 122, 48, 0.4);
+}
+
+/* Tooltip Styles */
+.tooltip {
+    --bs-tooltip-bg: #333;
+    --bs-tooltip-color: white;
+    --bs-tooltip-font-size: 0.875rem;
+}
+
+.tooltip .tooltip-inner {
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    font-weight: 500;
+}
+
+/* Modal Styles */
+.modal-content {
+    border-radius: 20px;
+    border: none;
+    overflow: hidden;
+    background: var(--container-beige); /* Use container beige */
+}
+
+.modal-header {
+    background: var(--header-green); /* Solid header green */
+    color: white;
+    border: none;
+}
+
+.modal-body {
+    padding: 2rem;
+    background: var(--container-beige); /* Use container beige */
+}
+
+.modal-footer {
+    background: var(--container-beige); /* Use container beige */
+    border-top: 1px solid rgba(255, 122, 48, 0.2); /* Orange border */
+}
+
+.form-control,
+.form-select {
+    border-radius: 10px;
+    border: 2px solid rgba(255, 122, 48, 0.2); /* Orange border */
+    padding: 0.75rem;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--hover-orange); /* Orange focus */
+    box-shadow: 0 0 0 0.2rem rgba(255, 122, 48, 0.25);
+}
+
+.form-label {
+    color: var(--hover-orange); /* Orange labels */
+    font-weight: 600;
+}
+
+/* Pagination Styles */
+.pagination .page-link {
+    border-radius: 10px;
+    margin: 0 2px;
+    border: 2px solid var(--header-green);
+    color: var(--header-green);
+}
+
+.pagination .page-item.active .page-link {
+    background: var(--header-green);
+    border-color: var(--header-green);
+    color: white;
+}
+
+.pagination .page-link:hover {
+    background: var(--hover-orange);
+    border-color: var(--hover-orange);
+    color: white;
+}
+
+/* Badge overrides */
+.badge.bg-danger {
+    background: var(--hover-orange) !important;
+}
+
+/* Text color overrides */
+h2 i[style*="var(--primary-color)"] {
+    color: var(--header-green) !important;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .main-content {
+        padding: 1rem;
+    }
+
+    .stats-card {
+        padding: 1.5rem;
+        text-align: center;
+    }
+
+    .filter-controls {
+        padding: 1rem;
+    }
+
+    .table-responsive {
+        border-radius: 10px;
+    }
+}

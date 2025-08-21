@@ -160,15 +160,13 @@ $button_label = ($mode === 'modify') ? 'Resubmit' : 'Edit Submit';
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Proposal Form</title>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <link href="../../assets/css/proposal.css?v=<?= time() ?>" rel="stylesheet" />
+    <link href="../../assets/css/student/editproposal.css?v=<?= time() ?>" rel="stylesheet" />
 </head>
 
 <body>
     <div class="container">
         <div class="header">
-            <button type="button" class="back-btn-header" id="headerBackBtn">
-                ← Back
-            </button>
+
             <h1>Proposal Form</h1>
             <p>Nilai University Content Management System</p>
         </div>
@@ -729,6 +727,10 @@ $button_label = ($mode === 'modify') ? 'Resubmit' : 'Edit Submit';
         </div>
     </div>
 
+    <div class="scroll-buttons">
+        <button class="scroll-btn up" id="scrollToTop" title="Scroll to Top"></button>
+        <button class="scroll-btn down" id="scrollToBottom" title="Scroll to Bottom"></button>
+    </div>
     <script>
         // Initialize form when page loads
         document.addEventListener("DOMContentLoaded", function () {
@@ -738,7 +740,51 @@ $button_label = ($mode === 'modify') ? 'Resubmit' : 'Edit Submit';
             calculateBudget(); // Calculate initial budget if there are existing items
             updateRemainingHours(); // Update hours if there are existing flows
         });
+        document.addEventListener("DOMContentLoaded", function () {
+            const scrollToTopBtn = document.getElementById('scrollToTop');
+            const scrollToBottomBtn = document.getElementById('scrollToBottom');
 
+            // Scroll to top function
+            scrollToTopBtn.addEventListener('click', function () {
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+            });
+
+            // Scroll to bottom function
+            scrollToBottomBtn.addEventListener('click', function () {
+                window.scrollTo({
+                    top: document.body.scrollHeight,
+                    behavior: 'smooth'
+                });
+            });
+
+            // Optional: Show/hide buttons based on scroll position
+            window.addEventListener('scroll', function () {
+                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                const scrollHeight = document.body.scrollHeight;
+                const clientHeight = window.innerHeight;
+
+                // Show/hide top button
+                if (scrollTop > 300) {
+                    scrollToTopBtn.style.opacity = '0.8';
+                    scrollToTopBtn.style.pointerEvents = 'auto';
+                } else {
+                    scrollToTopBtn.style.opacity = '0.4';
+                    scrollToTopBtn.style.pointerEvents = 'auto';
+                }
+
+                // Show/hide bottom button
+                if (scrollTop < (scrollHeight - clientHeight - 300)) {
+                    scrollToBottomBtn.style.opacity = '0.8';
+                    scrollToBottomBtn.style.pointerEvents = 'auto';
+                } else {
+                    scrollToBottomBtn.style.opacity = '0.4';
+                    scrollToBottomBtn.style.pointerEvents = 'auto';
+                }
+            });
+        });
         function populateTimeOptions() {
             const startTimeSelect = document.getElementById("startTime");
             const endTimeSelect = document.getElementById("endTime");

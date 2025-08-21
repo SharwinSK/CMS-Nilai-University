@@ -149,7 +149,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Post Event Review - Coordinator Decision Form</title>
-    <link href="../assets/css/coorpostevent.css?v=<?= time() ?>" rel="stylesheet" />
+    <link href="../assets/css/coordinator/coorpostevent.css?v=<?= time() ?>" rel="stylesheet" />
 </head>
 
 <body>

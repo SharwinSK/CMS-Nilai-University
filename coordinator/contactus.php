@@ -28,7 +28,7 @@ $currentPage = 'contact';
     <title>Contact Us - Nilai University CMS</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="../assets/css/coordinator.css?v=<?= time() ?>" rel="stylesheet" />
+    <link href="../assets/css/main.css?v=<?= time() ?>" rel="stylesheet" />
 
     <style>
         /* Custom styles for contact page */

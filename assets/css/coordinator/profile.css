@@ -1,0 +1,261 @@
+/* Profile Card Styles */
+.profile-container {
+    padding: 2rem;
+    display: flex;
+    justify-content: center;
+    background: var(--body-orange); /* Use body background color */
+}
+
+.profile-card {
+    background: var(--container-beige); /* Use container background color */
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    width: 100%;
+    max-width: 900px;
+}
+
+/* Profile Header */
+.profile-header {
+    background: var(--header-green); /* Solid header green */
+    padding: 3rem 2rem;
+    text-align: center;
+    color: white;
+    position: relative;
+}
+
+.profile-avatar {
+    width: 100px;
+    height: 100px;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 50%;
+    margin: 0 auto 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+}
+
+.profile-avatar i {
+    font-size: 2.5rem;
+    color: var(--header-green); /* Use header green for icon */
+}
+
+.profile-name {
+    font-size: 1.8rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.profile-role {
+    font-size: 1rem;
+    opacity: 0.9;
+    font-weight: 300;
+}
+
+/* Profile Body */
+.profile-body {
+    padding: 2rem;
+    background: var(--container-beige); /* Ensure body uses container color */
+}
+
+.profile-info-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.profile-info-item {
+    display: flex;
+    align-items: center;
+    padding: 1.2rem 0;
+    border-bottom: 1px solid rgba(255, 122, 48, 0.2); /* Use hover orange with transparency */
+}
+
+.profile-info-item:last-child {
+    border-bottom: none;
+}
+
+.info-icon {
+    width: 50px;
+    height: 50px;
+    background: var(--hover-orange); /* Solid orange background */
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1.5rem;
+    flex-shrink: 0;
+}
+
+.info-icon i {
+    color: white;
+    font-size: 1.2rem;
+}
+
+.info-content {
+    flex: 1;
+}
+
+.info-label {
+    font-size: 0.9rem;
+    color: var(--hover-orange); /* Orange color for labels */
+    margin-bottom: 0.3rem;
+    font-weight: 500;
+}
+
+.info-value {
+    font-size: 1.1rem;
+    color: black; /* Black color for values */
+    font-weight: 600;
+    word-break: break-all;
+}
+
+.edit-icon {
+    color: #999;
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    transition: all 0.3s ease;
+    margin-left: 1rem;
+}
+
+.edit-icon:hover {
+    color: var(--header-green); /* Use header green for hover */
+    transform: scale(1.1);
+}
+
+/* Edit Profile Button */
+.edit-profile-btn {
+    background: var(--header-green); /* Solid green background */
+    border: none;
+    color: white;
+    padding: 0.8rem 2rem;
+    border-radius: 25px;
+    font-weight: 500;
+    font-size: 1rem;
+    display: block;
+    margin: 2rem auto 0;
+    transition: all 0.3s ease;
+    box-shadow: 0 5px 15px rgba(45, 214, 39, 0.3);
+}
+
+.edit-profile-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(255, 122, 48, 0.4);
+    background: var(--hover-orange); /* Orange on hover */
+    color: white;
+}
+
+/* Modal Styles */
+.modal-content {
+    border-radius: 20px;
+    border: none;
+    overflow: hidden;
+    background: var(--container-beige); /* Use container color for modal */
+}
+
+.modal-header {
+    background: var(--header-green); /* Solid green background */
+    color: white;
+    border-bottom: none;
+    padding: 1.5rem 2rem;
+}
+
+.modal-header .btn-close {
+    filter: invert(1);
+}
+
+.modal-body {
+    padding: 2rem;
+    background: var(--container-beige); /* Ensure modal body uses container color */
+}
+
+.form-label {
+    font-weight: 600;
+    color: var(--text-dark);
+    margin-bottom: 0.5rem;
+}
+
+.form-control {
+    border-radius: 10px;
+    border: 2px solid #e9ecef;
+    padding: 0.75rem 1rem;
+    transition: all 0.3s ease;
+    font-size: 1rem;
+    background: white; /* White background for form inputs */
+}
+
+.form-control:focus {
+    border-color: var(--header-green); /* Use header green for focus */
+    box-shadow: 0 0 0 0.2rem rgba(45, 214, 39, 0.25); /* Use header green shadow */
+}
+
+.btn-primary {
+    background: var(--header-green); /* Solid green background */
+    border: none;
+    border-radius: 10px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 500;
+}
+
+.btn-primary:hover {
+    background: var(--hover-orange); /* Orange on hover */
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
+    border-radius: 10px;
+    padding: 0.75rem 1.5rem;
+    background: #6c757d;
+    border-color: #6c757d;
+}
+
+.btn-secondary:hover {
+    background: #5a6268;
+    border-color: #545b62;
+}
+
+/* Success Animation */
+.success-animation {
+    animation: successPulse 0.6s ease-in-out;
+}
+
+@keyframes successPulse {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.02);
+        background-color: rgba(45, 214, 39, 0.1); /* Use header green with transparency */
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* Toast Styles */
+.toast.bg-success {
+    background: var(--header-green) !important; /* Solid green background for success toast */
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .profile-container {
+        padding: 1rem;
+    }
+
+    .profile-header {
+        padding: 2rem 1.5rem;
+    }
+
+    .profile-name {
+        font-size: 1.5rem;
+    }
+
+    .profile-body {
+        padding: 1.5rem;
+    }
+}

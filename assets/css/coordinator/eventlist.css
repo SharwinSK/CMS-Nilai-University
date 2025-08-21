@@ -1,0 +1,274 @@
+/*proposal & post event view*/
+
+/* Main Content */
+.main-content {
+    padding: 20px;
+    margin-left: 0;
+    transition: all 0.3s ease;
+    background: var(--body-orange); /* Use body background color */
+}
+
+.page-header {
+    background: var(--container-beige); /* Use container beige */
+    border-radius: 15px;
+    padding: 25px;
+    margin-bottom: 25px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    border-left: 5px solid var(--header-green); /* Use header green for accent */
+}
+
+.page-title {
+    color: var(--text-dark);
+    font-weight: bold;
+    margin: 0;
+    display: flex;
+    align-items: center;
+}
+
+.page-title i {
+    color: var(--header-green); /* Use header green for icon */
+    margin-right: 15px;
+}
+
+/* Tab Styles */
+.nav-tabs {
+    border-bottom: 3px solid var(--hover-orange); /* Use hover orange */
+    margin-bottom: 20px;
+}
+
+.nav-tabs .nav-link {
+    border: none;
+    color: var(--text-dark);
+    font-weight: 600;
+    padding: 15px 25px;
+    border-radius: 10px 10px 0 0;
+    transition: all 0.3s ease;
+    position: relative;
+    background: var(--container-beige); /* Use container beige */
+}
+
+.nav-tabs .nav-link:hover {
+    background: var(--hover-orange); /* Use hover orange */
+    color: white;
+}
+
+.nav-tabs .nav-link.active {
+    background: var(--header-green); /* Use header green */
+    color: white;
+    border-bottom: 3px solid var(--header-green); /* Use header green */
+}
+
+/* Card Styles */
+.content-card {
+    background: var(--container-beige); /* Use container beige */
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    border-left: 5px solid var(--hover-orange); /* Use hover orange for accent */
+}
+
+/* Table Styles */
+.table {
+    margin: 0;
+}
+
+.table thead th {
+    background: var(--header-green); /* Solid header green */
+    color: white;
+    border: none;
+    font-weight: 600;
+    padding: 15px;
+    text-align: center;
+}
+
+.table tbody td {
+    padding: 15px;
+    vertical-align: middle;
+    text-align: center;
+    border-bottom: 1px solid #eee;
+}
+
+.table tbody tr:hover {
+    background-color: rgba(255, 122, 48, 0.1); /* Use hover orange with transparency */
+    transition: all 0.3s ease;
+}
+
+/* Action Button Styles */
+.action-btn {
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 50%;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 3px;
+    position: relative;
+    cursor: pointer;
+}
+
+.btn-view {
+    background: var(--body-orange); /* Use body orange (#FFC947) */
+    color: white;
+}
+
+.btn-view:hover {
+    background: var(--hover-orange); /* Use hover orange (#FF7A30) */
+    transform: translateY(-2px) scale(1.1);
+    box-shadow: 0 6px 12px rgba(255, 122, 48, 0.4);
+    color: white;
+}
+
+.btn-export {
+    background: var(--header-green); /* Use header green (#2DD627) */
+    color: white;
+}
+
+.btn-export:hover {
+    background: var(--hover-orange); /* Use hover orange (#FF7A30) */
+    transform: translateY(-2px) scale(1.1);
+    box-shadow: 0 6px 12px rgba(255, 122, 48, 0.4);
+    color: white;
+}
+
+/* Tooltip Styles */
+.tooltip {
+    position: absolute;
+    bottom: 120%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    z-index: 1000;
+    pointer-events: none;
+}
+
+.tooltip::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: rgba(0, 0, 0, 0.9);
+}
+
+.action-btn:hover .tooltip {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Event ID Column Width */
+.event-id-col {
+    width: 120px;
+    max-width: 120px;
+}
+
+/* Status Badge */
+.status-badge {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.status-pending {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
+.status-approved {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.status-rejected {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+/* Search and Filter */
+.filter-section {
+    background: var(--container-beige); /* Use container beige */
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.search-input {
+    border: 2px solid var(--hover-orange); /* Use hover orange */
+    border-radius: 10px;
+    padding: 10px 15px;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.search-input:focus {
+    border-color: var(--header-green); /* Use header green for focus */
+    box-shadow: 0 0 0 0.25rem rgba(45, 214, 39, 0.25);
+}
+
+/* Badge Styles */
+.badge.bg-primary {
+    background: var(--header-green) !important; /* Use header green for primary badges */
+}
+
+.badge.bg-success {
+    background: var(--hover-orange) !important; /* Use hover orange for success badges */
+}
+
+/* Text Primary Override */
+.text-primary {
+    color: var(--hover-orange) !important; /* Use hover orange for primary text */
+}
+
+/* Table Responsive Background */
+.table-responsive {
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+/* Content Card Headings */
+.content-card h5 {
+    color: var(--hover-orange); /* Use hover orange for headings */
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .main-content {
+        padding: 15px;
+    }
+
+    .action-btn {
+        display: block;
+        margin: 2px 0;
+        width: 100%;
+    }
+
+    .table-responsive {
+        font-size: 0.9rem;
+    }
+
+    .page-header {
+        padding: 20px;
+    }
+
+    .content-card {
+        padding: 20px;
+    }
+}

@@ -45,7 +45,7 @@
         </a>
         <div class="sidebar-footer text-center mt-auto">
             <hr>
-            <small style="color: black; font-size: 0.8rem">
+            <small style="font-size: 0.8rem">
                 CMS v1.0 © 2025 Nilai University
             </small>
         </div>

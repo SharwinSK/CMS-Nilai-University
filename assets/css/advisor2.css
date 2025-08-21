@@ -1,98 +1,10 @@
-  :root {
-            --primary-purple: #ac73ff;
-            --primary-dark: #6a4c93;
-            --primary-medium: #8e44ad;
-            --primary-light: #f8f9ff;
-            --success: #28a745;
-            --warning: #ffc107;
-            --danger: #dc3545;
-            --info: #17a2b8;
-        }
-
-        body {
-            background: linear-gradient(135deg,
-                    var(--primary-light) 0%,
-                    var(--primary-medium) 100%);
-            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-            min-height: 100vh;
-        }
-
-        .navbar {
-            background: linear-gradient(90deg,
-                    var(--primary-purple) 0%,
-                    var(--primary-dark) 100%);
-            box-shadow: 0 4px 15px rgba(172, 115, 255, 0.2);
-        }
-
-        .navbar-brand {
-            font-weight: bold;
-            color: white !important;
-            font-size: 1.3rem;
-        }
-
-        .navbar-nav .nav-link {
-            color: white !important;
-            font-weight: 500;
-        }
-
-        .dropdown-menu {
-            background: var(--primary-light);
-            border: none;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-            right: 0;
-            left: auto;
-        }
-
-        .offcanvas {
-            background: linear-gradient(180deg,
-                    var(--primary-light) 0%,
-                    var(--primary-medium) 100%);
-            border-right: 3px solid var(--primary-purple);
-        }
-
-        .offcanvas-header {
-            background: var(--primary-purple);
-            color: white;
-        }
-
-        .offcanvas-body {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .sidebar-footer {
-            padding: 10px;
-        }
-
-        .sidebar-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 12px 16px;
-            border-radius: 12px;
-            color: black;
-            text-decoration: none;
-            font-weight: 500;
-            transition: 0.3s;
-        }
-
-        .sidebar-item:hover {
-            background-color: var(--primary-purple);
-            color: white;
-        }
-
-        .sidebar-item.active {
-            background-color: var(--primary-purple);
-            color: white;
-        }
-
-        .main-content {
+.main-content {
             margin-top: 20px;
             padding: 0 20px;
         }
 
         .page-header {
-            background: white;
+            background: var(--container-beige);
             border-radius: 15px;
             padding: 25px;
             box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
@@ -113,7 +25,7 @@
         }
 
         .summary-card {
-            background: white;
+            background: var(--container-beige);
             border-radius: 15px;
             padding: 25px;
             box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
@@ -152,7 +64,7 @@
         }
 
         .filter-section {
-            background: white;
+            background: var(--container-beige);
             border-radius: 15px;
             padding: 25px;
             box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
@@ -166,7 +78,7 @@
         }
 
         .btn-filter {
-            background: var(--primary-purple);
+            background: #2DD627;
             border: none;
             color: white;
             padding: 10px 25px;
@@ -176,8 +88,25 @@
         }
 
         .btn-filter:hover {
-            background: var(--primary-dark);
+            background: #FF7A30;
+            color: white;
             transform: translateY(-2px);
+        }
+
+        .filter-icon {
+            color: white;
+            transition: color 0.3s ease;
+        }
+
+        .filter-icon:hover {
+            color: white;
+        }
+
+        /* Filter icon inside button */
+        .btn-filter .fa-filter,
+        .btn-filter i {
+            color: white;
+            margin-right: 8px;
         }
 
         .btn-reset {
@@ -196,7 +125,7 @@
         }
 
         .events-table {
-            background: white;
+            background: var(--container-beige);
             border-radius: 15px;
             padding: 25px;
             box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
@@ -291,7 +220,7 @@
 
 
         .results-info-section {
-            background: white;
+            background: var(--container-beige);
             border-radius: 10px;
             padding: 15px 25px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
@@ -368,7 +297,3 @@
                 font-size: 0.7rem;
             }
         }
-
-
-
-        

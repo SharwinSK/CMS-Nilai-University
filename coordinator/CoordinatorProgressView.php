@@ -75,36 +75,9 @@ while ($row = $type_result->fetch_assoc()) {
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.13.6/css/dataTables.bootstrap5.min.css"
         rel="stylesheet" />
-    <link href="../assets/css/coordinator.css?v=<?= time() ?>" rel="stylesheet" />
-    <style>
-        /* Main Content Styles */
-        .main-content {
-            margin-left: 0;
-            padding: 20px;
-            min-height: calc(100vh - 76px);
-        }
+    <link href="../assets/css/coordinator/ongoing.css?v=<?= time() ?>" rel="stylesheet" />
+    <link href="../assets/css/main.css?v=<?= time() ?>" rel="stylesheet" />
 
-        .event-type-badge {
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 500;
-            text-transform: uppercase;
-            color: white;
-        }
-
-        .event-type-badge.CSR {
-            background-color: #FFB300;
-        }
-
-        .event-type-badge.USR {
-            background-color: #1976D2;
-        }
-
-        .event-type-badge.SDG {
-            background-color: #388E3C;
-        }
-    </style>
 </head>
 
 <body>

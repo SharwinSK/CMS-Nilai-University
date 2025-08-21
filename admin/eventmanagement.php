@@ -1,5 +1,22 @@
 <?php
-include '../dbconfig.php';
+session_start();
+include '../db/dbconfig.php';
+$currentPage = 'eventmanagement';
+// Check if user is logged in and is an admin
+if (!isset($_SESSION['Admin_ID']) || $_SESSION['user_type'] !== 'admin') {
+    header("Location: ../adminlogin.php");
+    exit();
+}
+
+// Get admin details for navbar
+$admin_query = "SELECT Admin_Name FROM admin WHERE Admin_ID = ?";
+$admin_stmt = mysqli_prepare($conn, $admin_query);
+mysqli_stmt_bind_param($admin_stmt, "i", $_SESSION['Admin_ID']);
+mysqli_stmt_execute($admin_stmt);
+$admin_result = mysqli_stmt_get_result($admin_stmt);
+$admin_data = mysqli_fetch_assoc($admin_result);
+$admin_name = $admin_data['Admin_Name'] ?? 'Admin';
+mysqli_stmt_close($admin_stmt);
 
 // Fetch all proposal events with activity status and club list
 $proposalEventQuery = "
@@ -24,25 +41,22 @@ $proposalResult = $conn->query($proposalEventQuery);
 $clubsQuery = "SELECT DISTINCT Club_Name FROM club ORDER BY Club_Name ASC";
 $clubsResult = $conn->query($clubsQuery);
 
-
-// Query for post-event reports
+// Query for post-event reports - FIXED: Added Status_Name from eventstatus table
 $postEventQuery = "
     SELECT 
-        ep.Rep_ID, ep.Ev_ID,  ep.Updated_At, ep.created_at,
+        ep.Rep_ID, ep.Ev_ID, ep.Updated_At, ep.created_at,
         e.Ev_Name, e.Ev_Date,
-        s.Stu_Name, c.Club_Name
+        s.Stu_Name, c.Club_Name, st.Status_Name
     FROM eventpostmortem ep
     JOIN events e ON ep.Ev_ID = e.Ev_ID
     LEFT JOIN student s ON e.Stu_ID = s.Stu_ID
     LEFT JOIN club c ON e.Club_ID = c.Club_ID
+    LEFT JOIN eventstatus st ON ep.Status_ID = st.Status_ID
     ORDER BY ep.Updated_At DESC
 ";
 $postEventResult = $conn->query($postEventQuery);
 
 $clubsResultPost = $conn->query("SELECT DISTINCT Club_Name FROM club ORDER BY Club_Name ASC");
-
-
-
 ?>
 
 <!DOCTYPE html>
@@ -54,274 +68,326 @@ $clubsResultPost = $conn->query("SELECT DISTINCT Club_Name FROM club ORDER BY Cl
     <title>Event Management - Nilai University CMS</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+    <link href="../assets/css/main.css?v=<?= time() ?>" rel="stylesheet" />
     <style>
+        /* Enhanced styling using main.css theme colors */
         :root {
-            --primary-color: #03a791;
-            --secondary-color: #81e7af;
-            --accent-color: #e9f5be;
-            --warm-color: #f1ba88;
-            --light-bg: #f8f9fa;
+            --primary-green: #25aa20;
+            --hover-orange: #ff8645;
+            --body-orange: rgb(253, 255, 112);
+            --container-beige: #DDDAD0;
+            --text-dark: #333;
+            --success: #28a745;
+            --warning: #ffc107;
+            --danger: #dc3545;
+            --info: #17a2b8;
         }
 
         body {
-            background: linear-gradient(135deg,
-                    var(--accent-color),
-                    var(--light-bg));
-            min-height: 100vh;
+            background: var(--body-orange);
             font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
         }
 
-        /* Sidebar Styling */
-        .offcanvas-start {
-            background: linear-gradient(135deg,
-                    var(--primary-color),
-                    var(--secondary-color));
-            width: 280px;
-        }
-
-        .offcanvas-header {
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 1.5rem;
-        }
-
-        .offcanvas-title {
-            color: white;
-            font-weight: bold;
-            font-size: 1.4rem;
-        }
-
-        .nav-link {
-            color: rgba(255, 255, 255, 0.9) !important;
-            padding: 0.8rem 1.5rem;
-            margin: 0.2rem 0;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-        }
-
-        .nav-link:hover {
-            background-color: rgba(255, 255, 255, 0.1);
-            color: white !important;
-            transform: translateX(5px);
-        }
-
-        .nav-link.active {
-            background-color: var(--warm-color);
-            color: var(--primary-color) !important;
-            font-weight: bold;
-        }
-
-        /* Content Styling */
         .main-content {
             padding: 2rem;
             margin-top: 1rem;
         }
 
         .content-header {
+            background: var(--container-beige);
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 2px solid var(--primary-green);
+        }
+
+        .content-header h2 {
+            color: var(--primary-green);
+            margin: 0;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .content-header h2 i {
+            color: var(--hover-orange);
+            font-size: 2.5rem;
+        }
+
+        /* Tab Navigation Styling */
+        .nav-tabs {
+            border: none;
+            background: var(--container-beige);
+            border-radius: 15px 15px 0 0;
+            padding: 0.5rem;
+            margin-bottom: 0;
+        }
+
+        .nav-tabs .nav-link {
+            color: var(--primary-green);
+            border: none;
+            padding: 1rem 2rem;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            border-radius: 12px;
+            margin: 0 0.25rem;
+            background: transparent;
+        }
+
+        .nav-tabs .nav-link:hover {
+            background: rgba(255, 134, 69, 0.1);
+            color: var(--hover-orange);
+            transform: translateY(-2px);
+        }
+
+        .nav-tabs .nav-link.active {
+            background: var(--primary-green);
+            color: white;
+            box-shadow: 0 4px 15px rgba(37, 170, 32, 0.3);
+        }
+
+        .tab-content {
+            background: var(--container-beige);
+            border-radius: 0 0 15px 15px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 2px solid var(--primary-green);
+            border-top: none;
+        }
+
+        /* Search and Filter Container */
+        .search-filter-container {
             background: white;
             border-radius: 15px;
             padding: 1.5rem;
             margin-bottom: 2rem;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid var(--primary-green);
         }
 
-        .content-header h2 {
-            color: var(--primary-color);
-            margin: 0;
-            font-weight: bold;
-        }
-
-        .nav-tabs .nav-link {
-            color: var(--primary-color);
-            border: none;
-            padding: 1rem 1.5rem;
+        .form-control, .form-select {
+            border: 2px solid var(--primary-green);
+            border-radius: 10px;
+            padding: 0.75rem 1rem;
             font-weight: 500;
             transition: all 0.3s ease;
         }
 
-        .nav-tabs .nav-link.active {
-            background: linear-gradient(135deg,
-                    var(--primary-color),
-                    var(--secondary-color));
-            color: white;
-            border-radius: 10px 10px 0 0;
+        .form-control:focus, .form-select:focus {
+            border-color: var(--hover-orange);
+            box-shadow: 0 0 0 0.25rem rgba(255, 134, 69, 0.25);
+            transform: translateY(-1px);
         }
 
-        .nav-tabs .nav-link:hover {
-            border: none;
-            background-color: rgba(3, 167, 145, 0.1);
-        }
-
-        .tab-content {
-            background: white;
-            border-radius: 0 0 15px 15px;
-            padding: 2rem;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        }
-
+        /* Table Styling */
         .table-container {
-            border-radius: 10px;
+            border-radius: 15px;
             overflow: hidden;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 2px solid var(--primary-green);
         }
 
-        .table th {
-            background: linear-gradient(135deg,
-                    var(--primary-color),
-                    var(--secondary-color));
+        .table {
+            margin: 0;
+            background: white;
+        }
+
+        .table thead th {
+            background: var(--primary-green);
             color: white;
-            font-weight: 600;
+            font-weight: 700;
             border: none;
-            padding: 1rem;
+            padding: 1.25rem 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 0.9rem;
         }
 
-        .table td {
-            padding: 1rem;
+        .table tbody td {
+            padding: 1.25rem 1rem;
             vertical-align: middle;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid rgba(37, 170, 32, 0.1);
+            font-weight: 500;
         }
 
         .table tbody tr:hover {
-            background-color: rgba(3, 167, 145, 0.05);
+            background: rgba(37, 170, 32, 0.05);
+            transform: translateX(2px);
+            transition: all 0.3s ease;
         }
 
-        .btn-sm {
-            padding: 0.25rem 0.75rem;
-            font-size: 0.875rem;
-            margin: 0 0.2rem;
+        .table tbody tr:nth-child(even) {
+            background: rgba(221, 218, 208, 0.3);
         }
 
+        /* Status Badges */
         .status-badge {
-            padding: 0.4rem 0.8rem;
-            border-radius: 20px;
-            font-size: 0.8rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.7rem;
             font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            display: inline-block;
+            min-width: 70px;
+            text-align: center;
         }
 
         .status-pending {
-            background-color: #fff3cd;
+            background: #fff3cd;
             color: #856404;
+            border: 1px solid #ffc107;
         }
 
         .status-approved {
-            background-color: #d1edff;
+            background: #d1edff;
             color: #0c5460;
+            border: 1px solid #17a2b8;
         }
 
         .status-rejected {
-            background-color: #f8d7da;
+            background: #f8d7da;
             color: #721c24;
-        }
-
-        .status-completed {
-            background-color: #d4edda;
-            color: #155724;
+            border: 1px solid #dc3545;
         }
 
         .status-draft {
-            background-color: #e2e3e5;
+            background: #e2e3e5;
             color: #383d41;
+            border: 1px solid #6c757d;
         }
 
-        .search-filter-container {
-            background: white;
+        /* Activity Badges */
+        .badge {
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 0.3rem 0.5rem;
+            border-radius: 15px;
+        }
+
+        .bg-warning-subtle {
+            background: #fff3cd !important;
+            color: #856404 !important;
+            border: 1px solid #ffc107;
+        }
+
+        .bg-success-subtle {
+            background: #d4edda !important;
+            color: #155724 !important;
+            border: 1px solid #28a745;
+        }
+
+        /* Button Styling */
+        .btn {
             border-radius: 10px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            font-weight: 600;
+            padding: 0.5rem 1rem;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
         }
 
-        .form-control:focus {
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 0.2rem rgba(3, 167, 145, 0.25);
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
         }
 
-        .form-select:focus {
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 0.2rem rgba(3, 167, 145, 0.25);
+        .btn-outline-primary {
+            border-color: var(--primary-green);
+            color: var(--primary-green);
+        }
+
+        .btn-outline-primary:hover {
+            background: var(--primary-green);
+            color: white;
+        }
+
+        .btn-info {
+            background: #17a2b8;
+            border: none;
+        }
+
+        .btn-warning {
+            background: #ffc107;
+            border: none;
+            color: #333;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            border: none;
+        }
+
+        .btn-success {
+            background: #28a745;
+            border: none;
+        }
+
+        /* Action buttons container */
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .btn-sm {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.8rem;
+            min-width: 40px;
+        }
+
+        /* Responsive improvements */
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 1rem;
+            }
+            
+            .content-header h2 {
+                font-size: 1.5rem;
+            }
+            
+            .table-container {
+                overflow-x: auto;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+                gap: 0.25rem;
+            }
+            
+            .btn-sm {
+                min-width: 80px;
+            }
+        }
+
+        /* Loading animation */
+        .table tbody tr {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
 
 <body>
-    <!-- Navigation Bar -->
-    <nav class="navbar navbar-expand-lg" style="
-        background: linear-gradient(
-          135deg,
-          var(--primary-color),
-          var(--secondary-color)
-        );
-      ">
-        <div class="container-fluid">
-            <button class="btn btn-outline-light me-3" type="button" data-bs-toggle="offcanvas"
-                data-bs-target="#adminSidebar">
-                <i class="fas fa-bars"></i>
-            </button>
-            <a class="navbar-brand text-white fw-bold" href="#">
-                <i class="fas fa-university me-2"></i>Nilai University CMS
-            </a>
-            <div class="navbar-nav ms-auto">
-                <div class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle text-white" href="#" role="button" data-bs-toggle="dropdown">
-                        <i class="fas fa-user-circle me-1"></i>Admin
-                    </a>
-                    <ul class="dropdown-menu">
-                        <li>
-                            <a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i>Profile</a>
-                        </li>
-                        <li>
-                            <hr class="dropdown-divider" />
-                        </li>
-                        <li>
-                            <a class="dropdown-item" href="#"><i class="fas fa-sign-out-alt me-2"></i>Logout</a>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Offcanvas Sidebar -->
-    <div class="offcanvas offcanvas-start" tabindex="-1" id="adminSidebar">
-        <div class="offcanvas-header">
-            <h5 class="offcanvas-title">
-                <i class="fas fa-tachometer-alt me-2"></i>Admin Panel
-            </h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
-        </div>
-        <div class="offcanvas-body p-0">
-            <nav class="nav flex-column">
-                <a class="nav-link" href="dashboard.php" data-section="dashboard">
-                    <i class="fas fa-home me-2"></i>Admin Dashboard
-                </a>
-                <a class="nav-link active" href="eventmanagement.php" data-section="events">
-                    <i class="fas fa-calendar-alt me-2"></i>Event Management
-                </a>
-                <a class="nav-link" href="clubmanagement.php" data-section="clubs">
-                    <i class="fas fa-users me-2"></i>Club Management
-                </a>
-                <a class="nav-link" href="advisormanagement.php" data-section="advisors">
-                    <i class="fas fa-user-tie me-2"></i>Advisor Management
-                </a>
-                <a class="nav-link" href="coordinatormanagement.php" data-section="coordinators">
-                    <i class="fas fa-user-cog me-2"></i>Coordinator Management
-                </a>
-                <a class="nav-link" href="usermanagement.php" data-section="users">
-                    <i class="fas fa-user-friends me-2"></i>User Management
-                </a>
-                <a class="nav-link" href="reportexport.php" data-section="reports">
-                    <i class="fas fa-chart-bar me-2"></i>Report & Export
-                </a>
-            </nav>
-        </div>
-    </div>
+    <?php include('../model/LogoutDesign.php'); ?>
+    <?php include('../components/AdmHeader.php'); ?>
+    <?php include('../components/AdmOffcanvas.php'); ?>
 
     <!-- Main Content -->
     <div class="main-content">
         <div class="content-header">
             <h2>
-                <i class="fas fa-calendar-check me-3"></i>Event Management
+                <i class="fas fa-calendar-check"></i>
+                Event Management System
             </h2>
-
         </div>
 
         <!-- Tab Navigation -->
@@ -329,7 +395,7 @@ $clubsResultPost = $conn->query("SELECT DISTINCT Club_Name FROM club ORDER BY Cl
             <li class="nav-item" role="presentation">
                 <button class="nav-link active" id="proposals-tab" data-bs-toggle="tab" data-bs-target="#proposals"
                     type="button" role="tab">
-                    <i class="fas fa-file-alt me-2"></i>Proposal Events
+                    <i class="fas fa-file-alt me-2"></i>Event Proposals
                 </button>
             </li>
             <li class="nav-item" role="presentation">
@@ -338,7 +404,6 @@ $clubsResultPost = $conn->query("SELECT DISTINCT Club_Name FROM club ORDER BY Cl
                     <i class="fas fa-file-medical me-2"></i>Post-Event Reports
                 </button>
             </li>
-
         </ul>
 
         <!-- Tab Content -->
@@ -348,8 +413,13 @@ $clubsResultPost = $conn->query("SELECT DISTINCT Club_Name FROM club ORDER BY Cl
                 <div class="search-filter-container">
                     <div class="row g-3">
                         <div class="col-md-4">
-                            <input type="text" class="form-control" placeholder="Search by event name or student..."
-                                id="proposalSearch" />
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-end-0" style="border-color: var(--primary-green);">
+                                    <i class="fas fa-search text-muted"></i>
+                                </span>
+                                <input type="text" class="form-control border-start-0" placeholder="Search events or students..."
+                                    id="proposalSearch" />
+                            </div>
                         </div>
                         <div class="col-md-3">
                             <select class="form-select" id="proposalStatusFilter">
@@ -369,7 +439,6 @@ $clubsResultPost = $conn->query("SELECT DISTINCT Club_Name FROM club ORDER BY Cl
                                 <?php endwhile; ?>
                             </select>
                         </div>
-
                         <div class="col-md-2">
                             <button class="btn btn-outline-primary w-100" onclick="resetProposalFilters()">
                                 <i class="fas fa-refresh me-1"></i>Reset
@@ -377,20 +446,20 @@ $clubsResultPost = $conn->query("SELECT DISTINCT Club_Name FROM club ORDER BY Cl
                         </div>
                     </div>
                 </div>
+
                 <!-- Proposal Events Table -->
                 <div class="table-container">
                     <table class="table table-hover mb-0" id="proposalsTable">
                         <thead>
                             <tr>
-                                <th>Event&nbsp;ID</th>
-                                <th>Name</th>
-                                <th>Status</th>
-                                <th>Create&nbsp;Date</th>
-                                <th>Club</th>
-                                <th>Student</th>
-                                <th>Active</th>
-                                <th>Actions</th>
-
+                                <th><i class="fas fa-hashtag me-1"></i>Event ID</th>
+                                <th><i class="fas fa-event me-1"></i>Event Name</th>
+                                <th><i class="fas fa-info-circle me-1"></i>Status</th>
+                                <th><i class="fas fa-calendar me-1"></i>Created Date</th>
+                                <th><i class="fas fa-users me-1"></i>Club</th>
+                                <th><i class="fas fa-user me-1"></i>Student</th>
+                                <th><i class="fas fa-activity me-1"></i>Activity</th>
+                                <th><i class="fas fa-cogs me-1"></i>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -405,36 +474,38 @@ $clubsResultPost = $conn->query("SELECT DISTINCT Club_Name FROM club ORDER BY Cl
                                 };
                                 ?>
                                 <tr>
-                                    <td><?= htmlspecialchars($row['Ev_ID']) ?></td>
+                                    <td><strong><?= htmlspecialchars($row['Ev_ID']) ?></strong></td>
                                     <td><?= htmlspecialchars($row['Ev_Name']) ?></td>
-                                    <td><span class="status-badge <?= $statusClass ?>"><?= $row['Status_Name'] ?></span>
-                                    </td>
-                                    <td><?= date('d-m-Y', strtotime($row['created_at'])) ?></td>
+                                    <td><span class="status-badge <?= $statusClass ?>"><?= htmlspecialchars($row['Status_Name']) ?></span></td>
+                                    <td><?= date('d M Y', strtotime($row['created_at'])) ?></td>
                                     <td><?= htmlspecialchars($row['Club_Name']) ?></td>
                                     <td><?= htmlspecialchars($row['Stu_Name']) ?></td>
                                     <td>
                                         <?php if ($row['activity_flag'] === 'No Activity'): ?>
-                                            <span class="badge bg-warning-subtle text-warning">⚠ No Activity</span>
+                                            <span class="badge bg-warning-subtle text-warning">
+                                                <i class="fas fa-exclamation-triangle me-1"></i>No Activity
+                                            </span>
                                         <?php else: ?>
-                                            <span class="badge bg-success-subtle text-success">🟢 Active</span>
+                                            <span class="badge bg-success-subtle text-success">
+                                                <i class="fas fa-check-circle me-1"></i>Active
+                                            </span>
                                         <?php endif; ?>
                                     </td>
-
                                     <td>
-                                        <div class="d-flex align-items-center gap-1 flex-wrap">
+                                        <div class="action-buttons">
                                             <a class="btn btn-info btn-sm"
                                                 href="eventAction.php?action=view&type=proposal&id=<?= urlencode($row['Ev_ID']) ?>"
-                                                title="View">
+                                                title="View Details">
                                                 <i class="fas fa-eye"></i>
                                             </a>
                                             <a class="btn btn-warning btn-sm"
                                                 href="eventAction.php?action=edit&type=proposal&id=<?= urlencode($row['Ev_ID']) ?>"
-                                                title="Edit">
+                                                title="Edit Event">
                                                 <i class="fas fa-edit"></i>
                                             </a>
                                             <a class="btn btn-danger btn-sm"
                                                 href="eventAction.php?action=delete&type=abandoned&id=<?= urlencode($row['Ev_ID']) ?>"
-                                                title="Delete"
+                                                title="Delete Event"
                                                 onclick="return confirm('This event has no activity. Delete permanently?');">
                                                 <i class="fas fa-trash-alt"></i>
                                             </a>
@@ -445,8 +516,6 @@ $clubsResultPost = $conn->query("SELECT DISTINCT Club_Name FROM club ORDER BY Cl
                                             </a>
                                         </div>
                                     </td>
-
-
                                 </tr>
                             <?php endwhile; ?>
                         </tbody>
@@ -459,18 +528,22 @@ $clubsResultPost = $conn->query("SELECT DISTINCT Club_Name FROM club ORDER BY Cl
                 <div class="search-filter-container">
                     <div class="row g-3">
                         <div class="col-md-4">
-                            <input type="text" class="form-control" placeholder="Search by event name or student..."
-                                id="reportSearch" />
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-end-0" style="border-color: var(--primary-green);">
+                                    <i class="fas fa-search text-muted"></i>
+                                </span>
+                                <input type="text" class="form-control border-start-0" placeholder="Search events or students..."
+                                    id="reportSearch" />
+                            </div>
                         </div>
                         <div class="col-md-3">
                             <select class="form-select" id="reportStatusFilter">
                                 <option value="">All Status</option>
                                 <option value="Pending">Pending</option>
-                                <option value="Accepted">Accepted</option>
+                                <option value="Approved">Approved</option>
                                 <option value="Rejected">Rejected</option>
                             </select>
                         </div>
-
                         <div class="col-md-3">
                             <select class="form-select" id="reportClubFilter">
                                 <option value="">All Clubs</option>
@@ -481,7 +554,6 @@ $clubsResultPost = $conn->query("SELECT DISTINCT Club_Name FROM club ORDER BY Cl
                                 <?php endwhile; ?>
                             </select>
                         </div>
-
                         <div class="col-md-2">
                             <button class="btn btn-outline-primary w-100" onclick="resetReportFilters()">
                                 <i class="fas fa-refresh me-1"></i>Reset
@@ -494,50 +566,57 @@ $clubsResultPost = $conn->query("SELECT DISTINCT Club_Name FROM club ORDER BY Cl
                     <table class="table table-hover mb-0" id="reportsTable">
                         <thead>
                             <tr>
-                                <th>Event&nbsp;ID</th>
-                                <th>Event Name</th>
-                                <th>Status</th>
-                                <th>Create&nbsp;Date</th>
-                                <th>Club</th>
-                                <th>Student</th>
-                                <th>Actions</th>
-
+                                <th><i class="fas fa-hashtag me-1"></i>Event ID</th>
+                                <th><i class="fas fa-event me-1"></i>Event Name</th>
+                                <th><i class="fas fa-info-circle me-1"></i>Status</th>
+                                <th><i class="fas fa-calendar me-1"></i>Created Date</th>
+                                <th><i class="fas fa-users me-1"></i>Club</th>
+                                <th><i class="fas fa-user me-1"></i>Student</th>
+                                <th><i class="fas fa-cogs me-1"></i>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php while ($row = $postEventResult->fetch_assoc()): ?>
                                 <?php
-                                $status = strtolower($row['Rep_PostStatus']);
-                                $statusClass = match (true) {
-                                    str_contains($status, 'pending') => 'status-pending',
-                                    str_contains($status, 'accepted') => 'status-approved',
-                                    str_contains($status, 'rejected') => 'status-rejected',
+                                // Map the database status to simpler display names
+                                $dbStatus = $row['Status_Name'] ?? 'Postmortem Pending Review';
+                                $displayStatus = match (true) {
+                                    str_contains($dbStatus, 'Pending') => 'Pending',
+                                    str_contains($dbStatus, 'Approved') => 'Approved', 
+                                    str_contains($dbStatus, 'Rejected') => 'Rejected',
+                                    default => 'Pending'
+                                };
+                                
+                                $statusClass = match ($displayStatus) {
+                                    'Pending' => 'status-pending',
+                                    'Approved' => 'status-approved',
+                                    'Rejected' => 'status-rejected',
                                     default => 'status-draft'
                                 };
                                 ?>
                                 <tr>
-                                    <td><?= htmlspecialchars($row['Ev_ID']) ?></td>
+                                    <td><strong><?= htmlspecialchars($row['Ev_ID']) ?></strong></td>
                                     <td><?= htmlspecialchars($row['Ev_Name']) ?></td>
-                                    <td><span class="status-badge <?= $statusClass ?>"><?= $row['Rep_PostStatus'] ?></span>
-                                    </td>
-                                    <td><?= date('d-m-Y', strtotime($row['created_at'])) ?></td>
+                                    <td><span class="status-badge <?= $statusClass ?>"><?= $displayStatus ?></span></td>
+                                    <td><?= date('d M Y', strtotime($row['created_at'])) ?></td>
                                     <td><?= htmlspecialchars($row['Club_Name']) ?></td>
                                     <td><?= htmlspecialchars($row['Stu_Name']) ?></td>
                                     <td>
-                                        <div class="d-flex align-items-center gap-1 flex-wrap">
+                                        <div class="action-buttons">
                                             <a class="btn btn-info btn-sm"
                                                 href="eventAction.php?action=view&type=report&id=<?= urlencode($row['Ev_ID']) ?>"
-                                                title="View">
+                                                title="View Report">
                                                 <i class="fas fa-eye"></i>
                                             </a>
                                             <a class="btn btn-warning btn-sm"
                                                 href="eventAction.php?action=edit&type=report&id=<?= urlencode($row['Ev_ID']) ?>"
-                                                title="Edit">
+                                                title="Edit Report">
                                                 <i class="fas fa-edit"></i>
                                             </a>
                                             <a class="btn btn-danger btn-sm"
                                                 href="eventAction.php?action=delete&type=report&id=<?= urlencode($row['Ev_ID']) ?>"
-                                                title="Delete" onclick="return confirm('Delete this post-event report?');">
+                                                title="Delete Report" 
+                                                onclick="return confirm('Delete this post-event report?');">
                                                 <i class="fas fa-trash"></i>
                                             </a>
                                             <a class="btn btn-success btn-sm"
@@ -547,8 +626,6 @@ $clubsResultPost = $conn->query("SELECT DISTINCT Club_Name FROM club ORDER BY Cl
                                             </a>
                                         </div>
                                     </td>
-
-
                                 </tr>
                             <?php endwhile; ?>
                         </tbody>
@@ -560,65 +637,7 @@ $clubsResultPost = $conn->query("SELECT DISTINCT Club_Name FROM club ORDER BY Cl
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Proposal Events Functions
-        function viewDetails(eventId) {
-            alert("Viewing details for Event ID: " + eventId);
-            // Add your PHP/AJAX call here
-        }
-
-        function editProposal(eventId) {
-            alert("Editing proposal for Event ID: " + eventId);
-            // Add your PHP/AJAX call here
-        }
-
-        function deleteProposal(eventId) {
-            if (confirm("Are you sure you want to delete this proposal?")) {
-                alert("Deleting proposal for Event ID: " + eventId);
-                // Add your PHP/AJAX call here
-            }
-        }
-
-        function exportProposalPDF(eventId) {
-            alert("Exporting PDF for Event ID: " + eventId);
-            // Add your PDF export functionality here
-        }
-
-        // Post-Event Reports Functions
-        function viewReport(reportId) {
-            alert("Viewing report for Report ID: " + reportId);
-            // Add your PHP/AJAX call here
-        }
-
-        function editReport(reportId) {
-            alert("Editing report for Report ID: " + reportId);
-            // Add your PHP/AJAX call here
-        }
-
-        function deleteReport(reportId) {
-            if (confirm("Are you sure you want to delete this report?")) {
-                alert("Deleting report for Report ID: " + reportId);
-                // Add your PHP/AJAX call here
-            }
-        }
-
-        function exportReportPDF(reportId) {
-            alert("Exporting PDF for Report ID: " + reportId);
-            // Add your PDF export functionality here
-        }
-
-        // Complete Events Functions
-        function exportCompletedPDF(eventId) {
-            alert("Exporting PDF for Completed Event ID: " + eventId);
-            // Add your PDF export functionality here
-        }
-
-        function deleteCompleted(eventId) {
-            if (confirm("Are you sure you want to delete this completed event?")) {
-                alert("Deleting completed event for Event ID: " + eventId);
-                // Add your PHP/AJAX call here
-            }
-        }
-
+        // Enhanced filtering functions
         document.getElementById("proposalStatusFilter").addEventListener("change", filterProposalTable);
         document.getElementById("proposalClubFilter").addEventListener("change", filterProposalTable);
         document.getElementById("proposalSearch").addEventListener("input", filterProposalTable);
@@ -632,15 +651,17 @@ $clubsResultPost = $conn->query("SELECT DISTINCT Club_Name FROM club ORDER BY Cl
 
             rows.forEach(row => {
                 const name = row.children[1].textContent.toLowerCase();
+                const student = row.children[5].textContent.toLowerCase();
                 const rowStatus = row.children[2].textContent.toLowerCase();
                 const rowClub = row.children[4].textContent.toLowerCase();
 
-                const matchSearch = name.includes(search);
+                const matchSearch = name.includes(search) || student.includes(search);
                 const matchStatus = !status || rowStatus.includes(status);
                 const matchClub = !club || rowClub.includes(club);
 
                 if (matchSearch && matchStatus && matchClub) {
                     row.style.display = "";
+                    row.style.animation = "fadeIn 0.5s ease-in";
                 } else {
                     row.style.display = "none";
                 }
@@ -668,15 +689,17 @@ $clubsResultPost = $conn->query("SELECT DISTINCT Club_Name FROM club ORDER BY Cl
 
             rows.forEach(row => {
                 const evName = row.children[1].textContent.toLowerCase();
+                const student = row.children[5].textContent.toLowerCase();
                 const evStatus = row.children[2].textContent.toLowerCase();
                 const evClub = row.children[4].textContent.toLowerCase();
 
-                const matchSearch = evName.includes(search);
+                const matchSearch = evName.includes(search) || student.includes(search);
                 const matchStatus = !status || evStatus.includes(status);
                 const matchClub = !club || evClub.includes(club);
 
                 if (matchSearch && matchStatus && matchClub) {
                     row.style.display = "";
+                    row.style.animation = "fadeIn 0.5s ease-in";
                 } else {
                     row.style.display = "none";
                 }
@@ -689,9 +712,195 @@ $clubsResultPost = $conn->query("SELECT DISTINCT Club_Name FROM club ORDER BY Cl
             document.getElementById("reportClubFilter").value = "";
             filterReportTable();
         }
-        document.querySelectorAll('[title]').forEach(el => {
-            new bootstrap.Tooltip(el);
+
+        // Initialize tooltips
+        document.addEventListener('DOMContentLoaded', function() {
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
         });
+
+        // Add smooth scrolling and enhanced interactions
+        document.querySelectorAll('.btn').forEach(btn => {
+            btn.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-2px)';
+                this.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.2)';
+            });
+            
+            btn.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+                this.style.boxShadow = 'none';
+            });
+        });
+
+        // Enhanced table row hover effects
+        document.querySelectorAll('.table tbody tr').forEach(row => {
+            row.addEventListener('mouseenter', function() {
+                this.style.background = 'rgba(37, 170, 32, 0.1)';
+                this.style.transform = 'translateX(4px)';
+            });
+            
+            row.addEventListener('mouseleave', function() {
+                this.style.background = '';
+                this.style.transform = 'translateX(0)';
+            });
+        });
+
+        // Tab switching animation
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', function() {
+                // Add loading effect
+                const tabContent = document.querySelector('.tab-content');
+                tabContent.style.opacity = '0.7';
+                
+                setTimeout(() => {
+                    tabContent.style.opacity = '1';
+                }, 150);
+            });
+        });
+
+        // Search input enhancements
+        document.querySelectorAll('input[type="text"]').forEach(input => {
+            input.addEventListener('focus', function() {
+                this.parentElement.style.transform = 'translateY(-1px)';
+                this.parentElement.style.boxShadow = '0 4px 15px rgba(255, 134, 69, 0.2)';
+            });
+            
+            input.addEventListener('blur', function() {
+                this.parentElement.style.transform = 'translateY(0)';
+                this.parentElement.style.boxShadow = 'none';
+            });
+        });
+
+        // Status badge animations
+        document.querySelectorAll('.status-badge').forEach(badge => {
+            badge.addEventListener('mouseenter', function() {
+                this.style.transform = 'scale(1.05)';
+            });
+            
+            badge.addEventListener('mouseleave', function() {
+                this.style.transform = 'scale(1)';
+            });
+        });
+
+        // Confirmation dialogs with better styling
+        function confirmDelete(message, callback) {
+            if (confirm(message)) {
+                callback();
+            }
+        }
+
+        // Add loading states for buttons
+        document.querySelectorAll('a[href*="action="]').forEach(link => {
+            link.addEventListener('click', function(e) {
+                if (this.href.includes('delete')) {
+                    return; // Let the onclick handle it
+                }
+                
+                const originalHtml = this.innerHTML;
+                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                this.style.pointerEvents = 'none';
+                
+                // Restore after a short delay (in real app, this would be when the page loads)
+                setTimeout(() => {
+                    this.innerHTML = originalHtml;
+                    this.style.pointerEvents = 'auto';
+                }, 1000);
+            });
+        });
+
+        // Auto-refresh functionality (optional)
+        let autoRefresh = false;
+        function toggleAutoRefresh() {
+            autoRefresh = !autoRefresh;
+            if (autoRefresh) {
+                setInterval(() => {
+                    if (autoRefresh) {
+                        location.reload();
+                    }
+                }, 30000); // Refresh every 30 seconds
+            }
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Ctrl/Cmd + F to focus search
+            if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+                e.preventDefault();
+                const activeTab = document.querySelector('.tab-pane.active');
+                const searchInput = activeTab.querySelector('input[type="text"]');
+                if (searchInput) {
+                    searchInput.focus();
+                }
+            }
+            
+            // Escape to clear filters
+            if (e.key === 'Escape') {
+                const activeTab = document.querySelector('.tab-pane.active');
+                if (activeTab.id === 'proposals') {
+                    resetProposalFilters();
+                } else if (activeTab.id === 'reports') {
+                    resetReportFilters();
+                }
+            }
+        });
+
+        // Add data export functionality
+        function exportTableData(tableId, filename) {
+            const table = document.getElementById(tableId);
+            const rows = Array.from(table.querySelectorAll('tr:not([style*="display: none"])'));
+            
+            let csv = '';
+            rows.forEach(row => {
+                const cols = Array.from(row.querySelectorAll('th, td'));
+                const rowData = cols.map(col => {
+                    // Remove HTML tags and clean up text
+                    return '"' + col.textContent.replace(/"/g, '""').trim() + '"';
+                }).join(',');
+                csv += rowData + '\n';
+            });
+            
+            // Download CSV
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename + '.csv';
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        // Add export buttons (you can add these to the UI if needed)
+        function addExportButtons() {
+            const proposalContainer = document.querySelector('#proposals .search-filter-container .row');
+            const reportContainer = document.querySelector('#reports .search-filter-container .row');
+            
+            // Add export button for proposals
+            const proposalExportBtn = document.createElement('div');
+            proposalExportBtn.className = 'col-md-2 mt-2';
+            proposalExportBtn.innerHTML = `
+                <button class="btn btn-outline-success w-100" onclick="exportTableData('proposalsTable', 'event-proposals')">
+                    <i class="fas fa-download me-1"></i>Export
+                </button>
+            `;
+            proposalContainer.appendChild(proposalExportBtn);
+            
+            // Add export button for reports
+            const reportExportBtn = document.createElement('div');
+            reportExportBtn.className = 'col-md-2 mt-2';
+            reportExportBtn.innerHTML = `
+                <button class="btn btn-outline-success w-100" onclick="exportTableData('reportsTable', 'post-event-reports')">
+                    <i class="fas fa-download me-1"></i>Export
+                </button>
+            `;
+            reportContainer.appendChild(reportExportBtn);
+        }
+
+        // Initialize export buttons
+        // addExportButtons(); // Uncomment if you want export functionality
+
+        console.log('Event Management System initialized successfully!');
     </script>
 </body>
 

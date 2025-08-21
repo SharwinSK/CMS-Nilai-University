@@ -1,0 +1,261 @@
+
+ 
+ .content-wrapper {
+            padding: 30px;
+        }
+
+        .section-title {
+            color: black;
+            font-weight: bold;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .stats-counter {
+            background: var(--header-green);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .table-responsive {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            margin-bottom: 30px;
+            border: 2px solid #e0e0e0;
+        }
+
+        .table {
+            margin-bottom: 0;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .table thead {
+            background: var(--header-green);
+            color: white;
+        }
+
+        .table thead th {
+            border: 1px solid #dee2e6;
+            padding: 15px 10px;
+            font-weight: 600;
+            text-align: center;
+            border-color: rgba(255,255,255,0.2);
+            background-color: #2DD627;
+        }
+
+        .table tbody td {
+            padding: 12px 8px;
+            vertical-align: middle;
+            text-align: center;
+            border: 1px solid #dee2e6;
+        }
+
+        .table tbody tr:hover {
+            background-color: var(--hover-orange);
+        }
+
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 15px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            display: inline-block;
+            max-width: 120px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .status-pending {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+
+        .status-approved {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .status-rejected {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .action-btn {
+            margin: 2px;
+            padding: 8px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 35px;
+            height: 35px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-edit {
+            background-color: #0046FF;
+            color: white;
+        }
+
+        .btn-edit:hover {
+            background-color: #138496;
+        }
+
+        .btn-modify {
+            background-color: #ffc107;
+            color: black;
+        }
+
+        .btn-modify:hover {
+            background-color: #e0a800;
+        }
+
+        .btn-delete {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .btn-delete:hover {
+            background-color: #c82333;
+        }
+
+        .btn-postmortem {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .btn-postmortem:hover {
+            background-color: #218838;
+        }
+
+        .btn-export {
+            background-color: var(--header-green);
+            color: white;
+        }
+
+        .btn-export:hover {
+            background-color: #9a5fff;
+        }
+
+        .btn-feedback {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .btn-feedback:hover {
+            background-color: #5a6268;
+        }
+
+        .btn-view {
+            background-color: #FF8040;
+            color: white;
+        }
+
+        .btn-view:hover {
+            background-color: #0056b3;
+        }
+
+        .no-data {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+            padding: 40px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        /* Modal styles */
+        .modal-header {
+            background: var(--header-green);
+            color: white;
+        }
+
+        .modal-body {
+            background: var(--hover-orange);
+        }
+
+        .feedback-content {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+            border-left: 4px solid var(--header-green);
+        }
+
+        .feedback-author {
+            font-weight: bold;
+            color: var(--header-green);
+            margin-bottom: 5px;
+        }
+
+        .feedback-text {
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .feedback-date {
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 5px;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .table thead th,
+            .table tbody td {
+                padding: 8px 4px;
+                font-size: 0.8rem;
+            }
+            
+            .action-btn {
+                width: 30px;
+                height: 30px;
+                font-size: 0.8rem;
+            }
+            
+            .status-badge {
+                font-size: 0.7rem;
+                padding: 2px 6px;
+                max-width: 100px;
+            }
+            
+            .section-title {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .content-wrapper {
+                padding: 15px;
+            }
+            
+            .table {
+                font-size: 0.75rem;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+        }

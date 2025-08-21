@@ -108,7 +108,8 @@ $postmortem_count = $postmortem_result->num_rows;
     <title>Track Progress - Nilai University CMS</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="../assets/css/student2.css?v=<?= time() ?>" rel="stylesheet" />
+    <link href="../assets/css/main.css?v=<?= time() ?>" rel="stylesheet" />
+    <link href="../assets/css/student/progresspage.css?v=<?= time() ?>" rel="stylesheet" />
 
 </head>
 
@@ -119,10 +120,7 @@ $postmortem_count = $postmortem_result->num_rows;
         <div class="container-fluid">
             <!-- Page Title -->
             <div class="page-header">
-                <h2 class="page-title">
-                    <i class="fa-solid fa-bars-progress"></i>
-                    Post Event View
-                </h2>
+
             </div>
 
             <!-- Proposal Section -->
