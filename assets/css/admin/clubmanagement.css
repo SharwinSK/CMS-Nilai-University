@@ -1,0 +1,265 @@
+ /* Content Styling */
+        .main-content {
+            padding: 2rem;
+            margin-top: 1rem;
+        }
+
+        .content-header {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .content-header h2 {
+            color: #25aa20;
+            margin: 0;
+            font-weight: bold;
+        }
+
+        /* Club Management Specific Styles */
+        .club-management-container {
+            background: #f8f5f0;
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .add-club-btn {
+            background: #25aa20;
+            border: none;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 10px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .add-club-btn:hover {
+            background: #ff8645;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 134, 69, 0.3);
+            color: white;
+        }
+
+        .club-table {
+            margin-top: 2rem;
+        }
+
+        .table th {
+            background: #25aa20;
+            color: white;
+            border: none;
+            font-weight: bold;
+            padding: 1rem 0.75rem;
+        }
+
+        .table td {
+            vertical-align: middle;
+            padding: 1rem 0.75rem;
+            background: white;
+        }
+
+        .table tbody tr {
+            transition: all 0.3s ease;
+        }
+
+        .table tbody tr:hover {
+            background-color: rgba(255, 134, 69, 0.1);
+            transform: translateX(5px);
+        }
+
+        .action-btn {
+            padding: 0.5rem 0.75rem;
+            margin: 0 0.25rem;
+            border-radius: 8px;
+            border: none;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .edit-btn {
+            background-color: #ff8645;
+            color: white;
+        }
+
+        .edit-btn:hover {
+            background-color: #e07640;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .delete-btn {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .delete-btn:hover {
+            background-color: #c82333;
+            transform: translateY(-2px);
+        }
+
+        /* View Logo Button */
+        .view-logo-btn {
+            background-color: #17a2b8;
+            color: white;
+            padding: 0.4rem 0.8rem;
+            border-radius: 8px;
+            border: none;
+            transition: all 0.3s ease;
+            font-size: 0.85rem;
+        }
+
+        .view-logo-btn:hover {
+            background-color: #138496;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 3px 10px rgba(23, 162, 184, 0.3);
+        }
+
+        .view-logo-btn:disabled {
+            background-color: #6c757d;
+            color: #fff;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .view-logo-btn:disabled:hover {
+            background-color: #6c757d;
+            transform: none;
+        }
+
+        /* Club Management Modal Styling - Specific to avoid conflicts */
+        .club-management-container .modal-header {
+            background: #25aa20;
+            border-bottom: none;
+            border-radius: 15px 15px 0 0;
+        }
+
+        .club-management-container .modal-title {
+            color: white;
+            font-weight: bold;
+        }
+
+        .club-management-container .btn-close {
+            filter: brightness(0) invert(1);
+        }
+
+        .club-management-container .modal-body {
+            padding: 2rem;
+            background: #f8f5f0;
+        }
+
+        .club-management-container .form-label {
+            color: #25aa20;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .club-management-container .form-control {
+            border: 2px solid rgba(37, 170, 32, 0.2);
+            border-radius: 10px;
+            padding: 0.75rem;
+            transition: all 0.3s ease;
+        }
+
+        .club-management-container .form-control:focus {
+            border-color: #25aa20;
+            box-shadow: 0 0 0 0.25rem rgba(37, 170, 32, 0.1);
+        }
+
+        .club-management-container .form-select {
+            border: 2px solid rgba(37, 170, 32, 0.2);
+            border-radius: 10px;
+            padding: 0.75rem;
+        }
+
+        .club-management-container .form-select:focus {
+            border-color: #25aa20;
+            box-shadow: 0 0 0 0.25rem rgba(37, 170, 32, 0.1);
+        }
+
+        .club-management-container .btn-primary {
+            background: #25aa20;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 10px;
+            font-weight: bold;
+        }
+
+        .club-management-container .btn-primary:hover {
+            background: #ff8645;
+            transform: translateY(-2px);
+        }
+
+        .club-management-container .btn-secondary {
+            background-color: #6c757d;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 10px;
+        }
+
+        .search-container {
+            margin-bottom: 1.5rem;
+        }
+
+        .search-input {
+            border: 2px solid rgba(37, 170, 32, 0.2);
+            border-radius: 10px 0 0 10px;
+            border-right: none;
+        }
+
+        .search-btn {
+            background: #25aa20;
+            border: 2px solid #25aa20;
+            color: white;
+            border-radius: 0 10px 10px 0;
+        }
+
+        .search-btn:hover {
+            background: #ff8645;
+            border-color: #ff8645;
+        }
+
+        .club-count {
+            background: #25aa20;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+
+        .alert {
+            border-radius: 10px;
+            border: none;
+        }
+
+        .club-management-container .modal-footer {
+            background: #f8f5f0;
+            border-top: none;
+        }
+
+        .club-management-container .modal-content {
+            border: none;
+            border-radius: 15px;
+        }
+
+        /* Logo Modal specific styling */
+        #logoViewModal .modal-dialog {
+            max-width: 80%;
+        }
+
+        #logoViewModal .modal-body {
+            text-align: center;
+            padding: 1rem;
+        }
+
+        #logoViewModal .modal-body img {
+            max-width: 100%;
+            max-height: 70vh;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }

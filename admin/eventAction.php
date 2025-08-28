@@ -28,9 +28,9 @@ if ($action === 'view' || $action === 'edit') {
 // EXPORT PDF
 if ($action === 'export') {
     $pdfPage = match ($type) {
-        'proposal' => '../generate_pdf.php',
+        'proposal' => '../components/pdf/generate_pdf.php',
         'report',
-        'completed' => '../reportgeneratepdf.php',
+        'completed' => '../components/pdf/reportgeneratepdf.php',
     };
     header("Location: $pdfPage?id=" . urlencode($id));
     exit();

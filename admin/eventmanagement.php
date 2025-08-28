@@ -4,7 +4,7 @@ include '../db/dbconfig.php';
 $currentPage = 'eventmanagement';
 // Check if user is logged in and is an admin
 if (!isset($_SESSION['Admin_ID']) || $_SESSION['user_type'] !== 'admin') {
-    header("Location: ../adminlogin.php");
+    header("Location: ../auth/adminlogin.php");
     exit();
 }
 
@@ -18,7 +18,26 @@ $admin_data = mysqli_fetch_assoc($admin_result);
 $admin_name = $admin_data['Admin_Name'] ?? 'Admin';
 mysqli_stmt_close($admin_stmt);
 
-// Fetch all proposal events with activity status and club list
+// Pagination settings
+$recordsPerPage = 50;
+$proposalPage = isset($_GET['proposal_page']) ? (int) $_GET['proposal_page'] : 1;
+$reportPage = isset($_GET['report_page']) ? (int) $_GET['report_page'] : 1;
+$proposalOffset = ($proposalPage - 1) * $recordsPerPage;
+$reportOffset = ($reportPage - 1) * $recordsPerPage;
+
+// Count total records for proposals
+$proposalCountQuery = "
+    SELECT COUNT(*) as total
+    FROM events e
+    LEFT JOIN student s ON e.Stu_ID = s.Stu_ID
+    LEFT JOIN club c ON e.Club_ID = c.Club_ID
+    LEFT JOIN eventstatus st ON e.Status_ID = st.Status_ID
+";
+$proposalCountResult = $conn->query($proposalCountQuery);
+$proposalTotalRecords = $proposalCountResult->fetch_assoc()['total'];
+$proposalTotalPages = ceil($proposalTotalRecords / $recordsPerPage);
+
+// Fetch proposal events with pagination and activity status
 $proposalEventQuery = "
     SELECT 
         e.Ev_ID, e.Ev_Name, e.Ev_Date, e.Ev_TypeRef, e.Updated_At, e.created_at,
@@ -34,14 +53,24 @@ $proposalEventQuery = "
     LEFT JOIN club c ON e.Club_ID = c.Club_ID
     LEFT JOIN eventstatus st ON e.Status_ID = st.Status_ID
     ORDER BY e.Ev_Date DESC
+    LIMIT $recordsPerPage OFFSET $proposalOffset
 ";
 $proposalResult = $conn->query($proposalEventQuery);
 
-// Fetch clubs for filter dropdown
-$clubsQuery = "SELECT DISTINCT Club_Name FROM club ORDER BY Club_Name ASC";
-$clubsResult = $conn->query($clubsQuery);
+// Count total records for post-event reports
+$reportCountQuery = "
+    SELECT COUNT(*) as total
+    FROM eventpostmortem ep
+    JOIN events e ON ep.Ev_ID = e.Ev_ID
+    LEFT JOIN student s ON e.Stu_ID = s.Stu_ID
+    LEFT JOIN club c ON e.Club_ID = c.Club_ID
+    LEFT JOIN eventstatus st ON ep.Status_ID = st.Status_ID
+";
+$reportCountResult = $conn->query($reportCountQuery);
+$reportTotalRecords = $reportCountResult->fetch_assoc()['total'];
+$reportTotalPages = ceil($reportTotalRecords / $recordsPerPage);
 
-// Query for post-event reports - FIXED: Added Status_Name from eventstatus table
+// Query for post-event reports with pagination
 $postEventQuery = "
     SELECT 
         ep.Rep_ID, ep.Ev_ID, ep.Updated_At, ep.created_at,
@@ -53,10 +82,35 @@ $postEventQuery = "
     LEFT JOIN club c ON e.Club_ID = c.Club_ID
     LEFT JOIN eventstatus st ON ep.Status_ID = st.Status_ID
     ORDER BY ep.Updated_At DESC
+    LIMIT $recordsPerPage OFFSET $reportOffset
 ";
 $postEventResult = $conn->query($postEventQuery);
 
+// Fetch clubs for filter dropdown
+$clubsQuery = "SELECT DISTINCT Club_Name FROM club ORDER BY Club_Name ASC";
+$clubsResult = $conn->query($clubsQuery);
 $clubsResultPost = $conn->query("SELECT DISTINCT Club_Name FROM club ORDER BY Club_Name ASC");
+
+// Function to format status display names for proposals
+function formatProposalStatus($dbStatus)
+{
+    switch ($dbStatus) {
+        case 'Approved by Advisor (Pending Coordinator Review)':
+            return 'Pending Coordinator Review';
+        case 'Pending Advisor Review':
+            return 'Pending Advisor Review';
+        case 'Rejected by Advisor':
+            return 'Rejected by Advisor';
+        case 'Rejected by Coordinator':
+            return 'Rejected by Coordinator';
+        case 'Approved by Coordinator':
+            return 'Approved by Coordinator';
+        case 'Draft':
+            return 'Draft';
+        default:
+            return $dbStatus;
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -65,315 +119,11 @@ $clubsResultPost = $conn->query("SELECT DISTINCT Club_Name FROM club ORDER BY Cl
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Event Management - Nilai University CMS</title>
+    <title>Event Management</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
     <link href="../assets/css/main.css?v=<?= time() ?>" rel="stylesheet" />
-    <style>
-        /* Enhanced styling using main.css theme colors */
-        :root {
-            --primary-green: #25aa20;
-            --hover-orange: #ff8645;
-            --body-orange: rgb(253, 255, 112);
-            --container-beige: #DDDAD0;
-            --text-dark: #333;
-            --success: #28a745;
-            --warning: #ffc107;
-            --danger: #dc3545;
-            --info: #17a2b8;
-        }
-
-        body {
-            background: var(--body-orange);
-            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-            min-height: 100vh;
-        }
-
-        .main-content {
-            padding: 2rem;
-            margin-top: 1rem;
-        }
-
-        .content-header {
-            background: var(--container-beige);
-            border-radius: 15px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-            border: 2px solid var(--primary-green);
-        }
-
-        .content-header h2 {
-            color: var(--primary-green);
-            margin: 0;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .content-header h2 i {
-            color: var(--hover-orange);
-            font-size: 2.5rem;
-        }
-
-        /* Tab Navigation Styling */
-        .nav-tabs {
-            border: none;
-            background: var(--container-beige);
-            border-radius: 15px 15px 0 0;
-            padding: 0.5rem;
-            margin-bottom: 0;
-        }
-
-        .nav-tabs .nav-link {
-            color: var(--primary-green);
-            border: none;
-            padding: 1rem 2rem;
-            font-weight: 600;
-            font-size: 1.1rem;
-            transition: all 0.3s ease;
-            border-radius: 12px;
-            margin: 0 0.25rem;
-            background: transparent;
-        }
-
-        .nav-tabs .nav-link:hover {
-            background: rgba(255, 134, 69, 0.1);
-            color: var(--hover-orange);
-            transform: translateY(-2px);
-        }
-
-        .nav-tabs .nav-link.active {
-            background: var(--primary-green);
-            color: white;
-            box-shadow: 0 4px 15px rgba(37, 170, 32, 0.3);
-        }
-
-        .tab-content {
-            background: var(--container-beige);
-            border-radius: 0 0 15px 15px;
-            padding: 2rem;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-            border: 2px solid var(--primary-green);
-            border-top: none;
-        }
-
-        /* Search and Filter Container */
-        .search-filter-container {
-            background: white;
-            border-radius: 15px;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-            border: 1px solid var(--primary-green);
-        }
-
-        .form-control, .form-select {
-            border: 2px solid var(--primary-green);
-            border-radius: 10px;
-            padding: 0.75rem 1rem;
-            font-weight: 500;
-            transition: all 0.3s ease;
-        }
-
-        .form-control:focus, .form-select:focus {
-            border-color: var(--hover-orange);
-            box-shadow: 0 0 0 0.25rem rgba(255, 134, 69, 0.25);
-            transform: translateY(-1px);
-        }
-
-        /* Table Styling */
-        .table-container {
-            border-radius: 15px;
-            overflow: hidden;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-            border: 2px solid var(--primary-green);
-        }
-
-        .table {
-            margin: 0;
-            background: white;
-        }
-
-        .table thead th {
-            background: var(--primary-green);
-            color: white;
-            font-weight: 700;
-            border: none;
-            padding: 1.25rem 1rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            font-size: 0.9rem;
-        }
-
-        .table tbody td {
-            padding: 1.25rem 1rem;
-            vertical-align: middle;
-            border-bottom: 1px solid rgba(37, 170, 32, 0.1);
-            font-weight: 500;
-        }
-
-        .table tbody tr:hover {
-            background: rgba(37, 170, 32, 0.05);
-            transform: translateX(2px);
-            transition: all 0.3s ease;
-        }
-
-        .table tbody tr:nth-child(even) {
-            background: rgba(221, 218, 208, 0.3);
-        }
-
-        /* Status Badges */
-        .status-badge {
-            padding: 0.25rem 0.5rem;
-            border-radius: 12px;
-            font-size: 0.7rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
-            display: inline-block;
-            min-width: 70px;
-            text-align: center;
-        }
-
-        .status-pending {
-            background: #fff3cd;
-            color: #856404;
-            border: 1px solid #ffc107;
-        }
-
-        .status-approved {
-            background: #d1edff;
-            color: #0c5460;
-            border: 1px solid #17a2b8;
-        }
-
-        .status-rejected {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #dc3545;
-        }
-
-        .status-draft {
-            background: #e2e3e5;
-            color: #383d41;
-            border: 1px solid #6c757d;
-        }
-
-        /* Activity Badges */
-        .badge {
-            font-size: 0.7rem;
-            font-weight: 600;
-            padding: 0.3rem 0.5rem;
-            border-radius: 15px;
-        }
-
-        .bg-warning-subtle {
-            background: #fff3cd !important;
-            color: #856404 !important;
-            border: 1px solid #ffc107;
-        }
-
-        .bg-success-subtle {
-            background: #d4edda !important;
-            color: #155724 !important;
-            border: 1px solid #28a745;
-        }
-
-        /* Button Styling */
-        .btn {
-            border-radius: 10px;
-            font-weight: 600;
-            padding: 0.5rem 1rem;
-            transition: all 0.3s ease;
-            border: 2px solid transparent;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-        }
-
-        .btn-outline-primary {
-            border-color: var(--primary-green);
-            color: var(--primary-green);
-        }
-
-        .btn-outline-primary:hover {
-            background: var(--primary-green);
-            color: white;
-        }
-
-        .btn-info {
-            background: #17a2b8;
-            border: none;
-        }
-
-        .btn-warning {
-            background: #ffc107;
-            border: none;
-            color: #333;
-        }
-
-        .btn-danger {
-            background: #dc3545;
-            border: none;
-        }
-
-        .btn-success {
-            background: #28a745;
-            border: none;
-        }
-
-        /* Action buttons container */
-        .action-buttons {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-
-        .btn-sm {
-            padding: 0.4rem 0.8rem;
-            font-size: 0.8rem;
-            min-width: 40px;
-        }
-
-        /* Responsive improvements */
-        @media (max-width: 768px) {
-            .main-content {
-                padding: 1rem;
-            }
-            
-            .content-header h2 {
-                font-size: 1.5rem;
-            }
-            
-            .table-container {
-                overflow-x: auto;
-            }
-            
-            .action-buttons {
-                flex-direction: column;
-                gap: 0.25rem;
-            }
-            
-            .btn-sm {
-                min-width: 80px;
-            }
-        }
-
-        /* Loading animation */
-        .table tbody tr {
-            animation: fadeIn 0.5s ease-in;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-    </style>
+    <link href="../assets/css/admin/eventmanagement.css?v=<?= time() ?>" rel="stylesheet" />
 </head>
 
 <body>
@@ -383,12 +133,6 @@ $clubsResultPost = $conn->query("SELECT DISTINCT Club_Name FROM club ORDER BY Cl
 
     <!-- Main Content -->
     <div class="main-content">
-        <div class="content-header">
-            <h2>
-                <i class="fas fa-calendar-check"></i>
-                Event Management System
-            </h2>
-        </div>
 
         <!-- Tab Navigation -->
         <ul class="nav nav-tabs" id="eventTabs" role="tablist">
@@ -414,11 +158,12 @@ $clubsResultPost = $conn->query("SELECT DISTINCT Club_Name FROM club ORDER BY Cl
                     <div class="row g-3">
                         <div class="col-md-4">
                             <div class="input-group">
-                                <span class="input-group-text bg-white border-end-0" style="border-color: var(--primary-green);">
+                                <span class="input-group-text bg-white border-end-0"
+                                    style="border-color: var(--primary-green);">
                                     <i class="fas fa-search text-muted"></i>
                                 </span>
-                                <input type="text" class="form-control border-start-0" placeholder="Search events or students..."
-                                    id="proposalSearch" />
+                                <input type="text" class="form-control border-start-0"
+                                    placeholder="Search events or students..." id="proposalSearch" />
                             </div>
                         </div>
                         <div class="col-md-3">
@@ -449,23 +194,31 @@ $clubsResultPost = $conn->query("SELECT DISTINCT Club_Name FROM club ORDER BY Cl
 
                 <!-- Proposal Events Table -->
                 <div class="table-container">
+                    <!-- Filter Results Info -->
+                    <div id="proposalFilterInfo" class="alert alert-info"
+                        style="display: none; margin-bottom: 0; border-radius: 0;">
+                        <i class="fas fa-filter me-2"></i><span id="proposalFilterText"></span>
+                    </div>
+
                     <table class="table table-hover mb-0" id="proposalsTable">
                         <thead>
                             <tr>
-                                <th><i class="fas fa-hashtag me-1"></i>Event ID</th>
-                                <th><i class="fas fa-event me-1"></i>Event Name</th>
-                                <th><i class="fas fa-info-circle me-1"></i>Status</th>
-                                <th><i class="fas fa-calendar me-1"></i>Created Date</th>
-                                <th><i class="fas fa-users me-1"></i>Club</th>
-                                <th><i class="fas fa-user me-1"></i>Student</th>
-                                <th><i class="fas fa-activity me-1"></i>Activity</th>
-                                <th><i class="fas fa-cogs me-1"></i>Actions</th>
+                                <th>ID</th>
+                                <th>EVENT NAME</th>
+                                <th>STATUS</th>
+                                <th>CREATED</th>
+                                <th>CLUB</th>
+                                <th>STUDENT</th>
+                                <th>ACTIVITY</th>
+                                <th>ACTIONS</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php while ($row = $proposalResult->fetch_assoc()): ?>
                                 <?php
-                                $status = strtolower($row['Status_Name']);
+                                // Format the status display name
+                                $displayStatus = formatProposalStatus($row['Status_Name']);
+                                $status = strtolower($displayStatus);
                                 $statusClass = match (true) {
                                     str_contains($status, 'pending') => 'status-pending',
                                     str_contains($status, 'approved') => 'status-approved',
@@ -474,16 +227,18 @@ $clubsResultPost = $conn->query("SELECT DISTINCT Club_Name FROM club ORDER BY Cl
                                 };
                                 ?>
                                 <tr>
-                                    <td><strong><?= htmlspecialchars($row['Ev_ID']) ?></strong></td>
+                                    <td class="id-cell"><strong><?= htmlspecialchars($row['Ev_ID']) ?></strong></td>
                                     <td><?= htmlspecialchars($row['Ev_Name']) ?></td>
-                                    <td><span class="status-badge <?= $statusClass ?>"><?= htmlspecialchars($row['Status_Name']) ?></span></td>
+                                    <td><span
+                                            class="status-badge <?= $statusClass ?>"><?= htmlspecialchars($displayStatus) ?></span>
+                                    </td>
                                     <td><?= date('d M Y', strtotime($row['created_at'])) ?></td>
                                     <td><?= htmlspecialchars($row['Club_Name']) ?></td>
                                     <td><?= htmlspecialchars($row['Stu_Name']) ?></td>
                                     <td>
                                         <?php if ($row['activity_flag'] === 'No Activity'): ?>
                                             <span class="badge bg-warning-subtle text-warning">
-                                                <i class="fas fa-exclamation-triangle me-1"></i>No Activity
+                                                <i class="fas fa-exclamation-triangle me-1"></i>Inactive
                                             </span>
                                         <?php else: ?>
                                             <span class="badge bg-success-subtle text-success">
@@ -521,6 +276,34 @@ $clubsResultPost = $conn->query("SELECT DISTINCT Club_Name FROM club ORDER BY Cl
                         </tbody>
                     </table>
                 </div>
+
+                <!-- Pagination for Proposals -->
+                <nav aria-label="Proposal Events Pagination">
+                    <ul class="pagination">
+                        <li class="page-item <?= $proposalPage <= 1 ? 'disabled' : '' ?>">
+                            <a class="page-link"
+                                href="?proposal_page=<?= $proposalPage - 1 ?><?= isset($_GET['report_page']) ? '&report_page=' . $_GET['report_page'] : '' ?>">Previous</a>
+                        </li>
+
+                        <?php for ($i = 1; $i <= $proposalTotalPages; $i++): ?>
+                            <li class="page-item <?= $i == $proposalPage ? 'active' : '' ?>">
+                                <a class="page-link"
+                                    href="?proposal_page=<?= $i ?><?= isset($_GET['report_page']) ? '&report_page=' . $_GET['report_page'] : '' ?>"><?= $i ?></a>
+                            </li>
+                        <?php endfor; ?>
+
+                        <li class="page-item <?= $proposalPage >= $proposalTotalPages ? 'disabled' : '' ?>">
+                            <a class="page-link"
+                                href="?proposal_page=<?= $proposalPage + 1 ?><?= isset($_GET['report_page']) ? '&report_page=' . $_GET['report_page'] : '' ?>">Next</a>
+                        </li>
+                    </ul>
+                </nav>
+
+                <div class="mt-3 text-center text-muted">
+                    Showing <?= min($proposalOffset + 1, $proposalTotalRecords) ?> to
+                    <?= min($proposalOffset + $recordsPerPage, $proposalTotalRecords) ?> of <?= $proposalTotalRecords ?>
+                    events
+                </div>
             </div>
 
             <!-- Post-Event Reports Tab -->
@@ -529,11 +312,12 @@ $clubsResultPost = $conn->query("SELECT DISTINCT Club_Name FROM club ORDER BY Cl
                     <div class="row g-3">
                         <div class="col-md-4">
                             <div class="input-group">
-                                <span class="input-group-text bg-white border-end-0" style="border-color: var(--primary-green);">
+                                <span class="input-group-text bg-white border-end-0"
+                                    style="border-color: var(--primary-green);">
                                     <i class="fas fa-search text-muted"></i>
                                 </span>
-                                <input type="text" class="form-control border-start-0" placeholder="Search events or students..."
-                                    id="reportSearch" />
+                                <input type="text" class="form-control border-start-0"
+                                    placeholder="Search events or students..." id="reportSearch" />
                             </div>
                         </div>
                         <div class="col-md-3">
@@ -563,16 +347,22 @@ $clubsResultPost = $conn->query("SELECT DISTINCT Club_Name FROM club ORDER BY Cl
                 </div>
 
                 <div class="table-container">
+                    <!-- Filter Results Info -->
+                    <div id="reportFilterInfo" class="alert alert-info"
+                        style="display: none; margin-bottom: 0; border-radius: 0;">
+                        <i class="fas fa-filter me-2"></i><span id="reportFilterText"></span>
+                    </div>
+
                     <table class="table table-hover mb-0" id="reportsTable">
                         <thead>
                             <tr>
-                                <th><i class="fas fa-hashtag me-1"></i>Event ID</th>
-                                <th><i class="fas fa-event me-1"></i>Event Name</th>
-                                <th><i class="fas fa-info-circle me-1"></i>Status</th>
-                                <th><i class="fas fa-calendar me-1"></i>Created Date</th>
-                                <th><i class="fas fa-users me-1"></i>Club</th>
-                                <th><i class="fas fa-user me-1"></i>Student</th>
-                                <th><i class="fas fa-cogs me-1"></i>Actions</th>
+                                <th>ID</th>
+                                <th>EVENT NAME</th>
+                                <th>STATUS</th>
+                                <th>CREATED</th>
+                                <th>CLUB</th>
+                                <th>STUDENT</th>
+                                <th>ACTIONS</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -582,11 +372,11 @@ $clubsResultPost = $conn->query("SELECT DISTINCT Club_Name FROM club ORDER BY Cl
                                 $dbStatus = $row['Status_Name'] ?? 'Postmortem Pending Review';
                                 $displayStatus = match (true) {
                                     str_contains($dbStatus, 'Pending') => 'Pending',
-                                    str_contains($dbStatus, 'Approved') => 'Approved', 
+                                    str_contains($dbStatus, 'Approved') => 'Approved',
                                     str_contains($dbStatus, 'Rejected') => 'Rejected',
                                     default => 'Pending'
                                 };
-                                
+
                                 $statusClass = match ($displayStatus) {
                                     'Pending' => 'status-pending',
                                     'Approved' => 'status-approved',
@@ -595,7 +385,10 @@ $clubsResultPost = $conn->query("SELECT DISTINCT Club_Name FROM club ORDER BY Cl
                                 };
                                 ?>
                                 <tr>
-                                    <td><strong><?= htmlspecialchars($row['Ev_ID']) ?></strong></td>
+                                    <td class="id-cell">
+                                        <div><strong>Event ID:</strong> <?= htmlspecialchars($row['Ev_ID']) ?></div>
+                                        <div><strong>Rep ID:</strong> <?= htmlspecialchars($row['Rep_ID']) ?></div>
+                                    </td>
                                     <td><?= htmlspecialchars($row['Ev_Name']) ?></td>
                                     <td><span class="status-badge <?= $statusClass ?>"><?= $displayStatus ?></span></td>
                                     <td><?= date('d M Y', strtotime($row['created_at'])) ?></td>
@@ -615,7 +408,7 @@ $clubsResultPost = $conn->query("SELECT DISTINCT Club_Name FROM club ORDER BY Cl
                                             </a>
                                             <a class="btn btn-danger btn-sm"
                                                 href="eventAction.php?action=delete&type=report&id=<?= urlencode($row['Ev_ID']) ?>"
-                                                title="Delete Report" 
+                                                title="Delete Report"
                                                 onclick="return confirm('Delete this post-event report?');">
                                                 <i class="fas fa-trash"></i>
                                             </a>
@@ -631,13 +424,41 @@ $clubsResultPost = $conn->query("SELECT DISTINCT Club_Name FROM club ORDER BY Cl
                         </tbody>
                     </table>
                 </div>
+
+                <!-- Pagination for Post-Event Reports -->
+                <nav aria-label="Post-Event Reports Pagination">
+                    <ul class="pagination">
+                        <li class="page-item <?= $reportPage <= 1 ? 'disabled' : '' ?>">
+                            <a class="page-link"
+                                href="?report_page=<?= $reportPage - 1 ?><?= isset($_GET['proposal_page']) ? '&proposal_page=' . $_GET['proposal_page'] : '' ?>">Previous</a>
+                        </li>
+
+                        <?php for ($i = 1; $i <= $reportTotalPages; $i++): ?>
+                            <li class="page-item <?= $i == $reportPage ? 'active' : '' ?>">
+                                <a class="page-link"
+                                    href="?report_page=<?= $i ?><?= isset($_GET['proposal_page']) ? '&proposal_page=' . $_GET['proposal_page'] : '' ?>"><?= $i ?></a>
+                            </li>
+                        <?php endfor; ?>
+
+                        <li class="page-item <?= $reportPage >= $reportTotalPages ? 'disabled' : '' ?>">
+                            <a class="page-link"
+                                href="?report_page=<?= $reportPage + 1 ?><?= isset($_GET['proposal_page']) ? '&proposal_page=' . $_GET['proposal_page'] : '' ?>">Next</a>
+                        </li>
+                    </ul>
+                </nav>
+
+                <div class="mt-3 text-center text-muted">
+                    Showing <?= min($reportOffset + 1, $reportTotalRecords) ?> to
+                    <?= min($reportOffset + $recordsPerPage, $reportTotalRecords) ?> of <?= $reportTotalRecords ?>
+                    reports
+                </div>
             </div>
         </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Enhanced filtering functions
+        // Enhanced filtering functions with pagination support
         document.getElementById("proposalStatusFilter").addEventListener("change", filterProposalTable);
         document.getElementById("proposalClubFilter").addEventListener("change", filterProposalTable);
         document.getElementById("proposalSearch").addEventListener("input", filterProposalTable);
@@ -648,6 +469,7 @@ $clubsResultPost = $conn->query("SELECT DISTINCT Club_Name FROM club ORDER BY Cl
             const club = document.getElementById("proposalClubFilter").value.toLowerCase();
 
             const rows = document.querySelectorAll("#proposalsTable tbody tr");
+            let visibleCount = 0;
 
             rows.forEach(row => {
                 const name = row.children[1].textContent.toLowerCase();
@@ -662,16 +484,32 @@ $clubsResultPost = $conn->query("SELECT DISTINCT Club_Name FROM club ORDER BY Cl
                 if (matchSearch && matchStatus && matchClub) {
                     row.style.display = "";
                     row.style.animation = "fadeIn 0.5s ease-in";
+                    visibleCount++;
                 } else {
                     row.style.display = "none";
                 }
             });
+
+            // Update filter info display
+            const filterInfo = document.getElementById('proposalFilterInfo');
+            const filterText = document.getElementById('proposalFilterText');
+
+            if (search || status || club) {
+                filterText.textContent = `Showing ${visibleCount} filtered results`;
+                filterInfo.style.display = 'block';
+            } else {
+                filterInfo.style.display = 'none';
+            }
         }
 
         function resetProposalFilters() {
             document.getElementById("proposalSearch").value = "";
             document.getElementById("proposalStatusFilter").value = "";
             document.getElementById("proposalClubFilter").value = "";
+
+            // Hide filter info
+            document.getElementById('proposalFilterInfo').style.display = 'none';
+
             filterProposalTable();
         }
 
@@ -686,6 +524,7 @@ $clubsResultPost = $conn->query("SELECT DISTINCT Club_Name FROM club ORDER BY Cl
             const club = document.getElementById("reportClubFilter").value.toLowerCase();
 
             const rows = document.querySelectorAll("#reportsTable tbody tr");
+            let visibleCount = 0;
 
             rows.forEach(row => {
                 const evName = row.children[1].textContent.toLowerCase();
@@ -700,21 +539,46 @@ $clubsResultPost = $conn->query("SELECT DISTINCT Club_Name FROM club ORDER BY Cl
                 if (matchSearch && matchStatus && matchClub) {
                     row.style.display = "";
                     row.style.animation = "fadeIn 0.5s ease-in";
+                    visibleCount++;
                 } else {
                     row.style.display = "none";
                 }
             });
+
+            // Update filter info display
+            const filterInfo = document.getElementById('reportFilterInfo');
+            const filterText = document.getElementById('reportFilterText');
+
+            if (search || status || club) {
+                filterText.textContent = `Showing ${visibleCount} filtered results`;
+                filterInfo.style.display = 'block';
+            } else {
+                filterInfo.style.display = 'none';
+            }
         }
 
         function resetReportFilters() {
             document.getElementById("reportSearch").value = "";
             document.getElementById("reportStatusFilter").value = "";
             document.getElementById("reportClubFilter").value = "";
+
+            // Hide filter info
+            document.getElementById('reportFilterInfo').style.display = 'none';
+
             filterReportTable();
         }
 
+        // Helper function to update pagination info during filtering
+        function updatePaginationInfo(type, visibleCount) {
+            const infoElement = document.querySelector(`nav[aria-label*="${type === 'proposal' ? 'Proposal Events' : 'Post-Event Reports'}"]`)
+                ?.parentElement?.querySelector('.text-muted');
+            if (infoElement && visibleCount >= 0) {
+                infoElement.textContent = `Showing ${visibleCount} filtered results`;
+            }
+        }
+
         // Initialize tooltips
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             var tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
             var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
                 return new bootstrap.Tooltip(tooltipTriggerEl);
@@ -723,12 +587,12 @@ $clubsResultPost = $conn->query("SELECT DISTINCT Club_Name FROM club ORDER BY Cl
 
         // Add smooth scrolling and enhanced interactions
         document.querySelectorAll('.btn').forEach(btn => {
-            btn.addEventListener('mouseenter', function() {
+            btn.addEventListener('mouseenter', function () {
                 this.style.transform = 'translateY(-2px)';
                 this.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.2)';
             });
-            
-            btn.addEventListener('mouseleave', function() {
+
+            btn.addEventListener('mouseleave', function () {
                 this.style.transform = 'translateY(0)';
                 this.style.boxShadow = 'none';
             });
@@ -736,12 +600,12 @@ $clubsResultPost = $conn->query("SELECT DISTINCT Club_Name FROM club ORDER BY Cl
 
         // Enhanced table row hover effects
         document.querySelectorAll('.table tbody tr').forEach(row => {
-            row.addEventListener('mouseenter', function() {
+            row.addEventListener('mouseenter', function () {
                 this.style.background = 'rgba(37, 170, 32, 0.1)';
                 this.style.transform = 'translateX(4px)';
             });
-            
-            row.addEventListener('mouseleave', function() {
+
+            row.addEventListener('mouseleave', function () {
                 this.style.background = '';
                 this.style.transform = 'translateX(0)';
             });
@@ -749,11 +613,11 @@ $clubsResultPost = $conn->query("SELECT DISTINCT Club_Name FROM club ORDER BY Cl
 
         // Tab switching animation
         document.querySelectorAll('.nav-link').forEach(link => {
-            link.addEventListener('click', function() {
+            link.addEventListener('click', function () {
                 // Add loading effect
                 const tabContent = document.querySelector('.tab-content');
                 tabContent.style.opacity = '0.7';
-                
+
                 setTimeout(() => {
                     tabContent.style.opacity = '1';
                 }, 150);
@@ -762,12 +626,12 @@ $clubsResultPost = $conn->query("SELECT DISTINCT Club_Name FROM club ORDER BY Cl
 
         // Search input enhancements
         document.querySelectorAll('input[type="text"]').forEach(input => {
-            input.addEventListener('focus', function() {
+            input.addEventListener('focus', function () {
                 this.parentElement.style.transform = 'translateY(-1px)';
                 this.parentElement.style.boxShadow = '0 4px 15px rgba(255, 134, 69, 0.2)';
             });
-            
-            input.addEventListener('blur', function() {
+
+            input.addEventListener('blur', function () {
                 this.parentElement.style.transform = 'translateY(0)';
                 this.parentElement.style.boxShadow = 'none';
             });
@@ -775,11 +639,11 @@ $clubsResultPost = $conn->query("SELECT DISTINCT Club_Name FROM club ORDER BY Cl
 
         // Status badge animations
         document.querySelectorAll('.status-badge').forEach(badge => {
-            badge.addEventListener('mouseenter', function() {
+            badge.addEventListener('mouseenter', function () {
                 this.style.transform = 'scale(1.05)';
             });
-            
-            badge.addEventListener('mouseleave', function() {
+
+            badge.addEventListener('mouseleave', function () {
                 this.style.transform = 'scale(1)';
             });
         });
@@ -793,15 +657,15 @@ $clubsResultPost = $conn->query("SELECT DISTINCT Club_Name FROM club ORDER BY Cl
 
         // Add loading states for buttons
         document.querySelectorAll('a[href*="action="]').forEach(link => {
-            link.addEventListener('click', function(e) {
+            link.addEventListener('click', function (e) {
                 if (this.href.includes('delete')) {
                     return; // Let the onclick handle it
                 }
-                
+
                 const originalHtml = this.innerHTML;
                 this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
                 this.style.pointerEvents = 'none';
-                
+
                 // Restore after a short delay (in real app, this would be when the page loads)
                 setTimeout(() => {
                     this.innerHTML = originalHtml;
@@ -824,7 +688,7 @@ $clubsResultPost = $conn->query("SELECT DISTINCT Club_Name FROM club ORDER BY Cl
         }
 
         // Keyboard shortcuts
-        document.addEventListener('keydown', function(e) {
+        document.addEventListener('keydown', function (e) {
             // Ctrl/Cmd + F to focus search
             if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
                 e.preventDefault();
@@ -834,7 +698,7 @@ $clubsResultPost = $conn->query("SELECT DISTINCT Club_Name FROM club ORDER BY Cl
                     searchInput.focus();
                 }
             }
-            
+
             // Escape to clear filters
             if (e.key === 'Escape') {
                 const activeTab = document.querySelector('.tab-pane.active');
@@ -850,7 +714,7 @@ $clubsResultPost = $conn->query("SELECT DISTINCT Club_Name FROM club ORDER BY Cl
         function exportTableData(tableId, filename) {
             const table = document.getElementById(tableId);
             const rows = Array.from(table.querySelectorAll('tr:not([style*="display: none"])'));
-            
+
             let csv = '';
             rows.forEach(row => {
                 const cols = Array.from(row.querySelectorAll('th, td'));
@@ -860,7 +724,7 @@ $clubsResultPost = $conn->query("SELECT DISTINCT Club_Name FROM club ORDER BY Cl
                 }).join(',');
                 csv += rowData + '\n';
             });
-            
+
             // Download CSV
             const blob = new Blob([csv], { type: 'text/csv' });
             const url = window.URL.createObjectURL(blob);
@@ -875,7 +739,7 @@ $clubsResultPost = $conn->query("SELECT DISTINCT Club_Name FROM club ORDER BY Cl
         function addExportButtons() {
             const proposalContainer = document.querySelector('#proposals .search-filter-container .row');
             const reportContainer = document.querySelector('#reports .search-filter-container .row');
-            
+
             // Add export button for proposals
             const proposalExportBtn = document.createElement('div');
             proposalExportBtn.className = 'col-md-2 mt-2';
@@ -885,7 +749,7 @@ $clubsResultPost = $conn->query("SELECT DISTINCT Club_Name FROM club ORDER BY Cl
                 </button>
             `;
             proposalContainer.appendChild(proposalExportBtn);
-            
+
             // Add export button for reports
             const reportExportBtn = document.createElement('div');
             reportExportBtn.className = 'col-md-2 mt-2';

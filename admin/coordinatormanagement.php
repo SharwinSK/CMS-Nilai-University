@@ -1,3 +1,132 @@
+<?php
+session_start();
+include '../db/dbconfig.php';
+$currentPage = 'eventmanagement';
+
+// Check if user is logged in and is an admin
+if (!isset($_SESSION['Admin_ID']) || $_SESSION['user_type'] !== 'admin') {
+    header("Location: ../auth/adminlogin.php");
+    exit();
+}
+
+// Handle AJAX requests
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action = $_POST['action'] ?? '';
+
+    if ($action === 'add_coordinator') {
+        $name = mysqli_real_escape_string($conn, $_POST['name']);
+        $email = mysqli_real_escape_string($conn, $_POST['email']);
+        $phone = mysqli_real_escape_string($conn, $_POST['phone']);
+        $password = mysqli_real_escape_string($conn, $_POST['password']);
+
+        // Hash the password
+        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+
+        // Generate Coordinator ID
+        $coord_query = "SELECT Coor_ID FROM coordinator ORDER BY Coor_ID DESC LIMIT 1";
+        $coord_result = mysqli_query($conn, $coord_query);
+
+        if (mysqli_num_rows($coord_result) > 0) {
+            $last_coord = mysqli_fetch_assoc($coord_result);
+            $last_number = intval(substr($last_coord['Coor_ID'], 6));
+            $new_number = $last_number + 1;
+        } else {
+            $new_number = 501;
+        }
+        $new_coord_id = 'Cor' . str_pad($new_number, 5, '0', STR_PAD_LEFT);
+
+        // Check if email already exists
+        $check_email = "SELECT Coor_Email FROM coordinator WHERE Coor_Email = ?";
+        $check_stmt = mysqli_prepare($conn, $check_email);
+        mysqli_stmt_bind_param($check_stmt, "s", $email);
+        mysqli_stmt_execute($check_stmt);
+        $check_result = mysqli_stmt_get_result($check_stmt);
+
+        if (mysqli_num_rows($check_result) > 0) {
+            echo json_encode(['success' => false, 'message' => 'Email already exists']);
+            exit();
+        }
+
+        // Insert new coordinator
+        $insert_query = "INSERT INTO coordinator (Coor_ID, Coor_Name, Coor_Email, Coor_PhnNum, Coor_PSW) VALUES (?, ?, ?, ?, ?)";
+        $insert_stmt = mysqli_prepare($conn, $insert_query);
+        mysqli_stmt_bind_param($insert_stmt, "sssss", $new_coord_id, $name, $email, $phone, $hashed_password);
+
+        if (mysqli_stmt_execute($insert_stmt)) {
+            echo json_encode(['success' => true, 'message' => 'Coordinator added successfully']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Error adding coordinator']);
+        }
+        exit();
+    }
+
+    if ($action === 'edit_coordinator') {
+        $coord_id = $_POST['coordinator_id'];
+        $name = mysqli_real_escape_string($conn, $_POST['name']);
+        $email = mysqli_real_escape_string($conn, $_POST['email']);
+        $phone = mysqli_real_escape_string($conn, $_POST['phone']);
+        $password = mysqli_real_escape_string($conn, $_POST['password']);
+
+        // Hash the password
+        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+
+        // Check if email already exists (excluding current coordinator)
+        $check_email = "SELECT Coor_Email FROM coordinator WHERE Coor_Email = ? AND Coor_ID != ?";
+        $check_stmt = mysqli_prepare($conn, $check_email);
+        mysqli_stmt_bind_param($check_stmt, "ss", $email, $coord_id);
+        mysqli_stmt_execute($check_stmt);
+        $check_result = mysqli_stmt_get_result($check_stmt);
+
+        if (mysqli_num_rows($check_result) > 0) {
+            echo json_encode(['success' => false, 'message' => 'Email already exists']);
+            exit();
+        }
+
+        // Update coordinator
+        $update_query = "UPDATE coordinator SET Coor_Name = ?, Coor_Email = ?, Coor_PhnNum = ?, Coor_PSW = ? WHERE Coor_ID = ?";
+        $update_stmt = mysqli_prepare($conn, $update_query);
+        mysqli_stmt_bind_param($update_stmt, "sssss", $name, $email, $phone, $hashed_password, $coord_id);
+
+        if (mysqli_stmt_execute($update_stmt)) {
+            echo json_encode(['success' => true, 'message' => 'Coordinator updated successfully']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Error updating coordinator']);
+        }
+        exit();
+    }
+
+    if ($action === 'delete_coordinator') {
+        $coord_id = $_POST['coordinator_id'];
+
+        // Delete coordinator
+        $delete_query = "DELETE FROM coordinator WHERE Coor_ID = ?";
+        $delete_stmt = mysqli_prepare($conn, $delete_query);
+        mysqli_stmt_bind_param($delete_stmt, "s", $coord_id);
+
+        if (mysqli_stmt_execute($delete_stmt)) {
+            echo json_encode(['success' => true, 'message' => 'Coordinator deleted successfully']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Error deleting coordinator']);
+        }
+        exit();
+    }
+}
+
+// Get admin details for navbar
+$admin_query = "SELECT Admin_Name FROM admin WHERE Admin_ID = ?";
+$admin_stmt = mysqli_prepare($conn, $admin_query);
+mysqli_stmt_bind_param($admin_stmt, "i", $_SESSION['Admin_ID']);
+mysqli_stmt_execute($admin_stmt);
+$admin_result = mysqli_stmt_get_result($admin_stmt);
+$admin_data = mysqli_fetch_assoc($admin_result);
+$admin_name = $admin_data['Admin_Name'] ?? 'Admin';
+mysqli_stmt_close($admin_stmt);
+
+// Fetch all coordinators
+$coordinators_query = "SELECT * FROM coordinator ORDER BY Coor_ID ASC";
+$coordinators_result = mysqli_query($conn, $coordinators_query);
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -7,58 +136,8 @@
     <title>Coordinator Management - Nilai University CMS</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="../assets/css/main.css?v=<?= time() ?>" rel="stylesheet">
     <style>
-        :root {
-            --primary-color: #03a791;
-            --secondary-color: #81e7af;
-            --accent-color: #e9f5be;
-            --warm-color: #f1ba88;
-            --light-bg: #f8f9fa;
-        }
-
-        body {
-            background: linear-gradient(135deg, var(--accent-color), var(--light-bg));
-            min-height: 100vh;
-            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        /* Sidebar Styling */
-        .offcanvas-start {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            width: 280px;
-        }
-
-        .offcanvas-header {
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 1.5rem;
-        }
-
-        .offcanvas-title {
-            color: white;
-            font-weight: bold;
-            font-size: 1.4rem;
-        }
-
-        .nav-link {
-            color: rgba(255, 255, 255, 0.9) !important;
-            padding: 0.8rem 1.5rem;
-            margin: 0.2rem 0;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-        }
-
-        .nav-link:hover {
-            background-color: rgba(255, 255, 255, 0.1);
-            color: white !important;
-            transform: translateX(5px);
-        }
-
-        .nav-link.active {
-            background-color: var(--warm-color);
-            color: var(--primary-color) !important;
-            font-weight: bold;
-        }
-
         /* Content Styling */
         .main-content {
             padding: 2rem;
@@ -74,7 +153,7 @@
         }
 
         .content-header h2 {
-            color: var(--primary-color);
+            color: var(--header-green);
             margin: 0;
             font-weight: bold;
         }
@@ -88,7 +167,7 @@
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            background: var(--header-green);
             border: none;
             border-radius: 25px;
             padding: 0.5rem 1.5rem;
@@ -97,12 +176,12 @@
         }
 
         .btn-primary:hover {
-            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+            background: var(--hover-orange);
             transform: translateY(-2px);
         }
 
         .btn-warning {
-            background: var(--warm-color);
+            background: var(--hover-orange);
             border: none;
             border-radius: 20px;
             color: white;
@@ -130,7 +209,7 @@
         }
 
         .table thead {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            background: var(--header-green);
             color: white;
         }
 
@@ -139,22 +218,22 @@
         }
 
         .table tbody tr:hover {
-            background-color: rgba(3, 167, 145, 0.1);
+            background-color: rgba(37, 170, 32, 0.1);
             transform: scale(1.01);
         }
 
         .modal-header {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            background: var(--header-green);
             color: white;
         }
 
         .modal-header.bg-danger {
-            background: linear-gradient(135deg, #dc3545, #c82333) !important;
+            background: var(--danger) !important;
         }
 
         .form-control:focus {
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 0.2rem rgba(3, 167, 145, 0.25);
+            border-color: var(--header-green);
+            box-shadow: 0 0 0 0.2rem rgba(37, 170, 32, 0.25);
         }
 
         .action-buttons {
@@ -184,7 +263,7 @@
         }
 
         .search-container {
-            background: rgba(3, 167, 145, 0.1);
+            background: rgba(37, 170, 32, 0.1);
             border-radius: 15px;
             padding: 1rem;
             margin-bottom: 2rem;
@@ -200,74 +279,30 @@
 
         .search-input:focus {
             outline: none;
-            box-shadow: 0 0 0 0.2rem rgba(3, 167, 145, 0.25);
+            box-shadow: 0 0 0 0.2rem rgba(37, 170, 32, 0.25);
+        }
+
+        .alert {
+            border-radius: 15px;
+            border: none;
+        }
+
+        .alert-success {
+            background-color: var(--success);
+            color: white;
+        }
+
+        .alert-danger {
+            background-color: var(--danger);
+            color: white;
         }
     </style>
 </head>
 
 <body>
-    <!-- Navigation Bar -->
-    <nav class="navbar navbar-expand-lg"
-        style="background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));">
-        <div class="container-fluid">
-            <button class="btn btn-outline-light me-3" type="button" data-bs-toggle="offcanvas"
-                data-bs-target="#adminSidebar">
-                <i class="fas fa-bars"></i>
-            </button>
-            <a class="navbar-brand text-white fw-bold" href="#">
-                <i class="fas fa-university me-2"></i>Nilai University CMS
-            </a>
-            <div class="navbar-nav ms-auto">
-                <div class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle text-white" href="#" role="button" data-bs-toggle="dropdown">
-                        <i class="fas fa-user-circle me-1"></i>Admin
-                    </a>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i>Profile</a></li>
-                        <li>
-                            <hr class="dropdown-divider" />
-                        </li>
-                        <li><a class="dropdown-item" href="#"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Offcanvas Sidebar -->
-    <div class="offcanvas offcanvas-start" tabindex="-1" id="adminSidebar">
-        <div class="offcanvas-header">
-            <h5 class="offcanvas-title">
-                <i class="fas fa-tachometer-alt me-2"></i>Admin Panel
-            </h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
-        </div>
-        <div class="offcanvas-body p-0">
-            <nav class="nav flex-column">
-                <a class="nav-link" href="dashboard.php" data-section="dashboard">
-                    <i class="fas fa-home me-2"></i>Admin Dashboard
-                </a>
-                <a class="nav-link" href="eventmanagement.php" data-section="events">
-                    <i class="fas fa-calendar-alt me-2"></i>Event Management
-                </a>
-                <a class="nav-link" href="clubmanagement.php" data-section="clubs">
-                    <i class="fas fa-users me-2"></i>Club Management
-                </a>
-                <a class="nav-link" href="advisormanagement.php" data-section="advisors">
-                    <i class="fas fa-user-tie me-2"></i>Advisor Management
-                </a>
-                <a class="nav-link active" href="coordinatormanagement.php" data-section="coordinators">
-                    <i class="fas fa-user-cog me-2"></i>Coordinator Management
-                </a>
-                <a class="nav-link" href="usermanagement.php" data-section="users">
-                    <i class="fas fa-user-friends me-2"></i>User Management
-                </a>
-                <a class="nav-link" href="reportexport.php" data-section="reports">
-                    <i class="fas fa-chart-bar me-2"></i>Report & Export
-                </a>
-            </nav>
-        </div>
-    </div>
+    <?php include('../model/LogoutDesign.php'); ?>
+    <?php include('../components/AdmHeader.php'); ?>
+    <?php include('../components/AdmOffcanvas.php'); ?>
 
     <!-- Main Content -->
     <div class="main-content">
@@ -285,7 +320,8 @@
                         placeholder="🔍 Search coordinators...">
                 </div>
                 <div class="col-md-6 text-end">
-                    <span class="text-muted">Total Coordinators: <span id="totalCount">0</span></span>
+                    <span class="text-muted">Total Coordinators: <span
+                            id="totalCount"><?= mysqli_num_rows($coordinators_result) ?></span></span>
                 </div>
             </div>
         </div>
@@ -308,66 +344,30 @@
                             <th>Name</th>
                             <th>Email</th>
                             <th>Phone Number</th>
-                            <th>Password</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <!-- Sample data - Replace with PHP generated content -->
-                        <tr>
-                            <td>001</td>
-                            <td>John Doe</td>
-                            <td>john.doe@nilai.edu.my</td>
-                            <td>+60123456789</td>
-                            <td>password123</td>
-                            <td>
-                                <div class="action-buttons">
-                                    <button class="btn btn-warning btn-sm"
-                                        onclick="editCoordinator(1, 'John Doe', 'john.doe@nilai.edu.my', '+60123456789', 'password123')">
-                                        <i class="fas fa-edit"></i> Edit
-                                    </button>
-                                    <button class="btn btn-danger btn-sm" onclick="deleteCoordinator(1)">
-                                        <i class="fas fa-trash"></i> Remove
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>002</td>
-                            <td>Jane Smith</td>
-                            <td>jane.smith@nilai.edu.my</td>
-                            <td>+60198765432</td>
-                            <td>secure456</td>
-                            <td>
-                                <div class="action-buttons">
-                                    <button class="btn btn-warning btn-sm"
-                                        onclick="editCoordinator(2, 'Jane Smith', 'jane.smith@nilai.edu.my', '+60198765432', 'secure456')">
-                                        <i class="fas fa-edit"></i> Edit
-                                    </button>
-                                    <button class="btn btn-danger btn-sm" onclick="deleteCoordinator(2)">
-                                        <i class="fas fa-trash"></i> Remove
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>003</td>
-                            <td>Ahmad Rahman</td>
-                            <td>ahmad.rahman@nilai.edu.my</td>
-                            <td>+60187654321</td>
-                            <td>admin789</td>
-                            <td>
-                                <div class="action-buttons">
-                                    <button class="btn btn-warning btn-sm"
-                                        onclick="editCoordinator(3, 'Ahmad Rahman', 'ahmad.rahman@nilai.edu.my', '+60187654321', 'admin789')">
-                                        <i class="fas fa-edit"></i> Edit
-                                    </button>
-                                    <button class="btn btn-danger btn-sm" onclick="deleteCoordinator(3)">
-                                        <i class="fas fa-trash"></i> Remove
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
+                        <?php while ($coordinator = mysqli_fetch_assoc($coordinators_result)): ?>
+                            <tr>
+                                <td><?= htmlspecialchars($coordinator['Coor_ID']) ?></td>
+                                <td><?= htmlspecialchars($coordinator['Coor_Name']) ?></td>
+                                <td><?= htmlspecialchars($coordinator['Coor_Email']) ?></td>
+                                <td><?= htmlspecialchars($coordinator['Coor_PhnNum']) ?></td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn btn-warning btn-sm"
+                                            onclick="editCoordinator('<?= $coordinator['Coor_ID'] ?>', '<?= htmlspecialchars($coordinator['Coor_Name']) ?>', '<?= htmlspecialchars($coordinator['Coor_Email']) ?>', '<?= htmlspecialchars($coordinator['Coor_PhnNum']) ?>')">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </button>
+                                        <button class="btn btn-danger btn-sm"
+                                            onclick="deleteCoordinator('<?= $coordinator['Coor_ID'] ?>')">
+                                            <i class="fas fa-trash"></i> Remove
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        <?php endwhile; ?>
                     </tbody>
                 </table>
             </div>
@@ -400,7 +400,7 @@
                         </div>
                         <div class="mb-3">
                             <label for="password" class="form-label">Password</label>
-                            <input type="text" class="form-control" id="password" name="password" required>
+                            <input type="password" class="form-control" id="password" name="password" required>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -438,8 +438,8 @@
                             <input type="text" class="form-control" id="edit_phone" name="phone" required>
                         </div>
                         <div class="mb-3">
-                            <label for="edit_password" class="form-label">Password</label>
-                            <input type="text" class="form-control" id="edit_password" name="password" required>
+                            <label for="edit_password" class="form-label">New Password</label>
+                            <input type="password" class="form-control" id="edit_password" name="password" required>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -487,12 +487,12 @@
         });
 
         // Edit coordinator function
-        function editCoordinator(id, name, email, phone, password) {
+        function editCoordinator(id, name, email, phone) {
             document.getElementById('edit_coordinator_id').value = id;
             document.getElementById('edit_name').value = name;
             document.getElementById('edit_email').value = email;
             document.getElementById('edit_phone').value = phone;
-            document.getElementById('edit_password').value = password;
+            document.getElementById('edit_password').value = '';
 
             var editModal = new bootstrap.Modal(document.getElementById('editCoordinatorModal'));
             editModal.show();
@@ -510,45 +510,79 @@
         document.getElementById('addCoordinatorForm').addEventListener('submit', function (e) {
             e.preventDefault();
 
-            // Get form data
             const formData = new FormData(this);
+            formData.append('action', 'add_coordinator');
 
-            // Here you would typically send the data to your PHP script
-            console.log('Adding coordinator:', Object.fromEntries(formData));
-
-            // Close modal and show success message
-            bootstrap.Modal.getInstance(document.getElementById('addCoordinatorModal')).hide();
-            showSuccessMessage('Coordinator added successfully!');
-
-            // Reset form
-            this.reset();
+            fetch('', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        bootstrap.Modal.getInstance(document.getElementById('addCoordinatorModal')).hide();
+                        showSuccessMessage(data.message);
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        showErrorMessage(data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showErrorMessage('An error occurred while adding the coordinator.');
+                });
         });
 
         document.getElementById('editCoordinatorForm').addEventListener('submit', function (e) {
             e.preventDefault();
 
-            // Get form data
             const formData = new FormData(this);
+            formData.append('action', 'edit_coordinator');
 
-            // Here you would typically send the data to your PHP script
-            console.log('Editing coordinator:', Object.fromEntries(formData));
-
-            // Close modal and show success message
-            bootstrap.Modal.getInstance(document.getElementById('editCoordinatorModal')).hide();
-            showSuccessMessage('Coordinator updated successfully!');
+            fetch('', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        bootstrap.Modal.getInstance(document.getElementById('editCoordinatorModal')).hide();
+                        showSuccessMessage(data.message);
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        showErrorMessage(data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showErrorMessage('An error occurred while updating the coordinator.');
+                });
         });
 
         document.getElementById('deleteCoordinatorForm').addEventListener('submit', function (e) {
             e.preventDefault();
 
-            const coordinatorId = document.getElementById('delete_coordinator_id').value;
+            const formData = new FormData(this);
+            formData.append('action', 'delete_coordinator');
 
-            // Here you would typically send the data to your PHP script
-            console.log('Deleting coordinator ID:', coordinatorId);
-
-            // Close modal and show success message
-            bootstrap.Modal.getInstance(document.getElementById('deleteCoordinatorModal')).hide();
-            showSuccessMessage('Coordinator deleted successfully!');
+            fetch('', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        bootstrap.Modal.getInstance(document.getElementById('deleteCoordinatorModal')).hide();
+                        showSuccessMessage(data.message);
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        showErrorMessage(data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showErrorMessage('An error occurred while deleting the coordinator.');
+                });
         });
 
         // Search/Filter function
@@ -590,6 +624,26 @@
             alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
             alertDiv.innerHTML = `
                 <i class="fas fa-check-circle me-2"></i>${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+
+            document.body.appendChild(alertDiv);
+
+            // Auto remove after 3 seconds
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.parentNode.removeChild(alertDiv);
+                }
+            }, 3000);
+        }
+
+        // Error message function
+        function showErrorMessage(message) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-danger alert-dismissible fade show position-fixed';
+            alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            alertDiv.innerHTML = `
+                <i class="fas fa-exclamation-circle me-2"></i>${message}
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             `;
 

@@ -1,386 +1,202 @@
+<?php
+session_start();
+include '../db/dbconfig.php';
+$currentPage = 'advisormanagement';
+// Check if user is logged in and is an admin
+if (!isset($_SESSION['Admin_ID']) || $_SESSION['user_type'] !== 'admin') {
+    header("Location: ../auth/adminlogin.php");
+    exit();
+}
+
+// Get admin details for navbar
+$admin_query = "SELECT Admin_Name FROM admin WHERE Admin_ID = ?";
+$admin_stmt = mysqli_prepare($conn, $admin_query);
+mysqli_stmt_bind_param($admin_stmt, "i", $_SESSION['Admin_ID']);
+mysqli_stmt_execute($admin_stmt);
+$admin_result = mysqli_stmt_get_result($admin_stmt);
+$admin_data = mysqli_fetch_assoc($admin_result);
+$admin_name = $admin_data['Admin_Name'] ?? 'Admin';
+mysqli_stmt_close($admin_stmt);
+
+// Handle AJAX requests
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    header('Content-Type: application/json');
+
+    switch ($_POST['action']) {
+        case 'add_advisor':
+            $advisor_id = mysqli_real_escape_string($conn, $_POST['advisor_id']);
+            $advisor_name = mysqli_real_escape_string($conn, $_POST['advisor_name']);
+            $advisor_email = mysqli_real_escape_string($conn, $_POST['advisor_email']);
+            $advisor_phone = mysqli_real_escape_string($conn, $_POST['advisor_phone']);
+            $advisor_club = (int) $_POST['advisor_club'];
+            $advisor_password = password_hash($_POST['advisor_password'], PASSWORD_DEFAULT);
+
+            // Check if advisor ID already exists
+            $check_query = "SELECT Adv_ID FROM advisor WHERE Adv_ID = ?";
+            $check_stmt = mysqli_prepare($conn, $check_query);
+            mysqli_stmt_bind_param($check_stmt, "s", $advisor_id);
+            mysqli_stmt_execute($check_stmt);
+            $result = mysqli_stmt_get_result($check_stmt);
+
+            if (mysqli_num_rows($result) > 0) {
+                echo json_encode(['success' => false, 'message' => 'Advisor ID already exists']);
+                exit();
+            }
+
+            $insert_query = "INSERT INTO advisor (Adv_ID, Club_ID, Adv_Name, Adv_Email, Adv_PhnNum, Adv_PSW) VALUES (?, ?, ?, ?, ?, ?)";
+            $insert_stmt = mysqli_prepare($conn, $insert_query);
+            mysqli_stmt_bind_param($insert_stmt, "sissss", $advisor_id, $advisor_club, $advisor_name, $advisor_email, $advisor_phone, $advisor_password);
+
+            if (mysqli_stmt_execute($insert_stmt)) {
+                echo json_encode(['success' => true, 'message' => 'Advisor added successfully']);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Error adding advisor']);
+            }
+            exit();
+
+        case 'update_advisor':
+            $advisor_id = mysqli_real_escape_string($conn, $_POST['advisor_id']);
+            $advisor_name = mysqli_real_escape_string($conn, $_POST['advisor_name']);
+            $advisor_email = mysqli_real_escape_string($conn, $_POST['advisor_email']);
+            $advisor_phone = mysqli_real_escape_string($conn, $_POST['advisor_phone']);
+            $advisor_club = (int) $_POST['advisor_club'];
+
+            $update_query = "UPDATE advisor SET Adv_Name = ?, Adv_Email = ?, Adv_PhnNum = ?, Club_ID = ?";
+            $params = [$advisor_name, $advisor_email, $advisor_phone, $advisor_club];
+            $types = "sssi";
+
+            if (!empty($_POST['advisor_password'])) {
+                $advisor_password = password_hash($_POST['advisor_password'], PASSWORD_DEFAULT);
+                $update_query .= ", Adv_PSW = ?";
+                $params[] = $advisor_password;
+                $types .= "s";
+            }
+
+            $update_query .= " WHERE Adv_ID = ?";
+            $params[] = $advisor_id;
+            $types .= "s";
+
+            $update_stmt = mysqli_prepare($conn, $update_query);
+            mysqli_stmt_bind_param($update_stmt, $types, ...$params);
+
+            if (mysqli_stmt_execute($update_stmt)) {
+                echo json_encode(['success' => true, 'message' => 'Advisor updated successfully']);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Error updating advisor']);
+            }
+            exit();
+
+        case 'delete_advisor':
+            $advisor_id = mysqli_real_escape_string($conn, $_POST['advisor_id']);
+
+            $delete_query = "DELETE FROM advisor WHERE Adv_ID = ?";
+            $delete_stmt = mysqli_prepare($conn, $delete_query);
+            mysqli_stmt_bind_param($delete_stmt, "s", $advisor_id);
+
+            if (mysqli_stmt_execute($delete_stmt)) {
+                echo json_encode(['success' => true, 'message' => 'Advisor deleted successfully']);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Error deleting advisor']);
+            }
+            exit();
+    }
+}
+
+// Fetch advisors with club information
+$advisors_query = "
+    SELECT a.Adv_ID, a.Adv_Name, a.Adv_Email, a.Adv_PhnNum, c.Club_Name, c.Club_ID
+    FROM advisor a 
+    LEFT JOIN club c ON a.Club_ID = c.Club_ID 
+    ORDER BY a.Adv_ID
+";
+$advisors_result = mysqli_query($conn, $advisors_query);
+
+// Fetch clubs for dropdown
+$clubs_query = "SELECT Club_ID, Club_Name FROM club ORDER BY Club_Name";
+$clubs_result = mysqli_query($conn, $clubs_query);
+$clubs = [];
+while ($club = mysqli_fetch_assoc($clubs_result)) {
+    $clubs[] = $club;
+}
+
+// Calculate statistics
+$stats_query = "
+    SELECT 
+        COUNT(*) as total_advisors,
+        COUNT(DISTINCT Club_ID) as clubs_managed
+    FROM advisor 
+    WHERE Club_ID IS NOT NULL
+";
+$stats_result = mysqli_query($conn, $stats_query);
+$stats = mysqli_fetch_assoc($stats_result);
+?>
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advisor Management - Nilai University CMS</title>
+    <title>Advisor Management</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-
-    <style>
-        :root {
-            --primary-color: #03a791;
-            --secondary-color: #81e7af;
-            --accent-color: #e9f5be;
-            --warm-color: #f1ba88;
-            --light-bg: #f8f9fa;
-        }
-
-        body {
-            background: linear-gradient(135deg, var(--accent-color), var(--light-bg));
-            min-height: 100vh;
-            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        /* Sidebar Styling */
-        .offcanvas-start {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            width: 280px;
-        }
-
-        .offcanvas-header {
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 1.5rem;
-        }
-
-        .offcanvas-title {
-            color: white;
-            font-weight: bold;
-            font-size: 1.4rem;
-        }
-
-        .nav-link {
-            color: rgba(255, 255, 255, 0.9) !important;
-            padding: 0.8rem 1.5rem;
-            margin: 0.2rem 0;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-        }
-
-        .nav-link:hover {
-            background-color: rgba(255, 255, 255, 0.1);
-            color: white !important;
-            transform: translateX(5px);
-        }
-
-        .nav-link.active {
-            background-color: var(--warm-color);
-            color: var(--primary-color) !important;
-            font-weight: bold;
-        }
-
-        /* Content Styling */
-        .main-content {
-            padding: 2rem;
-            margin-top: 1rem;
-        }
-
-        .content-header {
-            background: white;
-            border-radius: 15px;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        }
-
-        .content-header h2 {
-            color: var(--primary-color);
-            margin: 0;
-            font-weight: bold;
-        }
-
-        /* Card Styling */
-        .card {
-            border: none;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            margin-bottom: 2rem;
-            overflow: hidden;
-        }
-
-        .card-header {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            color: white;
-            border: none;
-            padding: 1.2rem 1.5rem;
-        }
-
-        .card-header h5 {
-            margin: 0;
-            font-weight: bold;
-        }
-
-        /* Button Styling */
-        .btn-primary {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            border: none;
-            border-radius: 8px;
-            padding: 0.6rem 1.2rem;
-            transition: all 0.3s ease;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(3, 167, 145, 0.4);
-        }
-
-        .btn-warning {
-            background: var(--warm-color);
-            border: none;
-            color: var(--primary-color);
-            font-weight: bold;
-        }
-
-        .btn-danger {
-            background: #e74c3c;
-            border: none;
-        }
-
-        .btn-success {
-            background: var(--secondary-color);
-            border: none;
-            color: var(--primary-color);
-            font-weight: bold;
-        }
-
-        /* Table Styling */
-        .table {
-            border-radius: 10px;
-            overflow: hidden;
-        }
-
-        .table thead th {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            color: white;
-            border: none;
-            font-weight: bold;
-            padding: 1rem;
-        }
-
-        .table tbody tr {
-            transition: all 0.3s ease;
-        }
-
-        .table tbody tr:hover {
-            background-color: rgba(3, 167, 145, 0.05);
-            transform: scale(1.01);
-        }
-
-        .table tbody td {
-            padding: 1rem;
-            vertical-align: middle;
-            border-color: rgba(0, 0, 0, 0.05);
-        }
-
-        /* Modal Styling */
-        .modal-content {
-            border: none;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-        }
-
-        .modal-header {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            color: white;
-            border: none;
-            border-radius: 15px 15px 0 0;
-        }
-
-        .modal-header .btn-close {
-            filter: invert(1);
-        }
-
-        .form-control {
-            border-radius: 8px;
-            border: 2px solid #e9ecef;
-            transition: all 0.3s ease;
-        }
-
-        .form-control:focus {
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 0.2rem rgba(3, 167, 145, 0.25);
-        }
-
-        /* Action Buttons */
-        .btn-sm {
-            padding: 0.4rem 0.8rem;
-            margin: 0 0.2rem;
-            border-radius: 6px;
-        }
-
-        /* Search and Filter */
-        .search-filter-container {
-            background: white;
-            border-radius: 15px;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        }
-
-        /* Stats Cards */
-        .stats-card {
-            background: white;
-            border-radius: 15px;
-            padding: 1.5rem;
-            text-align: center;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
-        }
-
-        .stats-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-        }
-
-        .stats-number {
-            font-size: 2.5rem;
-            font-weight: bold;
-            color: var(--primary-color);
-        }
-
-        .stats-label {
-            color: #6c757d;
-            font-weight: 500;
-        }
-    </style>
+    <link href="../assets/css/main.css?v=<?= time() ?>" rel="stylesheet">
+    <link href="../assets/css/admin/advisormanagement.css?v=<?= time() ?>" rel="stylesheet">
 </head>
 
 <body>
-    <!-- Navigation Bar -->
-    <nav class="navbar navbar-expand-lg"
-        style="background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));">
-        <div class="container-fluid">
-            <button class="btn btn-outline-light me-3" type="button" data-bs-toggle="offcanvas"
-                data-bs-target="#adminSidebar">
-                <i class="fas fa-bars"></i>
-            </button>
-            <a class="navbar-brand text-white fw-bold" href="#">
-                <i class="fas fa-university me-2"></i>Nilai University CMS
-            </a>
-            <div class="navbar-nav ms-auto">
-                <div class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle text-white" href="#" role="button" data-bs-toggle="dropdown">
-                        <i class="fas fa-user-circle me-1"></i>Admin
-                    </a>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i>Profile</a></li>
-                        <li>
-                            <hr class="dropdown-divider" />
-                        </li>
-                        <li><a class="dropdown-item" href="#"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Offcanvas Sidebar -->
-    <div class="offcanvas offcanvas-start" tabindex="-1" id="adminSidebar">
-        <div class="offcanvas-header">
-            <h5 class="offcanvas-title">
-                <i class="fas fa-tachometer-alt me-2"></i>Admin Panel
-            </h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
-        </div>
-        <div class="offcanvas-body p-0">
-            <nav class="nav flex-column">
-                <a class="nav-link" href="dashboard.php" data-section="dashboard">
-                    <i class="fas fa-home me-2"></i>Admin Dashboard
-                </a>
-                <a class="nav-link" href="eventmanagement.php" data-section="events">
-                    <i class="fas fa-calendar-alt me-2"></i>Event Management
-                </a>
-                <a class="nav-link" href="clubmanagement.php" data-section="clubs">
-                    <i class="fas fa-users me-2"></i>Club Management
-                </a>
-                <a class="nav-link active" href="advisormanagement.php" data-section="advisors">
-                    <i class="fas fa-user-tie me-2"></i>Advisor Management
-                </a>
-                <a class="nav-link" href="coordinatormanagement.php" data-section="coordinators">
-                    <i class="fas fa-user-cog me-2"></i>Coordinator Management
-                </a>
-                <a class="nav-link" href="usermanagement.php" data-section="users">
-                    <i class="fas fa-user-friends me-2"></i>User Management
-                </a>
-                <a class="nav-link" href="reportexport.php" data-section="reports">
-                    <i class="fas fa-chart-bar me-2"></i>Report & Export
-                </a>
-            </nav>
-        </div>
-    </div>
+    <?php include('../model/LogoutDesign.php'); ?>
+    <?php include('../components/AdmHeader.php'); ?>
+    <?php include('../components/AdmOffcanvas.php'); ?>
 
     <!-- Main Content -->
     <div class="main-content">
-        <div class="content-header">
-            <h2><i class="fas fa-user-tie me-3"></i>Advisor Management</h2>
-        </div>
-
-        <!-- Stats Cards -->
-        <div class="row mb-4">
-            <div class="col-md-3 mb-3">
-                <div class="stats-card">
-                    <div class="stats-number" id="totalAdvisors">12</div>
-                    <div class="stats-label">Total Advisors</div>
-                </div>
-            </div>
-            <div class="col-md-3 mb-3">
-                <div class="stats-card">
-                    <div class="stats-number" id="activeAdvisors">10</div>
-                    <div class="stats-label">Active Advisors</div>
-                </div>
-            </div>
-            <div class="col-md-3 mb-3">
-                <div class="stats-card">
-                    <div class="stats-number" id="clubsManaged">15</div>
-                    <div class="stats-label">Clubs Managed</div>
-                </div>
-            </div>
-            <div class="col-md-3 mb-3">
-                <div class="stats-card">
-                    <div class="stats-number" id="newThisMonth">3</div>
-                    <div class="stats-label">New This Month</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Search and Filter -->
-        <div class="search-filter-container">
-            <div class="row">
-                <div class="col-md-4 mb-3">
-                    <label class="form-label">Search Advisors</label>
-                    <div class="input-group">
-                        <span class="input-group-text"><i class="fas fa-search"></i></span>
-                        <input type="text" class="form-control" id="searchInput"
-                            placeholder="Search by name or email...">
-                    </div>
-                </div>
-                <div class="col-md-3 mb-3">
-                    <label class="form-label">Filter by Club</label>
-                    <select class="form-select" id="clubFilter">
-                        <option value="">All Clubs</option>
-                        <option value="Computer Science Club">Computer Science Club</option>
-                        <option value="Business Club">Business Club</option>
-                        <option value="Engineering Society">Engineering Society</option>
-                        <option value="Arts & Design Club">Arts & Design Club</option>
-                    </select>
-                </div>
-                <div class="col-md-3 mb-3">
-                    <label class="form-label">Status Filter</label>
-                    <select class="form-select" id="statusFilter">
-                        <option value="">All Status</option>
-                        <option value="Active">Active</option>
-                        <option value="Inactive">Inactive</option>
-                    </select>
-                </div>
-                <div class="col-md-2 mb-3">
-                    <label class="form-label">&nbsp;</label>
-                    <button class="btn btn-primary d-block w-100" onclick="clearFilters()">
-                        <i class="fas fa-refresh me-1"></i>Clear
-                    </button>
-                </div>
-            </div>
-        </div>
 
         <!-- Advisor Management Card -->
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h5><i class="fas fa-user-tie me-2"></i>Advisor List</h5>
+                <h5><i class="fas fa-user-tie me-2"></i>Advisor Management</h5>
                 <button class="btn btn-light" data-bs-toggle="modal" data-bs-target="#addAdvisorModal">
                     <i class="fas fa-plus me-2"></i>Add New Advisor
                 </button>
             </div>
             <div class="card-body">
+                <h5><i class="fas fa-user-tie me-2"></i><?= 'Total: ' . $stats['total_advisors'] . ' Advisors' ?></h5>
+                <!-- Search and Filter -->
+                <div class="row mb-4">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Search Advisors</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-search"></i></span>
+                            <input type="text" class="form-control" id="searchInput"
+                                placeholder="Search by name or email...">
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">Filter by Club</label>
+                        <select class="form-select" id="clubFilter">
+                            <option value="">All Clubs</option>
+                            <?php foreach ($clubs as $club): ?>
+                                <option value="<?= htmlspecialchars($club['Club_Name']) ?>">
+                                    <?= htmlspecialchars($club['Club_Name']) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">Status Filter</label>
+                        <select class="form-select" id="statusFilter">
+                            <option value="">All Status</option>
+                            <option value="Active">Active</option>
+                            <option value="Inactive">Inactive</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label class="form-label">&nbsp;</label>
+                        <button class="btn btn-primary d-block w-100" onclick="clearFilters()">
+                            <i class="fas fa-refresh me-1"></i>Clear
+                        </button>
+                    </div>
+                </div>
                 <div class="table-responsive">
                     <table class="table table-hover" id="advisorsTable">
                         <thead>
@@ -395,64 +211,33 @@
                             </tr>
                         </thead>
                         <tbody id="advisorsTableBody">
-                            <!-- Sample data - replace with PHP MySQL data -->
-                            <tr>
-                                <td>ADV001</td>
-                                <td>Dr. Sarah Johnson</td>
-                                <td>sarah.johnson@nilai.edu.my</td>
-                                <td>Computer Science Club</td>
-                                <td>+60123456789</td>
-                                <td><span class="badge bg-success">Active</span></td>
-                                <td>
-                                    <button class="btn btn-warning btn-sm" onclick="editAdvisor('ADV001')">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button class="btn btn-info btn-sm" onclick="viewAdvisor('ADV001')">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                    <button class="btn btn-danger btn-sm" onclick="deleteAdvisor('ADV001')">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>ADV002</td>
-                                <td>Prof. Michael Chen</td>
-                                <td>michael.chen@nilai.edu.my</td>
-                                <td>Business Club</td>
-                                <td>+60187654321</td>
-                                <td><span class="badge bg-success">Active</span></td>
-                                <td>
-                                    <button class="btn btn-warning btn-sm" onclick="editAdvisor('ADV002')">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button class="btn btn-info btn-sm" onclick="viewAdvisor('ADV002')">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                    <button class="btn btn-danger btn-sm" onclick="deleteAdvisor('ADV002')">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>ADV003</td>
-                                <td>Dr. Lisa Wong</td>
-                                <td>lisa.wong@nilai.edu.my</td>
-                                <td>Engineering Society</td>
-                                <td>+60198765432</td>
-                                <td><span class="badge bg-warning">Inactive</span></td>
-                                <td>
-                                    <button class="btn btn-warning btn-sm" onclick="editAdvisor('ADV003')">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button class="btn btn-info btn-sm" onclick="viewAdvisor('ADV003')">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                    <button class="btn btn-danger btn-sm" onclick="deleteAdvisor('ADV003')">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </td>
-                            </tr>
+                            <?php while ($advisor = mysqli_fetch_assoc($advisors_result)): ?>
+                                <tr data-advisor-id="<?= htmlspecialchars($advisor['Adv_ID']) ?>">
+                                    <td><?= htmlspecialchars($advisor['Adv_ID']) ?></td>
+                                    <td><?= htmlspecialchars($advisor['Adv_Name']) ?></td>
+                                    <td><?= htmlspecialchars($advisor['Adv_Email']) ?></td>
+                                    <td><?= htmlspecialchars($advisor['Club_Name'] ?? 'No Club Assigned') ?></td>
+                                    <td><?= htmlspecialchars($advisor['Adv_PhnNum']) ?></td>
+                                    <td><span class="badge bg-success">Active</span></td>
+                                    <td>
+                                        <button class="btn btn-warning btn-sm"
+                                            onclick="editAdvisor('<?= htmlspecialchars($advisor['Adv_ID']) ?>')"
+                                            data-bs-toggle="tooltip" title="Edit Advisor">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-info btn-sm"
+                                            onclick="viewAdvisor('<?= htmlspecialchars($advisor['Adv_ID']) ?>')"
+                                            data-bs-toggle="tooltip" title="View Details">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="btn btn-danger btn-sm"
+                                            onclick="deleteAdvisor('<?= htmlspecialchars($advisor['Adv_ID']) ?>')"
+                                            data-bs-toggle="tooltip" title="Delete Advisor">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            <?php endwhile; ?>
                         </tbody>
                     </table>
                 </div>
@@ -473,7 +258,7 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Advisor ID</label>
-                                <input type="text" class="form-control" id="advisorId" placeholder="ADV001" required>
+                                <input type="text" class="form-control" id="advisorId" placeholder="Adv00001" required>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Full Name</label>
@@ -498,28 +283,23 @@
                                 <label class="form-label">Assigned Club</label>
                                 <select class="form-select" id="advisorClub" required>
                                     <option value="">Select Club</option>
-                                    <option value="Computer Science Club">Computer Science Club</option>
-                                    <option value="Business Club">Business Club</option>
-                                    <option value="Engineering Society">Engineering Society</option>
-                                    <option value="Arts & Design Club">Arts & Design Club</option>
-                                    <option value="Sports Club">Sports Club</option>
+                                    <?php foreach ($clubs as $club): ?>
+                                        <option value="<?= $club['Club_ID'] ?>"><?= htmlspecialchars($club['Club_Name']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
                                 </select>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Password</label>
-                                <input type="password" class="form-control" id="advisorPassword"
-                                    placeholder="Enter password" required>
+                                <div class="input-group">
+                                    <input type="password" class="form-control" id="advisorPassword"
+                                        placeholder="Enter password" required>
+                                    <button class="btn btn-outline-secondary" type="button"
+                                        onclick="togglePassword('advisorPassword')">
+                                        <i class="fas fa-eye" id="advisorPasswordEye"></i>
+                                    </button>
+                                </div>
                             </div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Department</label>
-                            <input type="text" class="form-control" id="advisorDepartment"
-                                placeholder="Faculty of Computer Science">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Bio/Notes</label>
-                            <textarea class="form-control" id="advisorBio" rows="3"
-                                placeholder="Additional information about the advisor..."></textarea>
                         </div>
                     </form>
                 </div>
@@ -569,26 +349,23 @@
                                 <label class="form-label">Assigned Club</label>
                                 <select class="form-select" id="editAdvisorClub" required>
                                     <option value="">Select Club</option>
-                                    <option value="Computer Science Club">Computer Science Club</option>
-                                    <option value="Business Club">Business Club</option>
-                                    <option value="Engineering Society">Engineering Society</option>
-                                    <option value="Arts & Design Club">Arts & Design Club</option>
-                                    <option value="Sports Club">Sports Club</option>
+                                    <?php foreach ($clubs as $club): ?>
+                                        <option value="<?= $club['Club_ID'] ?>"><?= htmlspecialchars($club['Club_Name']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
                                 </select>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">New Password (optional)</label>
-                                <input type="password" class="form-control" id="editAdvisorPassword"
-                                    placeholder="Leave blank to keep current password">
+                                <div class="input-group">
+                                    <input type="password" class="form-control" id="editAdvisorPassword"
+                                        placeholder="Leave blank to keep current password">
+                                    <button class="btn btn-outline-secondary" type="button"
+                                        onclick="togglePassword('editAdvisorPassword')">
+                                        <i class="fas fa-eye" id="editAdvisorPasswordEye"></i>
+                                    </button>
+                                </div>
                             </div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Department</label>
-                            <input type="text" class="form-control" id="editAdvisorDepartment">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Bio/Notes</label>
-                            <textarea class="form-control" id="editAdvisorBio" rows="3"></textarea>
                         </div>
                     </form>
                 </div>
@@ -636,16 +413,6 @@
                             <h6 class="text-muted">Assigned Club</h6>
                             <p id="viewAdvisorClub" class="mb-3"></p>
                         </div>
-                        <div class="col-md-6">
-                            <h6 class="text-muted">Department</h6>
-                            <p id="viewAdvisorDepartment" class="mb-3"></p>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-12">
-                            <h6 class="text-muted">Bio/Notes</h6>
-                            <p id="viewAdvisorBio" class="mb-3"></p>
-                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -656,72 +423,43 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
-        // Sample data for demonstration
-        let advisors = [
-            {
-                id: 'ADV001',
-                name: 'Dr. Sarah Johnson',
-                email: 'sarah.johnson@nilai.edu.my',
-                club: 'Computer Science Club',
-                phone: '+60123456789',
-                status: 'Active',
-                department: 'Faculty of Computer Science',
-                bio: 'Expert in software engineering and database systems.'
-            },
-            {
-                id: 'ADV002',
-                name: 'Prof. Michael Chen',
-                email: 'michael.chen@nilai.edu.my',
-                club: 'Business Club',
-                phone: '+60187654321',
-                status: 'Active',
-                department: 'Faculty of Business',
-                bio: 'Specializes in business management and entrepreneurship.'
-            },
-            {
-                id: 'ADV003',
-                name: 'Dr. Lisa Wong',
-                email: 'lisa.wong@nilai.edu.my',
-                club: 'Engineering Society',
-                phone: '+60198765432',
-                status: 'Inactive',
-                department: 'Faculty of Engineering',
-                bio: 'Research focus on mechanical engineering and automation.'
+        // Toggle password visibility
+        function togglePassword(inputId) {
+            const input = document.getElementById(inputId);
+            const eyeIcon = document.getElementById(inputId + 'Eye');
+
+            if (input.type === 'password') {
+                input.type = 'text';
+                eyeIcon.classList.remove('fa-eye');
+                eyeIcon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                eyeIcon.classList.remove('fa-eye-slash');
+                eyeIcon.classList.add('fa-eye');
             }
-        ];
+        }
 
-        // Load advisors table
-        function loadAdvisorsTable() {
-            const tbody = document.getElementById('advisorsTableBody');
-            tbody.innerHTML = '';
+        // Store advisors data globally
+        let advisorsData = [];
 
-            advisors.forEach(advisor => {
-                const statusBadge = advisor.status === 'Active' ?
-                    '<span class="badge bg-success">Active</span>' :
-                    '<span class="badge bg-warning">Inactive</span>';
-
-                tbody.innerHTML += `
-                    <tr>
-                        <td>${advisor.id}</td>
-                        <td>${advisor.name}</td>
-                        <td>${advisor.email}</td>
-                        <td>${advisor.club}</td>
-                        <td>${advisor.phone}</td>
-                        <td>${statusBadge}</td>
-                        <td>
-                            <button class="btn btn-warning btn-sm" onclick="editAdvisor('${advisor.id}')">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="btn btn-info btn-sm" onclick="viewAdvisor('${advisor.id}')">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                            <button class="btn btn-danger btn-sm" onclick="deleteAdvisor('${advisor.id}')">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </td>
-                    </tr>
-                `;
+        // Load advisors from database on page load
+        function loadAdvisorsData() {
+            advisorsData = [];
+            const rows = document.querySelectorAll('#advisorsTableBody tr');
+            rows.forEach(row => {
+                const cells = row.cells;
+                if (cells.length > 0) {
+                    advisorsData.push({
+                        id: cells[0].textContent.trim(),
+                        name: cells[1].textContent.trim(),
+                        email: cells[2].textContent.trim(),
+                        club: cells[3].textContent.trim(),
+                        phone: cells[4].textContent.trim(),
+                        status: 'Active'
+                    });
+                }
             });
         }
 
@@ -733,49 +471,60 @@
                 return;
             }
 
-            const newAdvisor = {
-                id: document.getElementById('advisorId').value,
-                name: document.getElementById('advisorName').value,
-                email: document.getElementById('advisorEmail').value,
-                club: document.getElementById('advisorClub').value,
-                phone: document.getElementById('advisorPhone').value,
-                status: 'Active',
-                department: document.getElementById('advisorDepartment').value,
-                bio: document.getElementById('advisorBio').value
-            };
+            const formData = new FormData();
+            formData.append('action', 'add_advisor');
+            formData.append('advisor_id', document.getElementById('advisorId').value);
+            formData.append('advisor_name', document.getElementById('advisorName').value);
+            formData.append('advisor_email', document.getElementById('advisorEmail').value);
+            formData.append('advisor_phone', document.getElementById('advisorPhone').value);
+            formData.append('advisor_club', document.getElementById('advisorClub').value);
+            formData.append('advisor_password', document.getElementById('advisorPassword').value);
 
-            // Check if advisor ID already exists
-            if (advisors.some(advisor => advisor.id === newAdvisor.id)) {
-                alert('Advisor ID already exists! Please use a different ID.');
-                return;
-            }
-
-            advisors.push(newAdvisor);
-            loadAdvisorsTable();
-            updateStats();
-
-            // Reset form and close modal
-            form.reset();
-            const modal = bootstrap.Modal.getInstance(document.getElementById('addAdvisorModal'));
-            modal.hide();
-
-            showSuccessMessage('Advisor added successfully!');
+            fetch(window.location.href, {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showMessage(data.message, 'success');
+                        form.reset();
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('addAdvisorModal'));
+                        modal.hide();
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        showMessage(data.message, 'danger');
+                    }
+                })
+                .catch(error => {
+                    showMessage('Error adding advisor', 'danger');
+                    console.error('Error:', error);
+                });
         }
 
         // Edit advisor
         function editAdvisor(advisorId) {
-            const advisor = advisors.find(a => a.id === advisorId);
-            if (!advisor) return;
+            const row = document.querySelector(`tr[data-advisor-id="${advisorId}"]`);
+            if (!row) return;
+
+            const cells = row.cells;
 
             // Populate edit form
-            document.getElementById('editAdvisorIdHidden').value = advisor.id;
-            document.getElementById('editAdvisorId').value = advisor.id;
-            document.getElementById('editAdvisorName').value = advisor.name;
-            document.getElementById('editAdvisorEmail').value = advisor.email;
-            document.getElementById('editAdvisorPhone').value = advisor.phone;
-            document.getElementById('editAdvisorClub').value = advisor.club;
-            document.getElementById('editAdvisorDepartment').value = advisor.department || '';
-            document.getElementById('editAdvisorBio').value = advisor.bio || '';
+            document.getElementById('editAdvisorIdHidden').value = advisorId;
+            document.getElementById('editAdvisorId').value = advisorId;
+            document.getElementById('editAdvisorName').value = cells[1].textContent.trim();
+            document.getElementById('editAdvisorEmail').value = cells[2].textContent.trim();
+            document.getElementById('editAdvisorPhone').value = cells[4].textContent.trim();
+
+            // Set club selection
+            const clubName = cells[3].textContent.trim();
+            const clubSelect = document.getElementById('editAdvisorClub');
+            for (let option of clubSelect.options) {
+                if (option.textContent === clubName) {
+                    option.selected = true;
+                    break;
+                }
+            }
 
             // Show modal
             const modal = new bootstrap.Modal(document.getElementById('editAdvisorModal'));
@@ -790,44 +539,49 @@
                 return;
             }
 
-            const advisorId = document.getElementById('editAdvisorIdHidden').value;
-            const advisorIndex = advisors.findIndex(a => a.id === advisorId);
+            const formData = new FormData();
+            formData.append('action', 'update_advisor');
+            formData.append('advisor_id', document.getElementById('editAdvisorIdHidden').value);
+            formData.append('advisor_name', document.getElementById('editAdvisorName').value);
+            formData.append('advisor_email', document.getElementById('editAdvisorEmail').value);
+            formData.append('advisor_phone', document.getElementById('editAdvisorPhone').value);
+            formData.append('advisor_club', document.getElementById('editAdvisorClub').value);
+            formData.append('advisor_password', document.getElementById('editAdvisorPassword').value);
 
-            if (advisorIndex === -1) return;
-
-            // Update advisor data
-            advisors[advisorIndex] = {
-                ...advisors[advisorIndex],
-                name: document.getElementById('editAdvisorName').value,
-                email: document.getElementById('editAdvisorEmail').value,
-                phone: document.getElementById('editAdvisorPhone').value,
-                club: document.getElementById('editAdvisorClub').value,
-                department: document.getElementById('editAdvisorDepartment').value,
-                bio: document.getElementById('editAdvisorBio').value
-            };
-
-            loadAdvisorsTable();
-
-            // Close modal
-            const modal = bootstrap.Modal.getInstance(document.getElementById('editAdvisorModal'));
-            modal.hide();
-
-            showSuccessMessage('Advisor updated successfully!');
+            fetch(window.location.href, {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showMessage(data.message, 'success');
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('editAdvisorModal'));
+                        modal.hide();
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        showMessage(data.message, 'danger');
+                    }
+                })
+                .catch(error => {
+                    showMessage('Error updating advisor', 'danger');
+                    console.error('Error:', error);
+                });
         }
 
         // View advisor details
         function viewAdvisor(advisorId) {
-            const advisor = advisors.find(a => a.id === advisorId);
-            if (!advisor) return;
+            const row = document.querySelector(`tr[data-advisor-id="${advisorId}"]`);
+            if (!row) return;
+
+            const cells = row.cells;
 
             // Populate view modal
-            document.getElementById('viewAdvisorId').textContent = advisor.id;
-            document.getElementById('viewAdvisorName').textContent = advisor.name;
-            document.getElementById('viewAdvisorEmail').textContent = advisor.email;
-            document.getElementById('viewAdvisorPhone').textContent = advisor.phone;
-            document.getElementById('viewAdvisorClub').textContent = advisor.club;
-            document.getElementById('viewAdvisorDepartment').textContent = advisor.department || 'Not specified';
-            document.getElementById('viewAdvisorBio').textContent = advisor.bio || 'No additional information';
+            document.getElementById('viewAdvisorId').textContent = cells[0].textContent.trim();
+            document.getElementById('viewAdvisorName').textContent = cells[1].textContent.trim();
+            document.getElementById('viewAdvisorEmail').textContent = cells[2].textContent.trim();
+            document.getElementById('viewAdvisorPhone').textContent = cells[4].textContent.trim();
+            document.getElementById('viewAdvisorClub').textContent = cells[3].textContent.trim();
 
             // Show modal
             const modal = new bootstrap.Modal(document.getElementById('viewAdvisorModal'));
@@ -836,15 +590,61 @@
 
         // Delete advisor
         function deleteAdvisor(advisorId) {
-            const advisor = advisors.find(a => a.id === advisorId);
-            if (!advisor) return;
+            const row = document.querySelector(`tr[data-advisor-id="${advisorId}"]`);
+            if (!row) return;
 
-            if (confirm(`Are you sure you want to delete advisor "${advisor.name}"? This action cannot be undone.`)) {
-                advisors = advisors.filter(a => a.id !== advisorId);
-                loadAdvisorsTable();
-                updateStats();
-                showSuccessMessage('Advisor deleted successfully!');
-            }
+            const advisorName = row.cells[1].textContent.trim();
+
+            Swal.fire({
+                title: 'Are you sure?',
+                text: `You want to delete advisor "${advisorName}"? This action cannot be undone!`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#e74c3c',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, delete it!',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const formData = new FormData();
+                    formData.append('action', 'delete_advisor');
+                    formData.append('advisor_id', advisorId);
+
+                    fetch(window.location.href, {
+                        method: 'POST',
+                        body: formData
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                Swal.fire({
+                                    title: 'Deleted!',
+                                    text: data.message,
+                                    icon: 'success',
+                                    confirmButtonColor: '#25aa20'
+                                }).then(() => {
+                                    location.reload();
+                                });
+                            } else {
+                                Swal.fire({
+                                    title: 'Error!',
+                                    text: data.message,
+                                    icon: 'error',
+                                    confirmButtonColor: '#e74c3c'
+                                });
+                            }
+                        })
+                        .catch(error => {
+                            Swal.fire({
+                                title: 'Error!',
+                                text: 'Error deleting advisor',
+                                icon: 'error',
+                                confirmButtonColor: '#e74c3c'
+                            });
+                            console.error('Error:', error);
+                        });
+                }
+            });
         }
 
         // Search and filter functions
@@ -858,16 +658,27 @@
                 const clubValue = clubFilter.value;
                 const statusValue = statusFilter.value;
 
-                const filteredAdvisors = advisors.filter(advisor => {
-                    const matchesSearch = advisor.name.toLowerCase().includes(searchTerm) ||
-                        advisor.email.toLowerCase().includes(searchTerm);
-                    const matchesClub = !clubValue || advisor.club === clubValue;
-                    const matchesStatus = !statusValue || advisor.status === statusValue;
+                const rows = document.querySelectorAll('#advisorsTableBody tr');
 
-                    return matchesSearch && matchesClub && matchesStatus;
+                rows.forEach(row => {
+                    const cells = row.cells;
+                    if (cells.length === 0) return;
+
+                    const name = cells[1].textContent.toLowerCase();
+                    const email = cells[2].textContent.toLowerCase();
+                    const club = cells[3].textContent;
+                    const status = cells[5].textContent.trim();
+
+                    const matchesSearch = name.includes(searchTerm) || email.includes(searchTerm);
+                    const matchesClub = !clubValue || club === clubValue;
+                    const matchesStatus = !statusValue || status.includes(statusValue);
+
+                    if (matchesSearch && matchesClub && matchesStatus) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
                 });
-
-                displayFilteredAdvisors(filteredAdvisors);
             }
 
             searchInput.addEventListener('input', filterTable);
@@ -875,64 +686,28 @@
             statusFilter.addEventListener('change', filterTable);
         }
 
-        function displayFilteredAdvisors(filteredAdvisors) {
-            const tbody = document.getElementById('advisorsTableBody');
-            tbody.innerHTML = '';
-
-            filteredAdvisors.forEach(advisor => {
-                const statusBadge = advisor.status === 'Active' ?
-                    '<span class="badge bg-success">Active</span>' :
-                    '<span class="badge bg-warning">Inactive</span>';
-
-                tbody.innerHTML += `
-                    <tr>
-                        <td>${advisor.id}</td>
-                        <td>${advisor.name}</td>
-                        <td>${advisor.email}</td>
-                        <td>${advisor.club}</td>
-                        <td>${advisor.phone}</td>
-                        <td>${statusBadge}</td>
-                        <td>
-                            <button class="btn btn-warning btn-sm" onclick="editAdvisor('${advisor.id}')">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="btn btn-info btn-sm" onclick="viewAdvisor('${advisor.id}')">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                            <button class="btn btn-danger btn-sm" onclick="deleteAdvisor('${advisor.id}')">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </td>
-                    </tr>
-                `;
-            });
-        }
-
         // Clear filters
         function clearFilters() {
             document.getElementById('searchInput').value = '';
             document.getElementById('clubFilter').value = '';
             document.getElementById('statusFilter').value = '';
-            loadAdvisorsTable();
+
+            // Show all rows
+            const rows = document.querySelectorAll('#advisorsTableBody tr');
+            rows.forEach(row => {
+                row.style.display = '';
+            });
         }
 
-        // Update statistics
-        function updateStats() {
-            const totalAdvisors = advisors.length;
-            const activeAdvisors = advisors.filter(a => a.status === 'Active').length;
-            const uniqueClubs = [...new Set(advisors.map(a => a.club))].length;
+        // Show success/error message
+        function showMessage(message, type) {
+            // Remove existing alerts
+            const existingAlerts = document.querySelectorAll('.alert');
+            existingAlerts.forEach(alert => alert.remove());
 
-            document.getElementById('totalAdvisors').textContent = totalAdvisors;
-            document.getElementById('activeAdvisors').textContent = activeAdvisors;
-            document.getElementById('clubsManaged').textContent = uniqueClubs;
-            document.getElementById('newThisMonth').textContent = '3'; // This would come from your backend
-        }
-
-        // Show success message
-        function showSuccessMessage(message) {
-            // Create a temporary alert
+            // Create new alert
             const alert = document.createElement('div');
-            alert.className = 'alert alert-success alert-dismissible fade show position-fixed top-0 end-0 m-3';
+            alert.className = `alert alert-${type} alert-dismissible fade show position-fixed top-0 end-0 m-3`;
             alert.style.zIndex = '9999';
             alert.innerHTML = `
                 ${message}
@@ -949,21 +724,66 @@
             }, 3000);
         }
 
+        // Auto-generate advisor ID
+        function generateAdvisorId() {
+            // Get current max advisor ID from table
+            const rows = document.querySelectorAll('#advisorsTableBody tr');
+            let maxId = 0;
+
+            rows.forEach(row => {
+                const id = row.cells[0].textContent.trim();
+                const match = id.match(/Adv(\d+)/);
+                if (match) {
+                    const num = parseInt(match[1]);
+                    if (num > maxId) {
+                        maxId = num;
+                    }
+                }
+            });
+
+            const nextId = maxId + 1;
+            return 'Adv' + String(nextId).padStart(5, '0');
+        }
+
         // Initialize page
         document.addEventListener('DOMContentLoaded', function () {
-            loadAdvisorsTable();
+            loadAdvisorsData();
             setupSearchAndFilter();
-            updateStats();
+
+            // Initialize tooltips
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+
+            // Auto-generate advisor ID when modal opens
+            document.getElementById('addAdvisorModal').addEventListener('show.bs.modal', function () {
+                document.getElementById('advisorId').value = generateAdvisorId();
+            });
         });
 
-        // Auto-generate advisor ID
-        document.getElementById('advisorName').addEventListener('input', function () {
-            const name = this.value;
-            if (name.length > 0) {
-                // Generate ID based on name (you can customize this logic)
-                const prefix = 'ADV';
-                const number = String(advisors.length + 1).padStart(3, '0');
-                document.getElementById('advisorId').value = prefix + number;
+        // Reset forms when modals are hidden
+        document.getElementById('addAdvisorModal').addEventListener('hidden.bs.modal', function () {
+            document.getElementById('addAdvisorForm').reset();
+            // Reset password visibility for add form
+            const addPasswordInput = document.getElementById('advisorPassword');
+            const addPasswordEye = document.getElementById('advisorPasswordEye');
+            if (addPasswordInput.type === 'text') {
+                addPasswordInput.type = 'password';
+                addPasswordEye.classList.remove('fa-eye-slash');
+                addPasswordEye.classList.add('fa-eye');
+            }
+        });
+
+        document.getElementById('editAdvisorModal').addEventListener('hidden.bs.modal', function () {
+            document.getElementById('editAdvisorForm').reset();
+            // Reset password visibility for edit form
+            const editPasswordInput = document.getElementById('editAdvisorPassword');
+            const editPasswordEye = document.getElementById('editAdvisorPasswordEye');
+            if (editPasswordInput.type === 'text') {
+                editPasswordInput.type = 'password';
+                editPasswordEye.classList.remove('fa-eye-slash');
+                editPasswordEye.classList.add('fa-eye');
             }
         });
     </script>
