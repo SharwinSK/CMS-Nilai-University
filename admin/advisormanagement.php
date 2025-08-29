@@ -1,7 +1,7 @@
 <?php
 session_start();
 include '../db/dbconfig.php';
-$currentPage = 'advisormanagement';
+$currentPage = 'usermanagement';
 // Check if user is logged in and is an admin
 if (!isset($_SESSION['Admin_ID']) || $_SESSION['user_type'] !== 'admin') {
     header("Location: ../auth/adminlogin.php");

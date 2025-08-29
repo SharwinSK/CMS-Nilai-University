@@ -1,7 +1,7 @@
 <?php
 session_start();
 include '../db/dbconfig.php';
-$currentPage = 'eventmanagement';
+$currentPage = 'usermanagement';
 
 // Check if user is logged in and is an admin
 if (!isset($_SESSION['Admin_ID']) || $_SESSION['user_type'] !== 'admin') {
@@ -14,6 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
 
     if ($action === 'add_coordinator') {
+        $coord_id = mysqli_real_escape_string($conn, $_POST['coordinator_id']);
         $name = mysqli_real_escape_string($conn, $_POST['name']);
         $email = mysqli_real_escape_string($conn, $_POST['email']);
         $phone = mysqli_real_escape_string($conn, $_POST['phone']);
@@ -22,18 +23,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Hash the password
         $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
-        // Generate Coordinator ID
-        $coord_query = "SELECT Coor_ID FROM coordinator ORDER BY Coor_ID DESC LIMIT 1";
-        $coord_result = mysqli_query($conn, $coord_query);
+        // Check if Coordinator ID already exists
+        $check_id = "SELECT Coor_ID FROM coordinator WHERE Coor_ID = ?";
+        $check_id_stmt = mysqli_prepare($conn, $check_id);
+        mysqli_stmt_bind_param($check_id_stmt, "s", $coord_id);
+        mysqli_stmt_execute($check_id_stmt);
+        $check_id_result = mysqli_stmt_get_result($check_id_stmt);
 
-        if (mysqli_num_rows($coord_result) > 0) {
-            $last_coord = mysqli_fetch_assoc($coord_result);
-            $last_number = intval(substr($last_coord['Coor_ID'], 6));
-            $new_number = $last_number + 1;
-        } else {
-            $new_number = 501;
+        if (mysqli_num_rows($check_id_result) > 0) {
+            echo json_encode(['success' => false, 'message' => 'Coordinator ID already exists']);
+            exit();
         }
-        $new_coord_id = 'Cor' . str_pad($new_number, 5, '0', STR_PAD_LEFT);
 
         // Check if email already exists
         $check_email = "SELECT Coor_Email FROM coordinator WHERE Coor_Email = ?";
@@ -50,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Insert new coordinator
         $insert_query = "INSERT INTO coordinator (Coor_ID, Coor_Name, Coor_Email, Coor_PhnNum, Coor_PSW) VALUES (?, ?, ?, ?, ?)";
         $insert_stmt = mysqli_prepare($conn, $insert_query);
-        mysqli_stmt_bind_param($insert_stmt, "sssss", $new_coord_id, $name, $email, $phone, $hashed_password);
+        mysqli_stmt_bind_param($insert_stmt, "sssss", $coord_id, $name, $email, $phone, $hashed_password);
 
         if (mysqli_stmt_execute($insert_stmt)) {
             echo json_encode(['success' => true, 'message' => 'Coordinator added successfully']);
@@ -137,166 +137,7 @@ $coordinators_result = mysqli_query($conn, $coordinators_query);
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="../assets/css/main.css?v=<?= time() ?>" rel="stylesheet">
-    <style>
-        /* Content Styling */
-        .main-content {
-            padding: 2rem;
-            margin-top: 1rem;
-        }
-
-        .content-header {
-            background: white;
-            border-radius: 15px;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        }
-
-        .content-header h2 {
-            color: var(--header-green);
-            margin: 0;
-            font-weight: bold;
-        }
-
-        .management-card {
-            background: white;
-            border-radius: 15px;
-            padding: 2rem;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            margin-bottom: 2rem;
-        }
-
-        .btn-primary {
-            background: var(--header-green);
-            border: none;
-            border-radius: 25px;
-            padding: 0.5rem 1.5rem;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-
-        .btn-primary:hover {
-            background: var(--hover-orange);
-            transform: translateY(-2px);
-        }
-
-        .btn-warning {
-            background: var(--hover-orange);
-            border: none;
-            border-radius: 20px;
-            color: white;
-            transition: all 0.3s ease;
-        }
-
-        .btn-warning:hover {
-            background: #e8a76f;
-            transform: translateY(-1px);
-        }
-
-        .btn-danger {
-            border-radius: 20px;
-            transition: all 0.3s ease;
-        }
-
-        .btn-danger:hover {
-            transform: translateY(-1px);
-        }
-
-        .table {
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        .table thead {
-            background: var(--header-green);
-            color: white;
-        }
-
-        .table tbody tr {
-            transition: all 0.3s ease;
-        }
-
-        .table tbody tr:hover {
-            background-color: rgba(37, 170, 32, 0.1);
-            transform: scale(1.01);
-        }
-
-        .modal-header {
-            background: var(--header-green);
-            color: white;
-        }
-
-        .modal-header.bg-danger {
-            background: var(--danger) !important;
-        }
-
-        .form-control:focus {
-            border-color: var(--header-green);
-            box-shadow: 0 0 0 0.2rem rgba(37, 170, 32, 0.25);
-        }
-
-        .action-buttons {
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .fade-in {
-            animation: fadeIn 0.5s ease-in;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .table-responsive {
-            border-radius: 15px;
-            overflow: hidden;
-        }
-
-        .search-container {
-            background: rgba(37, 170, 32, 0.1);
-            border-radius: 15px;
-            padding: 1rem;
-            margin-bottom: 2rem;
-        }
-
-        .search-input {
-            border: none;
-            background: white;
-            border-radius: 25px;
-            padding: 0.5rem 1rem;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        }
-
-        .search-input:focus {
-            outline: none;
-            box-shadow: 0 0 0 0.2rem rgba(37, 170, 32, 0.25);
-        }
-
-        .alert {
-            border-radius: 15px;
-            border: none;
-        }
-
-        .alert-success {
-            background-color: var(--success);
-            color: white;
-        }
-
-        .alert-danger {
-            background-color: var(--danger);
-            color: white;
-        }
-    </style>
+    <link href="../assets/css/admin/coormanage.css?v=<?= time() ?>" rel="stylesheet">
 </head>
 
 <body>
@@ -306,15 +147,17 @@ $coordinators_result = mysqli_query($conn, $coordinators_query);
 
     <!-- Main Content -->
     <div class="main-content">
-        <div class="content-header">
-            <h2>
-                <i class="fas fa-user-cog me-3"></i>Coordinator Management
-            </h2>
-        </div>
+        <div class="management-card fade-in">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="mb-0" style="color: var(--header-green);">
+                    <i class="fas fa-user-cog me-3"></i>Coordinator Management
+                </h2>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCoordinatorModal">
+                    <i class="fas fa-plus me-2"></i>Add Coordinator
+                </button>
+            </div>
 
-        <!-- Search Container -->
-        <div class="search-container">
-            <div class="row">
+            <div class="row mb-4">
                 <div class="col-md-6">
                     <input type="text" class="form-control search-input" id="searchInput"
                         placeholder="🔍 Search coordinators...">
@@ -323,17 +166,6 @@ $coordinators_result = mysqli_query($conn, $coordinators_query);
                     <span class="text-muted">Total Coordinators: <span
                             id="totalCount"><?= mysqli_num_rows($coordinators_result) ?></span></span>
                 </div>
-            </div>
-        </div>
-
-        <div class="management-card fade-in">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h4 class="mb-0">
-                    <i class="fas fa-list me-2"></i>Coordinators List
-                </h4>
-                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCoordinatorModal">
-                    <i class="fas fa-plus me-2"></i>Add Coordinator
-                </button>
             </div>
 
             <div class="table-responsive">
@@ -386,6 +218,11 @@ $coordinators_result = mysqli_query($conn, $coordinators_query);
                 </div>
                 <form id="addCoordinatorForm">
                     <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="coordinator_id" class="form-label">Coordinator ID</label>
+                            <input type="text" class="form-control" id="coordinator_id" name="coordinator_id" required
+                                placeholder="e.g. Cor00502">
+                        </div>
                         <div class="mb-3">
                             <label for="name" class="form-label">Name</label>
                             <input type="text" class="form-control" id="name" name="name" required>

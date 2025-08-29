@@ -21,16 +21,6 @@
                 <i class="fas fa-users"></i>
                 <span>Club Management</span>
             </a>
-            <a class="sidebar-item <?= ($currentPage == 'advisormanagement') ? 'active' : '' ?>"
-                href="advisormanagement.php">
-                <i class="fas fa-user-tie"></i>
-                <span>Advisor Management</span>
-            </a>
-            <a class="sidebar-item <?= ($currentPage == 'coordinatormanagement') ? 'active' : '' ?>"
-                href="coordinatormanagement.php">
-                <i class="fas fa-user-cog"></i>
-                <span>Coordinator Management</span>
-            </a>
             <a class="sidebar-item <?= ($currentPage == 'usermanagement') ? 'active' : '' ?>" href="usermanagement.php">
                 <i class="fas fa-user-friends"></i>
                 <span>User Management</span>

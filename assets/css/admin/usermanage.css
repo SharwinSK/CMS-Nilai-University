@@ -1,0 +1,294 @@
+ /* Main Content */
+        .main-content {
+            margin-top: 20px;
+        }
+
+        .content-container {
+            background: var(--container-beige);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .page-header {
+            background: var(--header-green);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .management-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+
+        .management-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+            border: 3px solid transparent;
+        }
+
+        .management-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+            border-color: var(--hover-orange);
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .card-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 35px;
+            color: white;
+        }
+
+        .student-card .card-icon {
+            background: #4CAF50;
+        }
+
+        .advisor-card .card-icon {
+            background: #2196F3;
+        }
+
+        .coordinator-card .card-icon {
+            background: #FF9800;
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .card-description {
+            color: #666;
+            text-align: center;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .card-stats {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px 0;
+            border-top: 1px solid #eee;
+            margin-top: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--header-green);
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #888;
+            margin-top: 5px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn-manage {
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-student {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .btn-student:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+
+        .btn-advisor {
+            background: #2196F3;
+            color: white;
+        }
+
+        .btn-advisor:hover {
+            background: #1976D2;
+            transform: translateY(-2px);
+        }
+
+        .btn-coordinator {
+            background: #FF9800;
+            color: white;
+        }
+
+        .btn-coordinator:hover {
+            background: #F57C00;
+            transform: translateY(-2px);
+        }
+
+        .quick-stats {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid;
+        }
+
+        .total-users {
+            background: #f8f9fa;
+            border-left-color: var(--header-green);
+        }
+
+        .active-students {
+            background: #e8f5e8;
+            border-left-color: #4CAF50;
+        }
+
+        .active-advisors {
+            background: #e3f2fd;
+            border-left-color: #2196F3;
+        }
+
+        .active-coordinators {
+            background: #fff3e0;
+            border-left-color: #FF9800;
+        }
+
+        @media (max-width: 768px) {
+            .management-cards {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+          /* Floating Action Buttons */
+        .floating-actions {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .fab {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+            position: relative;
+        }
+
+        .fab:hover {
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+        }
+
+        .fab:active {
+            transform: translateY(0) scale(0.95);
+        }
+
+        .fab-create {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+        }
+
+        .fab-create:hover {
+            background: linear-gradient(135deg, #45a049, #3d8b40);
+        }
+
+        .fab-export {
+            background: linear-gradient(135deg, #17a2b8, #138496);
+        }
+
+        .fab-export:hover {
+            background: linear-gradient(135deg, #138496, #0f6674);
+        }
+
+        .fab-report {
+            background: linear-gradient(135deg, #6c757d, #5a6268);
+        }
+
+        .fab-report:hover {
+            background: linear-gradient(135deg, #5a6268, #495057);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .floating-actions {
+                bottom: 20px;
+                right: 20px;
+            }
+
+            .fab {
+                width: 38px;
+                height: 38px;
+                font-size: 14px;
+            }
+        }
+
+        /* Tooltip custom styling */
+        .tooltip {
+            pointer-events: none;
+        }
+
+        .tooltip .tooltip-inner {
+            background-color: #333;
+            color: white;
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 13px;
+            max-width: 200px;
+        }

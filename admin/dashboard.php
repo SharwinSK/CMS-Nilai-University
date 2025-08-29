@@ -176,57 +176,57 @@ while ($post_event = mysqli_fetch_assoc($postevent_result)) {
                         <i class="fas fa-image me-2"></i>Ongoing Events
                     </h5>
                     <?php if (mysqli_num_rows($poster_result) > 0): ?>
-                            <?php
-                            // Convert result to array for reuse
-                            $poster_items = [];
-                            mysqli_data_seek($poster_result, 0);
-                            while ($row = mysqli_fetch_assoc($poster_result)) {
-                                $poster_items[] = $row;
-                            }
-                            ?>
-                            <div id="posterCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="4000">
-                                <div class="carousel-indicators">
-                                    <?php foreach ($poster_items as $i => $_): ?>
-                                            <button type="button" data-bs-target="#posterCarousel" data-bs-slide-to="<?= $i ?>"
-                                                class="<?= $i === 0 ? 'active' : '' ?>"
-                                                aria-current="<?= $i === 0 ? 'true' : 'false' ?>"
-                                                aria-label="Slide <?= $i + 1 ?>"></button>
-                                    <?php endforeach; ?>
-                                </div>
-
-                                <div class="carousel-inner">
-                                    <?php foreach ($poster_items as $i => $poster):
-                                        $poster_path = '../uploads/posters/' . basename($poster['Ev_Poster']);
-                                        $safe_alt = htmlspecialchars($poster['Ev_Name'] ?? 'Event Poster', ENT_QUOTES, 'UTF-8');
-                                        ?>
-                                            <div class="carousel-item <?= $i === 0 ? 'active' : '' ?>">
-                                                <div class="poster-slide">
-                                                    <img src="<?= $poster_path ?>" alt="<?= $safe_alt ?>" loading="lazy"
-                                                        style="cursor: pointer; background: transparent;"
-                                                        onclick="showPosterModal('<?= $poster_path ?>', '<?= addslashes($poster['Ev_Name']) ?>', '<?= addslashes($poster['Club_Name']) ?>')"
-                                                        onerror="this.src='../assets/img/PlaceHolder.png';">
-                                                </div>
-                                            </div>
-                                    <?php endforeach; ?>
-                                </div>
-
-                                <button class="carousel-control-prev" type="button" data-bs-target="#posterCarousel"
-                                    data-bs-slide="prev">
-                                    <span class="carousel-control-prev-icon"></span>
-                                    <span class="visually-hidden">Previous</span>
-                                </button>
-                                <button class="carousel-control-next" type="button" data-bs-target="#posterCarousel"
-                                    data-bs-slide="next">
-                                    <span class="carousel-control-next-icon"></span>
-                                    <span class="visually-hidden">Next</span>
-                                </button>
+                        <?php
+                        // Convert result to array for reuse
+                        $poster_items = [];
+                        mysqli_data_seek($poster_result, 0);
+                        while ($row = mysqli_fetch_assoc($poster_result)) {
+                            $poster_items[] = $row;
+                        }
+                        ?>
+                        <div id="posterCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="4000">
+                            <div class="carousel-indicators">
+                                <?php foreach ($poster_items as $i => $_): ?>
+                                    <button type="button" data-bs-target="#posterCarousel" data-bs-slide-to="<?= $i ?>"
+                                        class="<?= $i === 0 ? 'active' : '' ?>"
+                                        aria-current="<?= $i === 0 ? 'true' : 'false' ?>"
+                                        aria-label="Slide <?= $i + 1 ?>"></button>
+                                <?php endforeach; ?>
                             </div>
+
+                            <div class="carousel-inner">
+                                <?php foreach ($poster_items as $i => $poster):
+                                    $poster_path = '../uploads/posters/' . basename($poster['Ev_Poster']);
+                                    $safe_alt = htmlspecialchars($poster['Ev_Name'] ?? 'Event Poster', ENT_QUOTES, 'UTF-8');
+                                    ?>
+                                    <div class="carousel-item <?= $i === 0 ? 'active' : '' ?>">
+                                        <div class="poster-slide">
+                                            <img src="<?= $poster_path ?>" alt="<?= $safe_alt ?>" loading="lazy"
+                                                style="cursor: pointer; background: transparent;"
+                                                onclick="showPosterModal('<?= $poster_path ?>', '<?= addslashes($poster['Ev_Name']) ?>', '<?= addslashes($poster['Club_Name']) ?>')"
+                                                onerror="this.src='../assets/img/PlaceHolder.png';">
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+
+                            <button class="carousel-control-prev" type="button" data-bs-target="#posterCarousel"
+                                data-bs-slide="prev">
+                                <span class="carousel-control-prev-icon"></span>
+                                <span class="visually-hidden">Previous</span>
+                            </button>
+                            <button class="carousel-control-next" type="button" data-bs-target="#posterCarousel"
+                                data-bs-slide="next">
+                                <span class="carousel-control-next-icon"></span>
+                                <span class="visually-hidden">Next</span>
+                            </button>
+                        </div>
                     <?php else: ?>
-                            <div class="text-center">
-                                <img src="../assets/img/PlaceHolder.png" class="img-fluid"
-                                    style="max-height: 200px; background: transparent;" alt="No events">
-                                <p class="mt-2 text-muted">No ongoing events at the moment.</p>
-                            </div>
+                        <div class="text-center">
+                            <img src="../assets/img/PlaceHolder.png" class="img-fluid"
+                                style="max-height: 200px; background: transparent;" alt="No events">
+                            <p class="mt-2 text-muted">No ongoing events at the moment.</p>
+                        </div>
                     <?php endif; ?>
                 </div>
 
@@ -266,22 +266,23 @@ while ($post_event = mysqli_fetch_assoc($postevent_result)) {
                                 </thead>
                                 <tbody>
                                     <?php while ($student = mysqli_fetch_assoc($student_result)): ?>
-                                            <tr>
-                                                <td><strong><?php echo htmlspecialchars($student['Stu_ID']); ?></strong></td>
-                                                <td style="font-size: 0.8rem;">
-                                                    <?php echo htmlspecialchars($student['Stu_Name']); ?>
-                                                </td>
-                                                <td style="font-size: 0.8rem;">
-                                                    <?php echo htmlspecialchars($student['Stu_Program']); ?>
-                                                </td>
-                                            </tr>
+                                        <tr>
+                                            <td><strong><?php echo htmlspecialchars($student['Stu_ID']); ?></strong></td>
+                                            <td style="font-size: 0.8rem;">
+                                                <?php echo htmlspecialchars($student['Stu_Name']); ?>
+                                            </td>
+                                            <td style="font-size: 0.8rem;">
+                                                <?php echo htmlspecialchars($student['Stu_Program']); ?>
+                                            </td>
+                                        </tr>
                                     <?php endwhile; ?>
                                 </tbody>
                             </table>
                         </div>
                         <div class="d-flex justify-content-end mt-2">
                             <button class="icon-btn small" data-bs-toggle="tooltip" data-bs-placement="top"
-                                title="View All Students" onclick="window.location.href='../admin/usermanagement.php'">
+                                title="View All Students"
+                                onclick="window.location.href='../admin/studentmanagement.php'">
                                 <i class="fas fa-user-graduate"></i>
                             </button>
                         </div>
@@ -331,40 +332,40 @@ while ($post_event = mysqli_fetch_assoc($postevent_result)) {
                                         </thead>
                                         <tbody>
                                             <?php foreach ($main_events as $event): ?>
-                                                    <tr>
-                                                        <td>
-                                                            <strong><?php echo htmlspecialchars($event['Ev_Name']); ?></strong><br>
-                                                            <small class="text-muted">Event ID:
-                                                                <?php echo htmlspecialchars($event['Ev_ID']); ?></small>
-                                                        </td>
-                                                        <td>
-                                                            <?php echo date('M j, Y', strtotime($event['Ev_Date'])); ?>
-                                                        </td>
-                                                        <td><?php echo htmlspecialchars($event['Stu_Name']); ?><br>
-                                                            <small
-                                                                class="text-muted"><?php echo htmlspecialchars($event['Stu_ID']); ?></small>
-                                                        </td>
-                                                        <td><span
-                                                                class="club-text"><?php echo htmlspecialchars($event['Club_Name']); ?></span>
-                                                        </td>
-                                                        <td>
-                                                            <span
-                                                                class="status-badge status-<?php echo strtolower($event['Status_Display']); ?>">
-                                                                <?php echo htmlspecialchars($event['Status_Display']); ?>
-                                                            </span>
-                                                        </td>
-                                                        <td class="action-buttons">
-                                                            <button class="btn btn-sm btn-outline-primary me-1"
-                                                                data-bs-toggle="tooltip" data-bs-placement="top"
-                                                                title="Edit Event">
-                                                                <i class="fas fa-edit"></i>
-                                                            </button>
-                                                            <button class="btn btn-sm btn-outline-info" data-bs-toggle="tooltip"
-                                                                data-bs-placement="top" title="View Event Details">
-                                                                <i class="fas fa-eye"></i>
-                                                            </button>
-                                                        </td>
-                                                    </tr>
+                                                <tr>
+                                                    <td>
+                                                        <strong><?php echo htmlspecialchars($event['Ev_Name']); ?></strong><br>
+                                                        <small class="text-muted">Event ID:
+                                                            <?php echo htmlspecialchars($event['Ev_ID']); ?></small>
+                                                    </td>
+                                                    <td>
+                                                        <?php echo date('M j, Y', strtotime($event['Ev_Date'])); ?>
+                                                    </td>
+                                                    <td><?php echo htmlspecialchars($event['Stu_Name']); ?><br>
+                                                        <small
+                                                            class="text-muted"><?php echo htmlspecialchars($event['Stu_ID']); ?></small>
+                                                    </td>
+                                                    <td><span
+                                                            class="club-text"><?php echo htmlspecialchars($event['Club_Name']); ?></span>
+                                                    </td>
+                                                    <td>
+                                                        <span
+                                                            class="status-badge status-<?php echo strtolower($event['Status_Display']); ?>">
+                                                            <?php echo htmlspecialchars($event['Status_Display']); ?>
+                                                        </span>
+                                                    </td>
+                                                    <td class="action-buttons">
+                                                        <button class="btn btn-sm btn-outline-primary me-1"
+                                                            data-bs-toggle="tooltip" data-bs-placement="top"
+                                                            title="Edit Event">
+                                                            <i class="fas fa-edit"></i>
+                                                        </button>
+                                                        <button class="btn btn-sm btn-outline-info" data-bs-toggle="tooltip"
+                                                            data-bs-placement="top" title="View Event Details">
+                                                            <i class="fas fa-eye"></i>
+                                                        </button>
+                                                    </td>
+                                                </tr>
                                             <?php endforeach; ?>
                                         </tbody>
                                     </table>
@@ -386,47 +387,47 @@ while ($post_event = mysqli_fetch_assoc($postevent_result)) {
                                         </thead>
                                         <tbody>
                                             <?php if (!empty($post_events)): ?>
-                                                    <?php foreach ($post_events as $post_event): ?>
-                                                            <tr>
-                                                                <td>
-                                                                    <strong><?php echo htmlspecialchars($post_event['Ev_Name']); ?></strong><br>
-                                                                    <small class="text-muted">Event ID:
-                                                                        <?php echo htmlspecialchars($post_event['Ev_ID']); ?></small>
-                                                                </td>
-                                                                <td>
-                                                                    <strong><?php echo htmlspecialchars($post_event['Rep_ID']); ?></strong>
-                                                                </td>
-                                                                <td>
-                                                                    <?php echo date('M j, Y', strtotime($post_event['submitted_date'])); ?><br>
-                                                                    <small
-                                                                        class="text-muted"><?php echo date('H:i', strtotime($post_event['submitted_date'])); ?></small>
-                                                                </td>
-                                                                <td>
-                                                                    <span
-                                                                        class="status-badge status-<?php echo strtolower($post_event['Status_Display']); ?>">
-                                                                        <?php echo htmlspecialchars($post_event['Status_Display']); ?>
-                                                                    </span>
-                                                                </td>
-                                                                <td class="action-buttons">
-                                                                    <button class="btn btn-sm btn-outline-primary me-1"
-                                                                        data-bs-toggle="tooltip" data-bs-placement="top"
-                                                                        title="Edit Report">
-                                                                        <i class="fas fa-edit"></i>
-                                                                    </button>
-                                                                    <button class="btn btn-sm btn-outline-info" data-bs-toggle="tooltip"
-                                                                        data-bs-placement="top" title="View Report">
-                                                                        <i class="fas fa-eye"></i>
-                                                                    </button>
-                                                                </td>
-                                                            </tr>
-                                                    <?php endforeach; ?>
-                                            <?php else: ?>
+                                                <?php foreach ($post_events as $post_event): ?>
                                                     <tr>
-                                                        <td colspan="5" class="text-center text-muted">
-                                                            <i class="fas fa-file-alt fa-2x mb-2"></i><br>
-                                                            No post-event reports submitted yet.
+                                                        <td>
+                                                            <strong><?php echo htmlspecialchars($post_event['Ev_Name']); ?></strong><br>
+                                                            <small class="text-muted">Event ID:
+                                                                <?php echo htmlspecialchars($post_event['Ev_ID']); ?></small>
+                                                        </td>
+                                                        <td>
+                                                            <strong><?php echo htmlspecialchars($post_event['Rep_ID']); ?></strong>
+                                                        </td>
+                                                        <td>
+                                                            <?php echo date('M j, Y', strtotime($post_event['submitted_date'])); ?><br>
+                                                            <small
+                                                                class="text-muted"><?php echo date('H:i', strtotime($post_event['submitted_date'])); ?></small>
+                                                        </td>
+                                                        <td>
+                                                            <span
+                                                                class="status-badge status-<?php echo strtolower($post_event['Status_Display']); ?>">
+                                                                <?php echo htmlspecialchars($post_event['Status_Display']); ?>
+                                                            </span>
+                                                        </td>
+                                                        <td class="action-buttons">
+                                                            <button class="btn btn-sm btn-outline-primary me-1"
+                                                                data-bs-toggle="tooltip" data-bs-placement="top"
+                                                                title="Edit Report">
+                                                                <i class="fas fa-edit"></i>
+                                                            </button>
+                                                            <button class="btn btn-sm btn-outline-info" data-bs-toggle="tooltip"
+                                                                data-bs-placement="top" title="View Report">
+                                                                <i class="fas fa-eye"></i>
+                                                            </button>
                                                         </td>
                                                     </tr>
+                                                <?php endforeach; ?>
+                                            <?php else: ?>
+                                                <tr>
+                                                    <td colspan="5" class="text-center text-muted">
+                                                        <i class="fas fa-file-alt fa-2x mb-2"></i><br>
+                                                        No post-event reports submitted yet.
+                                                    </td>
+                                                </tr>
                                             <?php endif; ?>
                                         </tbody>
                                     </table>
@@ -465,20 +466,20 @@ while ($post_event = mysqli_fetch_assoc($postevent_result)) {
                                 </thead>
                                 <tbody>
                                     <?php while ($advisor = mysqli_fetch_assoc($advisor_result)): ?>
-                                            <tr>
-                                                <td><strong><?php echo htmlspecialchars($advisor['Adv_Name']); ?></strong></td>
-                                                <td><span
-                                                        class="club-text"><?php echo htmlspecialchars($advisor['Club_Name']); ?></span>
-                                                </td>
-                                                <td><small><?php echo htmlspecialchars($advisor['Adv_Email']); ?></small></td>
-                                                <td>
-                                                    <span
-                                                        class="badge bg-<?php echo $advisor['events_done'] > 0 ? 'success' : 'secondary'; ?>"
-                                                        style="font-size: 0.9rem; padding: 0.4rem 0.8rem;">
-                                                        <?php echo htmlspecialchars($advisor['events_done']); ?>
-                                                    </span>
-                                                </td>
-                                            </tr>
+                                        <tr>
+                                            <td><strong><?php echo htmlspecialchars($advisor['Adv_Name']); ?></strong></td>
+                                            <td><span
+                                                    class="club-text"><?php echo htmlspecialchars($advisor['Club_Name']); ?></span>
+                                            </td>
+                                            <td><small><?php echo htmlspecialchars($advisor['Adv_Email']); ?></small></td>
+                                            <td>
+                                                <span
+                                                    class="badge bg-<?php echo $advisor['events_done'] > 0 ? 'success' : 'secondary'; ?>"
+                                                    style="font-size: 0.9rem; padding: 0.4rem 0.8rem;">
+                                                    <?php echo htmlspecialchars($advisor['events_done']); ?>
+                                                </span>
+                                            </td>
+                                        </tr>
                                     <?php endwhile; ?>
                                 </tbody>
                             </table>
