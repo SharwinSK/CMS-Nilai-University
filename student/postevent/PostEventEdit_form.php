@@ -627,20 +627,20 @@ $stmt->close();
 
             row.setAttribute('data-meeting-id', newMeetingId);
             row.innerHTML = `
-            <input type="hidden" name="meetingRowIds[]" value="new-${meetingCounter}">
-
-                <td><input type="date" name="meetingDate[]" required onchange="updateAttendanceTable()"></td>
-                <td><input type="time" name="meetingStartTime[]" required></td>
-                <td><input type="time" name="meetingEndTime[]" required></td>
-                <td><input type="text" name="meetingLocation[]" pattern="[A-Za-z0-9\\s]+" title="Only alphabetic characters and numbers allowed" required></td>
-                <td>
-                    <button type="button" class="btn btn-success" onclick="showAddModal(this)" data-description="">Add</button>
-                    <button type="button" class="btn btn-secondary" onclick="showViewModal(this)" data-description="">View</button>
-                </td>
-                <td>
-                    <button type="button" class="btn btn-danger" onclick="removeMeetingRow(this)">Delete</button>
-                </td>
-            `;
+        <input type="hidden" name="meetingRowIds[]" value="${newMeetingId}">
+        <td><input type="date" name="meetingDate[]" required onchange="updateAttendanceTable()"></td>
+        <td><input type="time" name="meetingStartTime[]" required></td>
+        <td><input type="time" name="meetingEndTime[]" required></td>
+        <td><input type="text" name="meetingLocation[]" pattern="[A-Za-z0-9\\s]+" title="Only alphabetic characters and numbers allowed" required></td>
+        <td>
+            <button type="button" class="btn btn-success" onclick="showAddModal(this)" data-description="">Add</button>
+            <button type="button" class="btn btn-secondary" onclick="showViewModal(this)" data-description="">View</button>
+            <input type="hidden" name="meeting_descriptions[]" value="">
+        </td>
+        <td>
+            <button type="button" class="btn btn-danger" onclick="removeMeetingRow(this)">Delete</button>
+        </td>
+    `;
 
             tableBody.appendChild(row);
             updateAttendanceTable();
@@ -916,6 +916,7 @@ $stmt->close();
             if (currentAddButton) {
                 const newDesc = document.getElementById("addDescriptionTextarea").value;
                 const parentCell = currentAddButton.parentNode;
+                const row = currentAddButton.closest('tr');
 
                 // Update buttons
                 parentCell.querySelectorAll("button").forEach((btn) => {
@@ -934,7 +935,13 @@ $stmt->close();
                 hiddenInput.value = newDesc;
 
                 closeAddModal();
-                alert("Meeting description saved successfully!");
+                Swal.fire({
+                    title: 'Saved!',
+                    text: 'Meeting description saved successfully!',
+                    icon: 'success',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
             }
         }
 
@@ -956,14 +963,31 @@ $stmt->close();
         document.getElementById("postEventForm").addEventListener("submit", function (e) {
             e.preventDefault();
 
-            if (confirm("Submit Post Event Report? Please review all information before submitting.")) {
-                // Here you would normally submit the form
-                // For now, just show success message
-                alert("Form submitted successfully! In a real application, this would be processed by the server.");
+            Swal.fire({
+                title: 'Confirm Submission',
+                text: 'Submit Post Event Report? Please review all information before submitting.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, Submit',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: '#28a745',
+                cancelButtonColor: '#6c757d'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Show loading
+                    Swal.fire({
+                        title: 'Submitting...',
+                        text: 'Please wait while we process your report.',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
 
-                // Uncomment the next line to actually submit the form
-                this.submit();
-            }
+                    // Submit the form
+                    this.submit();
+                }
+            });
         });
 
         // Input validation for alphabetic only fields
@@ -997,8 +1021,22 @@ $stmt->close();
             }
         });
 
-        // Initialize attendance table on page load
+        // Add this right after the existing variables like meetingCounter, removedPhotos, etc.
         document.addEventListener('DOMContentLoaded', function () {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('success') === '1') {
+                Swal.fire({
+                    title: 'Success!',
+                    text: 'Post Event Report submitted successfully!',
+                    icon: 'success',
+                    confirmButtonText: 'OK'
+                }).then(() => {
+                    // Clean up URL
+                    window.history.replaceState({}, document.title, window.location.pathname + '?mode=<?= $mode ?>&rep_id=<?= $rep_id ?>');
+                });
+            }
+
+            // Initialize attendance table on page load
             updateAttendanceTable();
         });
 

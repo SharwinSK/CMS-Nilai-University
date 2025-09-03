@@ -457,15 +457,15 @@ $action = 'ProposalHandler.php?mode=create';
                     </div>
                     <div class="form-col">
                         <div class="form-group">
-                            <label for="additionalDocument">Additional Document (Optional)</label>
+                            <label for="additionalDocument" class="required">Organization Chart</label>
                             <div class="upload-area" id="additionalDocUpload">
                                 <div>
-                                    <p>📁 Drag and drop additional document here or click to browse</p>
+                                    <p>📁 Drag and drop organization chart here or click to browse</p>
                                     <input type="file" id="additionalDocument" name="additionalDocument" accept=".pdf"
-                                        style="display: none" />
+                                        style="display: none" required />
                                 </div>
                             </div>
-                            <div class="file-info">Only upload PDF file</div>
+                            <div class="file-info">Required: Upload organization chart in PDF format only</div>
                             <div class="preview-container" id="additionalDocPreview"></div>
                         </div>
                     </div>
@@ -1061,6 +1061,13 @@ $action = 'ProposalHandler.php?mode=create';
                 }
             });
 
+            // Add this after the existing file validation
+            const orgChart = document.getElementById("additionalDocument");
+            if (!orgChart.files.length) {
+                orgChart.closest(".form-group").classList.add("error");
+                isValid = false;
+            }
+
             // Custom validations
 
             // Event date validation (minimum 14 days from today)
@@ -1137,11 +1144,11 @@ $action = 'ProposalHandler.php?mode=create';
 
                 const preview = document.getElementById("additionalDocPreview");
                 preview.innerHTML = `
-            <div style="margin-top: 10px; padding: 10px; background: #e8f5e8; border-radius: 5px;">
-                <span>✅ ${file.name}</span>
-                <button type="button" class="btn btn-primary btn-sm" style="margin-left: 10px;" onclick="viewPDF('${file.name}')">View PDF</button>
-            </div>
-        `;
+    <div style="margin-top: 10px; padding: 10px; background: #e8f5e8; border-radius: 5px;">
+        <span>✅ Organization Chart: ${file.name}</span>
+        <button type="button" class="btn btn-primary btn-sm" style="margin-left: 10px;" onclick="viewPDF('${file.name}')">View PDF</button>
+    </div>
+`;
             }
         }
 

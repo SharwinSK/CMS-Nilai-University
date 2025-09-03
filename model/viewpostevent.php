@@ -389,10 +389,10 @@ $stmt->close();
                                                 <?php
                                                 $meetingID = $meeting['Meeting_ID'];
                                                 $status = $attendanceData[$member['Com_ID']][$meetingID] ?? 'not-set';
-                                                $statusClass = $status === 'present' ? 'status-present' :
-                                                    ($status === 'absent' ? 'status-absent' : 'status-not-set');
-                                                $statusText = $status === 'present' ? 'Present' :
-                                                    ($status === 'absent' ? 'Absent' : 'Not Set');
+                                                $statusClass = $status === 'Present' ? 'status-present' :
+                                                    ($status === 'Absent' ? 'status-absent' : 'status-not-set');
+                                                $statusText = $status === 'Present' ? 'Present' :
+                                                    ($status === 'Absent' ? 'Absent' : 'Not Set');
                                                 ?>
                                                 <div class="attendance-row">
                                                     <span

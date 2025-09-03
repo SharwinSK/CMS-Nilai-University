@@ -229,7 +229,7 @@ $postmortem_count = $postmortem_result->num_rows;
                 </div>
             </div>
 
-            <!-- Post Event Section -->
+            <!-- Post Event Section - FIXED VERSION -->
             <div class="row">
                 <div class="col-12">
                     <h2 class="section-title">
@@ -275,8 +275,11 @@ $postmortem_count = $postmortem_result->num_rows;
                                         </td>
 
                                         <td>
-                                            <button class="action-btn btn-feedback"
-                                                onclick="showFeedback('Coordinator', '<?= addslashes($report['Reviewer_Comment']) ?>', '<?= $report['Ev_ID'] ?>')"
+                                            <!-- FIXED: Using data attributes approach -->
+                                            <button class="action-btn btn-feedback" data-bs-toggle="modal"
+                                                data-bs-target="#feedbackModal" data-feedback-type="Coordinator"
+                                                data-feedback-text="<?= htmlspecialchars($report['Reviewer_Comment'] ?? '', ENT_QUOTES) ?>"
+                                                data-event-id="<?= $report['Ev_ID'] ?>" onclick="showFeedbackFromData(this)"
                                                 title="View Coordinator Feedback">
                                                 <i class="fas fa-comments"></i>
                                             </button>

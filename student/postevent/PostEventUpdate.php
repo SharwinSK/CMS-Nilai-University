@@ -1,8 +1,6 @@
 <?php
 session_start();
 include('../../db/dbconfig.php');
-include('../model/sendMailTemplates.php');
-
 
 // 1. Validate
 $mode = $_POST['mode'] ?? '';
@@ -44,13 +42,12 @@ try {
     }
 
     if (!empty($_FILES['budgetStatement']['name'])) {
-        $uploadDir = '../../uploads/statements/'; // ✅ Match create mode folder
+        $uploadDir = '../../uploads/statements/';
         $newName = uniqid("budget_") . "_" . basename($_FILES['budgetStatement']['name']);
         $targetPath = $uploadDir . $newName;
         move_uploaded_file($_FILES['budgetStatement']['tmp_name'], $targetPath);
-        $budgetPath = $newName; // ✅ Only filename, not full path
+        $budgetPath = $newName;
     }
-
 
     // 🟩 Update eventpostmortem
     $stmt = $conn->prepare("UPDATE eventpostmortem 
@@ -64,10 +61,9 @@ try {
     $stmt->bind_param("ss", $budgetPath, $ev_id);
     $stmt->execute();
 
-    // Add this BEFORE the foreach loop for event_flows
+    // 🟩 Delete existing event flows and re-insert
     $conn->query("DELETE FROM eventflows WHERE Rep_ID = '$rep_id'");
 
-    // Then your existing insert code will work properly
     foreach ($_POST['event_flows'] as $flow) {
         $time = $flow['time'] ?? '';
         $desc = $flow['description'] ?? '';
@@ -79,50 +75,61 @@ try {
             $stmt->close();
         }
     }
+
+    // 🟩 Handle meetings - DELETE and re-insert all
+    $conn->query("DELETE FROM posteventmeeting WHERE Rep_ID = '$rep_id'");
+    $conn->query("DELETE FROM committeeattendance WHERE Rep_ID = '$rep_id'");
+
+    $meetingDates = $_POST['meetingDate'] ?? [];
+    $startTimes = $_POST['meetingStartTime'] ?? [];
+    $endTimes = $_POST['meetingEndTime'] ?? [];
+    $locations = $_POST['meetingLocation'] ?? [];
+    $descriptions = $_POST['meeting_descriptions'] ?? [];
+    $meetingRowIds = $_POST['meetingRowIds'] ?? [];
+
     $meetingIDs = [];
     $newMeetingMap = [];
-
-    $rawMeetingRows = $_POST['meetingDate'];
-    $index = 0;
 
     foreach ($meetingDates as $i => $date) {
         $start = $startTimes[$i] ?? '';
         $end = $endTimes[$i] ?? '';
         $location = $locations[$i] ?? '';
-        $desc = $_POST['meeting_descriptions'][$i] ?? '';
+        $desc = $descriptions[$i] ?? '';
+        $meetingRowId = $meetingRowIds[$i] ?? 'new-' . $i;
 
-        $meetingRowId = $_POST['meetingRowIds'][$i] ?? 'new-' . $index; // fallback if not set
+        if (!empty($date) && !empty($start) && !empty($end) && !empty($location)) {
+            $stmt = $conn->prepare("INSERT INTO posteventmeeting (Rep_ID, Meeting_Date, Start_Time, End_Time, Meeting_Description, Meeting_Location) 
+                                VALUES (?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param("ssssss", $rep_id, $date, $start, $end, $desc, $location);
+            $stmt->execute();
 
-        $stmt = $conn->prepare("INSERT INTO posteventmeeting (Rep_ID, Meeting_Date, Start_Time, End_Time, Meeting_Description, Meeting_Location) 
-                            VALUES (?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("ssssss", $rep_id, $date, $start, $end, $desc, $location);
-        $stmt->execute();
-
-        $newId = $conn->insert_id;
-        $newMeetingMap[$meetingRowId] = $newId;
-        $index++;
-    }
-
-    // 🟩 Attendance - Re-insert fresh values
-    foreach ($_POST['attendance'] as $comId => $meetingStatuses) {
-        foreach ($meetingStatuses as $meetingID => $status) {
-            // If meeting ID is a "new-5" type, convert it
-            if (isset($newMeetingMap[$meetingID])) {
-                $meetingID = $newMeetingMap[$meetingID];
-            }
-
-            // Now insert only if it's a valid integer
-            if (is_numeric($meetingID)) {
-                $stmt = $conn->prepare("INSERT INTO committeeattendance (Rep_ID, Meeting_ID, Com_ID, Attendance_Status) 
-                                    VALUES (?, ?, ?, ?)");
-                $stmt->bind_param("siss", $rep_id, $meetingID, $comId, $status);
-                $stmt->execute();
-                $stmt->close();
-            }
+            $newId = $conn->insert_id;
+            $newMeetingMap[$meetingRowId] = $newId;
+            $meetingIDs[] = $newId;
+            $stmt->close();
         }
     }
 
+    // 🟩 Attendance - Insert fresh values
+    if (!empty($_POST['attendance'])) {
+        foreach ($_POST['attendance'] as $comId => $meetingStatuses) {
+            foreach ($meetingStatuses as $meetingID => $status) {
+                // If meeting ID is a "new-X" type, convert it using the mapping
+                if (isset($newMeetingMap[$meetingID])) {
+                    $meetingID = $newMeetingMap[$meetingID];
+                }
 
+                // Now insert only if it's a valid integer and we have a valid status
+                if (is_numeric($meetingID) && !empty($status)) {
+                    $stmt = $conn->prepare("INSERT INTO committeeattendance (Rep_ID, Meeting_ID, Com_ID, Attendance_Status) 
+                                        VALUES (?, ?, ?, ?)");
+                    $stmt->bind_param("siss", $rep_id, $meetingID, $comId, $status);
+                    $stmt->execute();
+                    $stmt->close();
+                }
+            }
+        }
+    }
 
     // 🟩 Individual Reports - DELETE all first, then INSERT new ones
     $conn->query("DELETE FROM individualreport WHERE Rep_ID = '$rep_id'");
@@ -165,45 +172,10 @@ try {
         }
     }
 
-    if ($mode === 'modify') {
-        // 🟩 Fetch event info
-        $stmt = $conn->prepare("SELECT Ev_Name, Club_ID, Stu_ID FROM events WHERE Ev_ID = ?");
-        $stmt->bind_param("s", $ev_id);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $eventRow = $result->fetch_assoc();
-        $eventName = $eventRow['Ev_Name'];
-        $clubID = $eventRow['Club_ID'];
-        $studentID = $eventRow['Stu_ID'];
-        $stmt->close();
-
-        // 🟩 Fetch student name
-        $stmt = $conn->prepare("SELECT Stu_Name FROM student WHERE Stu_ID = ?");
-        $stmt->bind_param("s", $studentID);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $studentName = $result->fetch_assoc()['Stu_Name'];
-        $stmt->close();
-
-        // 🟩 Fetch coordinator info
-        $stmt = $conn->prepare("SELECT coordinator.Coor_Name, coordinator.Coor_Email 
-                            FROM club 
-                            JOIN coordinator ON club.Coordinator_ID = coordinator.Coor_ID 
-                            WHERE club.Club_ID = ?");
-        $stmt->bind_param("s", $clubID);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $coorRow = $result->fetch_assoc();
-        $coordinatorName = $coorRow['Coor_Name'];
-        $coordinatorEmail = $coorRow['Coor_Email'];
-        $stmt->close();
-
-        // ✅ Send email
-        postEventSubmitted($coordinatorName, $eventName, $studentName, $coordinatorEmail);
-    }
-
     // ✅ Commit all changes
     $conn->commit();
+
+    // Redirect with success parameter instead of confirmation page
     header("Location: ../../model/confirmationPage.php?rep_id=$rep_id&event_id=$ev_id");
     exit;
 

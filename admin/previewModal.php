@@ -1,7 +1,6 @@
 <?php
 include '../db/dbconfig.php';
 
-
 $id = $_GET['id'] ?? null;
 $mode = $_GET['mode'] ?? 'view';
 
@@ -11,24 +10,26 @@ if (!$id) {
 
 // Handle form submission (edit mode)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $status_id = $_POST['status_id'];
-    $ev_date = $_POST['ev_date'];
-    $venue = $_POST['ev_venue'];
-    $start = $_POST['ev_start'];
-    $end = $_POST['ev_end'];
-    $created_at = $_POST['created_at'];
+    $status_id = $_POST['status_id'] ?? null;
+    $ev_date = $_POST['ev_date'] ?? null;
+    $venue_id = $_POST['ev_venue_id'] ?? null;
+    $start = $_POST['ev_start'] ?? null;
+    $end = $_POST['ev_end'] ?? null;
+    $created_at = $_POST['created_at'] ?? null;
     $rep_status = $_POST['rep_status'] ?? null;
 
-    // Update proposal info
-    $stmt = $conn->prepare("UPDATE events SET Status_ID=?, Ev_Date=?, Ev_Venue=?, Ev_StartTime=?, Ev_EndTime=?, created_at=? WHERE Ev_ID=?");
-    $stmt->bind_param("issssss", $status_id, $ev_date, $venue, $start, $end, $created_at, $id);
-    $stmt->execute();
-    $stmt->close();
+    // Update event info
+    if ($status_id && $ev_date && $start && $end && $created_at) {
+        $stmt = $conn->prepare("UPDATE events SET Status_ID=?, Ev_Date=?, Ev_VenueID=?, Ev_StartTime=?, Ev_EndTime=?, created_at=? WHERE Ev_ID=?");
+        $stmt->bind_param("issssss", $status_id, $ev_date, $venue_id, $start, $end, $created_at, $id);
+        $stmt->execute();
+        $stmt->close();
+    }
 
     // Update post-event status if exists
     if ($rep_status) {
-        $stmt2 = $conn->prepare("UPDATE eventpostmortem SET Rep_PostStatus=? WHERE Ev_ID=?");
-        $stmt2->bind_param("ss", $rep_status, $id);
+        $stmt2 = $conn->prepare("UPDATE eventpostmortem SET Status_ID=? WHERE Ev_ID=?");
+        $stmt2->bind_param("is", $rep_status, $id);
         $stmt2->execute();
         $stmt2->close();
     }
@@ -37,20 +38,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit();
 }
 
-// Fetch event data
-$event = $conn->query("
-    SELECT e.*, s.Stu_Name, c.Club_Name, st.Status_Name, p.PIC_Name, p.PIC_PhnNum
+// Fetch event data with venue names
+$eventQuery = "
+    SELECT e.*, s.Stu_Name, c.Club_Name, st.Status_Name, p.PIC_Name, p.PIC_PhnNum, p.PIC_ID,
+           v1.Venue_Name as Main_Venue, v2.Venue_Name as Alt_Venue
     FROM events e
     LEFT JOIN student s ON e.Stu_ID = s.Stu_ID
     LEFT JOIN club c ON e.Club_ID = c.Club_ID
     LEFT JOIN eventstatus st ON e.Status_ID = st.Status_ID
     LEFT JOIN personincharge p ON e.Ev_ID = p.Ev_ID
-    WHERE e.Ev_ID = '$id'
-")->fetch_assoc();
+    LEFT JOIN venue v1 ON e.Ev_VenueID = v1.Venue_ID
+    LEFT JOIN venue v2 ON e.Ev_AltVenueID = v2.Venue_ID
+    WHERE e.Ev_ID = ?
+";
+$stmt = $conn->prepare($eventQuery);
+$stmt->bind_param("s", $id);
+$stmt->execute();
+$event = $stmt->get_result()->fetch_assoc();
+$stmt->close();
 
-
-// Get post-event data
-$postevent = $conn->query("SELECT * FROM eventpostmortem WHERE Ev_ID = '$id'")->fetch_assoc();
+// Get post-event data with status
+$postEventQuery = "
+    SELECT epm.*, es.Status_Name as Post_Status_Name
+    FROM eventpostmortem epm
+    LEFT JOIN eventstatus es ON epm.Status_ID = es.Status_ID
+    WHERE epm.Ev_ID = ?
+";
+$stmt = $conn->prepare($postEventQuery);
+$stmt->bind_param("s", $id);
+$stmt->execute();
+$postevent = $stmt->get_result()->fetch_assoc();
+$stmt->close();
 
 // Extract Rep_ID safely
 $rep_id = isset($postevent['Rep_ID']) ? $postevent['Rep_ID'] : null;
@@ -58,42 +76,44 @@ $rep_id = isset($postevent['Rep_ID']) ? $postevent['Rep_ID'] : null;
 // Fetch post-event flow from eventflows
 $flowResult = null;
 if (!empty($rep_id)) {
-    $flowResult = $conn->query("SELECT * FROM eventflows WHERE Rep_ID = '$rep_id' ORDER BY EvFlow_Time ASC");
+    $flowStmt = $conn->prepare("SELECT * FROM eventflows WHERE Rep_ID = ? ORDER BY EvFlow_Time ASC");
+    $flowStmt->bind_param("s", $rep_id);
+    $flowStmt->execute();
+    $flowResult = $flowStmt->get_result();
 }
 
-// Fetch event minutes
+// Fetch other data
 $eventminutes = $conn->query("SELECT * FROM eventminutes WHERE Ev_ID = '$id'");
-
-// Fetch committee members
 $committees = $conn->query("SELECT * FROM committee WHERE Ev_ID = '$id'");
-
-// Fetch budget
 $budgets = $conn->query("SELECT * FROM budget WHERE Ev_ID = '$id'");
 $summary = $conn->query("SELECT * FROM budgetsummary WHERE Ev_ID = '$id'")->fetch_assoc();
 
 // Fetch status dropdown
-$statusOptions = $conn->query("SELECT * FROM eventstatus");
+$statusOptions = $conn->query("SELECT * FROM eventstatus WHERE Status_Type = 'proposal'");
+$postStatusOptions = $conn->query("SELECT * FROM eventstatus WHERE Status_Type = 'postmortem'");
+$venueOptions = $conn->query("SELECT * FROM venue ORDER BY Venue_Name");
 
 $challenges = $postevent['Rep_ChallengesDifficulties'] ?? '';
 $recommendation = $postevent['Rep_recomendation'] ?? '';
 $conclusion = $postevent['Rep_Conclusion'] ?? '';
-
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Event Preview - Nilai University CMS</title>
     <style>
         :root {
-            --primary-color: #03a791;
-            --secondary-color: #81e7af;
-            --accent-color: #e9f5be;
-            --warm-color: #f1ba88;
+            --primary-color: #2c5aa0;
+            --secondary-color: #5ba3f5;
+            --accent-color: #f4f8ff;
+            --warm-color: #ff6b35;
+            --success-color: #28a745;
             --light-bg: #f8f9fa;
+            --dark-text: #333;
+            --border-color: #e9ecef;
         }
 
         * {
@@ -105,14 +125,12 @@ $conclusion = $postevent['Rep_Conclusion'] ?? '';
         body {
             font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
             background-color: var(--light-bg);
-            color: #333;
+            color: var(--dark-text);
             line-height: 1.6;
         }
 
         .header {
-            background: linear-gradient(135deg,
-                    var(--primary-color),
-                    var(--secondary-color));
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
             color: white;
             padding: 20px 0;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
@@ -203,7 +221,7 @@ $conclusion = $postevent['Rep_Conclusion'] ?? '';
             display: flex;
             flex-direction: column;
             padding: 15px;
-            background-color: var(--light-bg);
+            background-color: var(--accent-color);
             border-radius: 8px;
             border-left: 4px solid var(--primary-color);
         }
@@ -218,15 +236,21 @@ $conclusion = $postevent['Rep_Conclusion'] ?? '';
 
         .info-value {
             font-size: 16px;
-            color: #333;
+            color: var(--dark-text);
+        }
+
+        .form-control, .form-select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 14px;
         }
 
         .event-poster {
             max-width: 300px;
             height: 400px;
-            background: linear-gradient(135deg,
-                    var(--accent-color),
-                    var(--secondary-color));
+            background: linear-gradient(135deg, var(--accent-color), var(--secondary-color));
             border-radius: 10px;
             display: flex;
             align-items: center;
@@ -234,10 +258,18 @@ $conclusion = $postevent['Rep_Conclusion'] ?? '';
             margin: 20px auto;
             cursor: pointer;
             transition: transform 0.3s ease;
+            overflow: hidden;
         }
 
         .event-poster:hover {
             transform: scale(1.05);
+        }
+
+        .event-poster img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 10px;
         }
 
         .table-container {
@@ -254,11 +286,10 @@ $conclusion = $postevent['Rep_Conclusion'] ?? '';
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
 
-        th,
-        td {
+        th, td {
             padding: 12px 15px;
             text-align: left;
-            border-bottom: 1px solid #ddd;
+            border-bottom: 1px solid var(--border-color);
         }
 
         th {
@@ -272,9 +303,7 @@ $conclusion = $postevent['Rep_Conclusion'] ?? '';
         }
 
         .budget-summary {
-            background: linear-gradient(135deg,
-                    var(--accent-color),
-                    rgba(255, 255, 255, 0.8));
+            background: linear-gradient(135deg, var(--accent-color), rgba(255, 255, 255, 0.8));
             padding: 20px;
             border-radius: 10px;
             margin: 20px 0;
@@ -304,9 +333,7 @@ $conclusion = $postevent['Rep_Conclusion'] ?? '';
 
         .photo-item {
             aspect-ratio: 16/9;
-            background: linear-gradient(45deg,
-                    var(--secondary-color),
-                    var(--accent-color));
+            background: linear-gradient(45deg, var(--secondary-color), var(--accent-color));
             border-radius: 8px;
             cursor: pointer;
             transition: transform 0.3s ease;
@@ -315,10 +342,18 @@ $conclusion = $postevent['Rep_Conclusion'] ?? '';
             justify-content: center;
             color: var(--primary-color);
             font-weight: bold;
+            overflow: hidden;
         }
 
         .photo-item:hover {
             transform: scale(1.05);
+        }
+
+        .photo-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 8px;
         }
 
         .report-item {
@@ -395,6 +430,10 @@ $conclusion = $postevent['Rep_Conclusion'] ?? '';
             cursor: pointer;
         }
 
+        .text-muted {
+            color: #6c757d;
+            font-style: italic;
+        }
 
         @media (max-width: 768px) {
             .header-content {
@@ -421,9 +460,7 @@ $conclusion = $postevent['Rep_Conclusion'] ?? '';
         }
 
         @media print {
-
-            .header,
-            .action-buttons {
+            .header, .action-buttons {
                 display: none;
             }
 
@@ -444,595 +481,642 @@ $conclusion = $postevent['Rep_Conclusion'] ?? '';
                 <a class="btn btn-outline" href="javascript:history.back()">← Back</a>
 
                 <?php if ($mode === 'view'): ?>
-                    <a class="btn btn-primary" href="previewModal.php?type=<?= $type ?>&id=<?= $id ?>&mode=edit">✏️ Edit</a>
-
+                    <a class="btn btn-primary" href="previewModal.php?id=<?= $id ?>&mode=edit">✏️ Edit</a>
                 <?php else: ?>
                     <button class="btn btn-primary" type="submit" form="editForm">💾 Save</button>
-                    <a class="btn btn-outline" href="previewModal.php?event_id=<?= $id ?>&mode=view">Cancel</a>
+                    <a class="btn btn-outline" href="previewModal.php?id=<?= $id ?>&mode=view">Cancel</a>
                 <?php endif; ?>
-
             </div>
-
         </div>
     </div>
 
-
     <?php if ($mode === 'edit'): ?>
         <form method="POST" id="editForm">
-        <?php endif; ?>
+    <?php endif; ?>
 
-        <div class="container">
-            <!-- Event Information Section -->
-            <div class="section">
-                <h2 class="section-title">Event Information</h2>
+    <div class="container">
+        <!-- Event Information Section -->
+        <div class="section">
+            <h2 class="section-title">Event Information</h2>
 
-                <div class="event-poster text-center mb-4" onclick="openModal('posterModal')">
-                    <?php
-                    // Use relative path for web display if full path is stored
-                    $posterPath = isset($event['Ev_Poster']) ? $event['Ev_Poster'] : '';
-                    $posterWebPath = $posterPath && file_exists($posterPath) ? $posterPath : null;
-                    ?>
-
-                    <?php if ($posterWebPath): ?>
-                        <img src="<?= htmlspecialchars($posterWebPath) ?>" class="event-poster shadow rounded"
-                            style="max-height: 300px; object-fit: contain;">
-                    <?php else: ?>
-                        <p class="text-muted fst-italic">No poster uploaded.</p>
-                    <?php endif; ?>
-                </div>
-
-                <div class="info-grid">
-                    <!-- Event ID -->
-                    <div class="info-item">
-                        <div class="info-label">Event ID</div>
-                        <div class="info-value"><?= htmlspecialchars($event['Ev_ID']) ?></div>
-                    </div>
-                    <!-- Status -->
-                    <div class="info-item">
-                        <div class="info-label">Status</div>
-                        <div class="info-value">
-                            <?php if ($mode === 'edit'): ?>
-                                <select name="status_id" class="form-select">
-                                    <?php while ($opt = $statusOptions->fetch_assoc()): ?>
-                                        <option value="<?= $opt['Status_ID'] ?>" <?= $opt['Status_ID'] == $event['Status_ID'] ? 'selected' : '' ?>>
-                                            <?= htmlspecialchars($opt['Status_Name']) ?>
-                                        </option>
-                                    <?php endwhile; ?>
-                                </select>
-                            <?php else: ?>
-                                <?= htmlspecialchars($event['Status_Name']) ?>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-
-                    <div class="info-item">
-                        <div class="info-label">Event Type Reference</div>
-                        <div class="info-value"><?= htmlspecialchars($event['Ev_TypeRef']) ?></div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">Event Reference Number</div>
-                        <div class="info-value"><?= htmlspecialchars($event['Ev_RefNum']) ?></div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">Student Name</div>
-                        <div class="info-value"><?= htmlspecialchars($event['Stu_Name']) ?></div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">Student ID</div>
-                        <div class="info-value"><?= htmlspecialchars($event['Stu_ID']) ?></div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">Club Name</div>
-                        <div class="info-value"><?= htmlspecialchars($event['Club_Name']) ?></div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">Event Name</div>
-                        <div class="info-value"><?= htmlspecialchars($event['Ev_Name']) ?></div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">Event Nature</div>
-                        <div class="info-value"><?= htmlspecialchars($event['Ev_ProjectNature']) ?></div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">Event Date</div>
-                        <div class="info-value">
-                            <?php if ($mode === 'edit'): ?>
-                                <input type="date" name="ev_date" class="form-control" value="<?= $event['Ev_Date'] ?>">
-                            <?php else: ?>
-                                <?= date('F j, Y', strtotime($event['Ev_Date'])) ?>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-
-                    <div class="info-item">
-                        <div class="info-label">Estimated Participants</div>
-                        <div class="info-value"><?= htmlspecialchars($event['Ev_Pax']) ?></div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">Venue</div>
-                        <div class="info-value">
-                            <?php if ($mode === 'edit'): ?>
-                                <input type="text" name="ev_venue" class="form-control" value="<?= $event['Ev_Venue'] ?>">
-                            <?php else: ?>
-                                <?= htmlspecialchars($event['Ev_Venue']) ?>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-
-                    <div class="info-item">
-                        <div class="info-label">Start Time</div>
-                        <div class="info-value">
-                            <?php if ($mode === 'edit'): ?>
-                                <input type="time" name="Ev_StartTime" class="form-control"
-                                    value="<?= $event['Ev_StartTime'] ?>">
-                            <?php else: ?>
-                                <?= date('g:i A', strtotime($event['Ev_StartTime'])) ?>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-
-                    <div class="info-item">
-                        <div class="info-label">End Time</div>
-                        <div class="info-value">
-                            <?php if ($mode === 'edit'): ?>
-                                <input type="time" name="Ev_EndTime" class="form-control"
-                                    value="<?= $event['Ev_EndTime'] ?>">
-                            <?php else: ?>
-                                <?= date('g:i A', strtotime($event['Ev_EndTime'])) ?>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">Person in Charge Name </div>
-                        <div class="info-value"><?= htmlspecialchars($event['PIC_Name']) ?></div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label"> Person in Charge ID</div>
-                        <div class="info-value"><?= htmlspecialchars($event['PIC_ID']) ?></div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">Person in Charge Contact</div>
-                        <div class="info-value"><?= htmlspecialchars($event['PIC_PhnNum']) ?></div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">Created At</div>
-                        <div class="info-value">
-                            <?php if ($mode === 'edit'): ?>
-                                <input type="datetime-local" name="created_at" class="form-control"
-                                    value="<?= $event['created_At'] ?>">
-                            <?php else: ?>
-                                <?= date('F j, Y', strtotime($event['created_At'])) ?>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-
-                </div>
-
-                <div class="info-item" style="grid-column: 1/-1">
-                    <div class="info-label">Event Introduction</div>
-                    <div class="info-value">
-                        <?= htmlspecialchars($event['Ev_Intro']) ?>
-                    </div>
-                </div>
-
-                <div class="info-item" style="grid-column: 1/-1">
-                    <div class="info-label">Event Details</div>
-                    <div class="info-value">
-                        <?= htmlspecialchars($event['Ev_Details']) ?>
-                    </div>
-                </div>
-
-                <div class="info-item" style="grid-column: 1/-1">
-                    <div class="info-label">Event Objectives</div>
-                    <div class="info-value">
-                        <?= htmlspecialchars($event['Ev_Objectives']) ?>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Event Flow / Meeting Minutes Section -->
-            <div class="section">
-                <h2 class="section-title">Event Flow / Meeting Minutes</h2>
-                <div class="table-container">
-                    <?php if ($eventminutes && $eventminutes->num_rows > 0): ?>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Start Time</th>
-                                    <th>End Time</th>
-                                    <th>Hours</th>
-                                    <th>Activity</th>
-                                    <th>Remarks</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php while ($row = $eventminutes->fetch_assoc()): ?>
-                                    <tr>
-                                        <!-- Date column -->
-                                        <td><?= date('F j, Y', strtotime($row['Date'])) ?></td>
-
-                                        <!-- Start & End times -->
-                                        <td><?= date('h:i A', strtotime($row['Start_Time'])) ?></td>
-                                        <td><?= date('h:i A', strtotime($row['End_Time'])) ?></td>
-
-                                        <!-- Hours -->
-                                        <td><?= htmlspecialchars($row['Hours']) ?></td>
-
-                                        <!-- Activity & Remarks -->
-                                        <td><?= htmlspecialchars($row['Activity']) ?></td>
-                                        <td><?= htmlspecialchars($row['Remarks']) ?></td>
-                                    </tr>
-                                <?php endwhile; ?>
-                            </tbody>
-                        </table>
-                    <?php else: ?>
-                        <p class="text-muted fst-italic">No meeting minutes recorded for this event.</p>
-                    <?php endif; ?>
-                </div>
-            </div>
-
-            <!-- Committee Members Section -->
-            <div class="section">
-                <h2 class="section-title">Committee Members</h2>
-                <div class="table-container">
-                    <?php if ($committees && $committees->num_rows > 0): ?>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Committee ID</th>
-                                    <th>Position</th>
-                                    <th>Name</th>
-                                    <th>Department</th>
-                                    <th>Phone Number</th>
-                                    <th>Job Scope</th>
-                                    <th>COCU Claimers</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php while ($com = $committees->fetch_assoc()): ?>
-                                    <tr>
-                                        <td><?= htmlspecialchars($com['Com_ID']) ?></td>
-                                        <td><?= htmlspecialchars($com['Com_Position']) ?></td>
-                                        <td><?= htmlspecialchars($com['Com_Name']) ?></td>
-                                        <td><?= htmlspecialchars($com['Com_Department']) ?></td>
-                                        <td><?= htmlspecialchars($com['Com_PhnNum']) ?></td>
-                                        <td><?= htmlspecialchars($com['Com_JobScope']) ?></td>
-                                        <td><?= $com['Com_COCUClaimers'] == '1' ? 'Yes' : 'No' ?></td>
-                                    </tr>
-                                <?php endwhile; ?>
-                            </tbody>
-                        </table>
-                    <?php else: ?>
-                        <p class="text-muted fst-italic">No committee members found for this event.</p>
-                    <?php endif; ?>
-                </div>
-            </div>
-
-            <!-- Budget Section -->
-            <div class="section">
-                <h2 class="section-title">Budget</h2>
-                <div class="table-container">
-                    <?php if ($budgets && $budgets->num_rows > 0): ?>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Description</th>
-                                    <th>Amount (RM)</th>
-                                    <th>Type</th>
-                                    <th>Remarks</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php while ($b = $budgets->fetch_assoc()): ?>
-                                    <tr>
-                                        <td><?= htmlspecialchars($b['Bud_Desc']) ?></td>
-                                        <td><?= number_format($b['Bud_Amount'], 2) ?></td>
-                                        <td><?= htmlspecialchars($b['Bud_Type']) ?></td>
-                                        <td><?= htmlspecialchars($b['Bud_Remarks']) ?></td>
-                                    </tr>
-                                <?php endwhile; ?>
-                            </tbody>
-                        </table>
-                    <?php else: ?>
-                        <p class="text-muted fst-italic">No budget records available for this event.</p>
-                    <?php endif; ?>
-                </div>
-
-                <?php if (!empty($summary)): ?>
-                    <div class="budget-summary mt-4">
-                        <div class="budget-row">
-                            <span>Total Income:</span>
-                            <span class="budget-total" style="color: green">RM
-                                <?= number_format($summary['Total_Income'], 2) ?></span>
-                        </div>
-                        <div class="budget-row">
-                            <span>Total Expenses:</span>
-                            <span class="budget-total" style="color: red">RM
-                                <?= number_format($summary['Total_Expense'], 2) ?></span>
-                        </div>
-                        <div class="budget-row">
-                            <span><?= ($summary['Surplus_Deficit'] >= 0) ? 'Surplus:' : 'Deficit:' ?></span>
-                            <span class="budget-total" style="color: var(--primary-color)">RM
-                                <?= number_format(abs($summary['Surplus_Deficit']), 2) ?></span>
-                        </div>
-                        <div class="budget-row">
-                            <span>Prepared by:</span>
-                            <span><strong><?= htmlspecialchars($summary['Prepared_By']) ?></strong></span>
-                        </div>
-                    </div>
+            <div class="event-poster" onclick="openModal('posterModal')">
+                <?php
+                // Fix poster path handling
+                $posterPath = '';
+                if (!empty($event['Ev_Poster'])) {
+                    if (is_resource($event['Ev_Poster'])) {
+                        $posterPath = stream_get_contents($event['Ev_Poster']);
+                    } else {
+                        $posterPath = $event['Ev_Poster'];
+                    }
+                }
+                
+                if (!empty($posterPath) && $posterPath !== '0' && file_exists($posterPath)): ?>
+                    <img src="<?= htmlspecialchars($posterPath) ?>" alt="Event Poster">
+                <?php else: ?>
+                    <p class="text-muted">No poster uploaded.</p>
                 <?php endif; ?>
             </div>
 
-
-            <!-- Post Event Report Section -->
-
-            <?php if ($postevent): ?>
+            <div class="info-grid">
+                <!-- Event ID -->
                 <div class="info-item">
-                    <div class="info-label">Post Event Status</div>
+                    <div class="info-label">Event ID</div>
+                    <div class="info-value"><?= htmlspecialchars($event['Ev_ID'] ?? 'N/A') ?></div>
+                </div>
+
+                <!-- Status -->
+                <div class="info-item">
+                    <div class="info-label">Status</div>
                     <div class="info-value">
                         <?php if ($mode === 'edit'): ?>
-                            <select name="rep_status" class="form-select">
-                                <?php foreach (['Pending Coordinator Review', 'Accepted', 'Rejected'] as $rep): ?>
-                                    <option value="<?= $rep ?>" <?= $rep === $postevent['Rep_PostStatus'] ? 'selected' : '' ?>>
-                                        <?= $rep ?>
+                            <select name="status_id" class="form-select">
+                                <?php while ($opt = $statusOptions->fetch_assoc()): ?>
+                                    <option value="<?= $opt['Status_ID'] ?>" <?= ($opt['Status_ID'] == $event['Status_ID']) ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars($opt['Status_Name']) ?>
                                     </option>
-                                <?php endforeach; ?>
+                                <?php endwhile; ?>
                             </select>
                         <?php else: ?>
-                            <?= htmlspecialchars($postevent['Rep_PostStatus']) ?>
+                            <?= htmlspecialchars($event['Status_Name'] ?? 'No Status') ?>
                         <?php endif; ?>
                     </div>
                 </div>
-            <?php endif; ?>
 
+                <div class="info-item">
+                    <div class="info-label">Event Type Reference</div>
+                    <div class="info-value"><?= htmlspecialchars($event['Ev_TypeRef'] ?? 'N/A') ?></div>
+                </div>
+                
+                <div class="info-item">
+                    <div class="info-label">Event Reference Number</div>
+                    <div class="info-value"><?= htmlspecialchars($event['Ev_RefNum'] ?? 'N/A') ?></div>
+                </div>
+                
+                <div class="info-item">
+                    <div class="info-label">Student Name</div>
+                    <div class="info-value"><?= htmlspecialchars($event['Stu_Name'] ?? 'N/A') ?></div>
+                </div>
+                
+                <div class="info-item">
+                    <div class="info-label">Student ID</div>
+                    <div class="info-value"><?= htmlspecialchars($event['Stu_ID'] ?? 'N/A') ?></div>
+                </div>
+                
+                <div class="info-item">
+                    <div class="info-label">Club Name</div>
+                    <div class="info-value"><?= htmlspecialchars($event['Club_Name'] ?? 'N/A') ?></div>
+                </div>
+                
+                <div class="info-item">
+                    <div class="info-label">Event Name</div>
+                    <div class="info-value"><?= htmlspecialchars($event['Ev_Name'] ?? 'N/A') ?></div>
+                </div>
+                
+                <div class="info-item">
+                    <div class="info-label">Event Nature</div>
+                    <div class="info-value"><?= htmlspecialchars($event['Ev_ProjectNature'] ?? 'N/A') ?></div>
+                </div>
+                
+                <div class="info-item">
+                    <div class="info-label">Event Date</div>
+                    <div class="info-value">
+                        <?php if ($mode === 'edit'): ?>
+                            <input type="date" name="ev_date" class="form-control" value="<?= $event['Ev_Date'] ?? '' ?>">
+                        <?php else: ?>
+                            <?= !empty($event['Ev_Date']) ? date('F j, Y', strtotime($event['Ev_Date'])) : 'N/A' ?>
+                        <?php endif; ?>
+                    </div>
+                </div>
 
-            <!-- Post Event Photos -->
-            <h3 style="color: var(--primary-color); margin: 20px 0">Event Photos</h3>
-            <div class="photo-gallery">
-                <?php
-                $photos = [];
+                <div class="info-item">
+                    <div class="info-label">Estimated Participants</div>
+                    <div class="info-value"><?= htmlspecialchars($event['Ev_Pax'] ?? 'N/A') ?></div>
+                </div>
+                
+                <!-- Fixed Venue Display -->
+                <div class="info-item">
+                    <div class="info-label">Primary Venue</div>
+                    <div class="info-value">
+                        <?php if ($mode === 'edit'): ?>
+                            <select name="ev_venue_id" class="form-select">
+                                <option value="">Select Venue</option>
+                                <?php while ($venue = $venueOptions->fetch_assoc()): ?>
+                                    <option value="<?= $venue['Venue_ID'] ?>" <?= ($venue['Venue_ID'] == $event['Ev_VenueID']) ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars($venue['Venue_Name']) ?>
+                                    </option>
+                                <?php endwhile; ?>
+                            </select>
+                        <?php else: ?>
+                            <?= htmlspecialchars($event['Main_Venue'] ?? 'No venue selected') ?>
+                        <?php endif; ?>
+                    </div>
+                </div>
 
-                if (!empty($postevent['rep_photo'])) {
-                    $decoded = json_decode($postevent['rep_photo'], true);
-                    if (is_array($decoded)) {
-                        $photos = $decoded;
-                    }
-                }
-
-                if (!empty($photos)):
-                    $index = 1;
-                    foreach ($photos as $photoPath):
-                        // Only display if file exists (optional)
-                        if (file_exists($photoPath)):
-                            ?>
-                            <div class="photo-item" onclick="openImageModal('<?= htmlspecialchars($photoPath) ?>')">
-                                <span>📸 Photo <?= $index ?></span>
-                            </div>
-                            <?php
-                            $index++;
-                        endif;
-                    endforeach;
-                else:
-                    ?>
-                    <p class="text-muted fst-italic">No event photos uploaded.</p>
+                <!-- Alternative Venue -->
+                <?php if (!empty($event['Alt_Venue'])): ?>
+                <div class="info-item">
+                    <div class="info-label">Alternative Venue</div>
+                    <div class="info-value"><?= htmlspecialchars($event['Alt_Venue']) ?></div>
+                </div>
                 <?php endif; ?>
+
+                <div class="info-item">
+                    <div class="info-label">Start Time</div>
+                    <div class="info-value">
+                        <?php if ($mode === 'edit'): ?>
+                            <input type="time" name="ev_start" class="form-control" value="<?= $event['Ev_StartTime'] ?? '' ?>">
+                        <?php else: ?>
+                            <?= !empty($event['Ev_StartTime']) ? date('g:i A', strtotime($event['Ev_StartTime'])) : 'N/A' ?>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <div class="info-item">
+                    <div class="info-label">End Time</div>
+                    <div class="info-value">
+                        <?php if ($mode === 'edit'): ?>
+                            <input type="time" name="ev_end" class="form-control" value="<?= $event['Ev_EndTime'] ?? '' ?>">
+                        <?php else: ?>
+                            <?= !empty($event['Ev_EndTime']) ? date('g:i A', strtotime($event['Ev_EndTime'])) : 'N/A' ?>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                
+                <!-- Fixed Person in Charge Display -->
+                <div class="info-item">
+                    <div class="info-label">Person in Charge Name</div>
+                    <div class="info-value"><?= htmlspecialchars($event['PIC_Name'] ?? 'N/A') ?></div>
+                </div>
+                
+                <div class="info-item">
+                    <div class="info-label">Person in Charge ID</div>
+                    <div class="info-value"><?= htmlspecialchars($event['PIC_ID'] ?? 'N/A') ?></div>
+                </div>
+                
+                <div class="info-item">
+                    <div class="info-label">Person in Charge Contact</div>
+                    <div class="info-value"><?= htmlspecialchars($event['PIC_PhnNum'] ?? 'N/A') ?></div>
+                </div>
+                
+                <!-- Fixed Created At Display -->
+                <div class="info-item">
+                    <div class="info-label">Created At</div>
+                    <div class="info-value">
+                        <?php if ($mode === 'edit'): ?>
+                            <input type="datetime-local" name="created_at" class="form-control" 
+                                   value="<?= !empty($event['created_at']) ? date('Y-m-d\TH:i', strtotime($event['created_at'])) : '' ?>">
+                        <?php else: ?>
+                            <?= !empty($event['created_at']) ? date('F j, Y g:i A', strtotime($event['created_at'])) : 'N/A' ?>
+                        <?php endif; ?>
+                    </div>
+                </div>
             </div>
 
+            <div class="info-item" style="grid-column: 1/-1">
+                <div class="info-label">Event Introduction</div>
+                <div class="info-value"><?= nl2br(htmlspecialchars($event['Ev_Intro'] ?? 'N/A')) ?></div>
+            </div>
 
+            <div class="info-item" style="grid-column: 1/-1">
+                <div class="info-label">Event Details</div>
+                <div class="info-value"><?= nl2br(htmlspecialchars($event['Ev_Details'] ?? 'N/A')) ?></div>
+            </div>
 
-            <!-- Post Event Flow Timeline -->
-            <h3 style="color: var(--primary-color); margin: 20px 0">Event Flow Timeline</h3>
+            <div class="info-item" style="grid-column: 1/-1">
+                <div class="info-label">Event Objectives</div>
+                <div class="info-value"><?= nl2br(htmlspecialchars($event['Ev_Objectives'] ?? 'N/A')) ?></div>
+            </div>
+        </div>
+
+        <!-- Event Flow / Meeting Minutes Section -->
+        <div class="section">
+            <h2 class="section-title">Event Flow / Meeting Minutes</h2>
             <div class="table-container">
-                <?php if ($flowResult && $flowResult->num_rows > 0): ?>
+                <?php if ($eventminutes && $eventminutes->num_rows > 0): ?>
                     <table>
                         <thead>
                             <tr>
-                                <th>Flow Time</th>
-                                <th>Event Flow Description</th>
+                                <th>Date</th>
+                                <th>Start Time</th>
+                                <th>End Time</th>
+                                <th>Hours</th>
+                                <th>Activity</th>
+                                <th>Remarks</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php while ($row = $flowResult->fetch_assoc()): ?>
+                            <?php while ($row = $eventminutes->fetch_assoc()): ?>
                                 <tr>
-                                    <td><?= date('g:i A', strtotime($row['EvFlow_Time'])) ?></td>
-                                    <td><?= htmlspecialchars($row['EvFlow_Description']) ?></td>
+                                    <td><?= date('F j, Y', strtotime($row['Date'])) ?></td>
+                                    <td><?= date('h:i A', strtotime($row['Start_Time'])) ?></td>
+                                    <td><?= date('h:i A', strtotime($row['End_Time'])) ?></td>
+                                    <td><?= htmlspecialchars($row['Hours']) ?></td>
+                                    <td><?= htmlspecialchars($row['Activity']) ?></td>
+                                    <td><?= htmlspecialchars($row['Remarks']) ?></td>
                                 </tr>
                             <?php endwhile; ?>
                         </tbody>
                     </table>
                 <?php else: ?>
-                    <p class="text-muted fst-italic">No post-event flow data available.</p>
+                    <p class="text-muted">No meeting minutes recorded for this event.</p>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <!-- Committee Members Section -->
+        <div class="section">
+            <h2 class="section-title">Committee Members</h2>
+            <div class="table-container">
+                <?php if ($committees && $committees->num_rows > 0): ?>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Committee ID</th>
+                                <th>Position</th>
+                                <th>Name</th>
+                                <th>Department</th>
+                                <th>Phone Number</th>
+                                <th>Job Scope</th>
+                                <th>COCU Claimers</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php while ($com = $committees->fetch_assoc()): ?>
+                                <tr>
+                                    <td><?= htmlspecialchars($com['Com_ID']) ?></td>
+                                    <td><?= htmlspecialchars($com['Com_Position']) ?></td>
+                                    <td><?= htmlspecialchars($com['Com_Name']) ?></td>
+                                    <td><?= htmlspecialchars($com['Com_Department']) ?></td>
+                                    <td><?= htmlspecialchars($com['Com_PhnNum']) ?></td>
+                                    <td><?= htmlspecialchars($com['Com_JobScope']) ?></td>
+                                    <td><?= strtolower($com['Com_COCUClaimers']) == 'yes' ? 'Yes' : 'No' ?></td>
+                                </tr>
+                            <?php endwhile; ?>
+                        </tbody>
+                    </table>
+                <?php else: ?>
+                    <p class="text-muted">No committee members found for this event.</p>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <!-- Budget Section -->
+        <div class="section">
+            <h2 class="section-title">Budget</h2>
+            <div class="table-container">
+                <?php if ($budgets && $budgets->num_rows > 0): ?>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Description</th>
+                                <th>Amount (RM)</th>
+                                <th>Type</th>
+                                <th>Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php while ($b = $budgets->fetch_assoc()): ?>
+                                <tr>
+                                    <td><?= htmlspecialchars($b['Bud_Desc']) ?></td>
+                                    <td><?= number_format($b['Bud_Amount'], 2) ?></td>
+                                    <td><?= htmlspecialchars($b['Bud_Type']) ?></td>
+                                    <td><?= htmlspecialchars($b['Bud_Remarks']) ?></td>
+                                </tr>
+                            <?php endwhile; ?>
+                        </tbody>
+                    </table>
+                <?php else: ?>
+                    <p class="text-muted">No budget records available for this event.</p>
                 <?php endif; ?>
             </div>
 
+            <?php if (!empty($summary)): ?>
+                <div class="budget-summary">
+                    <div class="budget-row">
+                        <span>Total Income:</span>
+                        <span class="budget-total" style="color: var(--success-color)">RM <?= number_format($summary['Total_Income'], 2) ?></span>
+                    </div>
+                    <div class="budget-row">
+                        <span>Total Expenses:</span>
+                        <span class="budget-total" style="color: var(--warm-color)">RM <?= number_format($summary['Total_Expense'], 2) ?></span>
+                    </div>
+                    <div class="budget-row">
+                        <span><?= ($summary['Surplus_Deficit'] >= 0) ? 'Surplus:' : 'Deficit:' ?></span>
+                        <span class="budget-total" style="color: var(--primary-color)">RM <?= number_format(abs($summary['Surplus_Deficit']), 2) ?></span>
+                    </div>
+                    <div class="budget-row">
+                        <span>Prepared by:</span>
+                        <span><strong><?= htmlspecialchars($summary['Prepared_By']) ?></strong></span>
+                    </div>
+                </div>
+            <?php endif; ?>
+        </div>
 
-            <!-- Challenges -->
-            <h3 style="color: var(--primary-color); margin: 20px 0">Challenges</h3>
-            <div class="info-item">
-                <div class="info-value">
-                    <?php if (!empty($challenges)): ?>
-                        <?= nl2br(htmlspecialchars($challenges)) ?>
-                    <?php else: ?>
-                        <span class="text-muted fst-italic">No challenges recorded.</span>
+        <!-- Post Event Report Section -->
+        <?php if ($postevent): ?>
+            <div class="section">
+                <h2 class="section-title">Post Event Report</h2>
+                
+                <!-- Fixed Post Event Status -->
+                <div class="info-item">
+                    <div class="info-label">Post Event Status</div>
+                    <div class="info-value">
+                        <?php if ($mode === 'edit'): ?>
+                            <select name="rep_status" class="form-select">
+                                <option value="">Select Status</option>
+                                <?php while ($status = $postStatusOptions->fetch_assoc()): ?>
+                                    <option value="<?= $status['Status_ID'] ?>" <?= ($status['Status_ID'] == $postevent['Status_ID']) ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars($status['Status_Name']) ?>
+                                    </option>
+                                <?php endwhile; ?>
+                            </select>
+                        <?php else: ?>
+                            <?= htmlspecialchars($postevent['Post_Status_Name'] ?? 'No Status') ?>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <!-- Post Event Photos -->
+                <h3 style="color: var(--primary-color); margin: 20px 0">Event Photos</h3>
+                <div class="photo-gallery">
+                    <?php
+                    $photos = [];
+                    if (!empty($postevent['rep_photo'])) {
+                        $decoded = json_decode($postevent['rep_photo'], true);
+                        if (is_array($decoded)) {
+                            $photos = $decoded;
+                        }
+                    }
+
+                    if (!empty($photos)):
+                        $index = 1;
+                        foreach ($photos as $photoPath):
+                            // Check different possible paths for photos
+                            $possiblePaths = [
+                                $photoPath,
+                                'uploads/photos/' . basename($photoPath),
+                                '../uploads/photos/' . basename($photoPath),
+                                '../../uploads/photos/' . basename($photoPath)
+                            ];
+                            
+                            $foundPath = null;
+                            foreach ($possiblePaths as $path) {
+                                if (file_exists($path)) {
+                                    $foundPath = $path;
+                                    break;
+                                }
+                            }
+                            
+                            if ($foundPath): ?>
+                                <div class="photo-item" onclick="openImageModal('<?= htmlspecialchars($foundPath) ?>')">
+                                    <img src="<?= htmlspecialchars($foundPath) ?>" alt="Event Photo <?= $index ?>">
+                                </div>
+                            <?php else: ?>
+                                <div class="photo-item">
+                                    <span>📸 Photo <?= $index ?> (Not Found)</span>
+                                    <small style="display: block; font-size: 12px; margin-top: 5px;">
+                                        Path: <?= htmlspecialchars($photoPath) ?>
+                                    </small>
+                                </div>
+                            <?php endif;
+                            $index++;
+                        endforeach;
+                    else: ?>
+                        <p class="text-muted">No event photos uploaded.</p>
                     <?php endif; ?>
                 </div>
-            </div>
 
-            <!-- Recommendations -->
-            <h3 style="color: var(--primary-color); margin: 20px 0">Recommendations</h3>
-            <div class="info-item">
-                <div class="info-value">
-                    <?php if (!empty($recommendation)): ?>
-                        <?= nl2br(htmlspecialchars($recommendation)) ?>
+                <!-- Post Event Flow Timeline -->
+                <h3 style="color: var(--primary-color); margin: 20px 0">Event Flow Timeline</h3>
+                <div class="table-container">
+                    <?php if ($flowResult && $flowResult->num_rows > 0): ?>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Flow Time</th>
+                                    <th>Event Flow Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php while ($row = $flowResult->fetch_assoc()): ?>
+                                    <tr>
+                                        <td><?= date('g:i A', strtotime($row['EvFlow_Time'])) ?></td>
+                                        <td><?= htmlspecialchars($row['EvFlow_Description']) ?></td>
+                                    </tr>
+                                <?php endwhile; ?>
+                            </tbody>
+                        </table>
                     <?php else: ?>
-                        <span class="text-muted fst-italic">No recommendations recorded.</span>
+                        <p class="text-muted">No post-event flow data available.</p>
                     <?php endif; ?>
                 </div>
-            </div>
 
-            <!-- Conclusion -->
-            <h3 style="color: var(--primary-color); margin: 20px 0">Conclusion</h3>
-            <div class="info-item">
-                <div class="info-value">
-                    <?php if (!empty($conclusion)): ?>
-                        <?= nl2br(htmlspecialchars($conclusion)) ?>
-                    <?php else: ?>
-                        <span class="text-muted fst-italic">No conclusion recorded.</span>
-                    <?php endif; ?>
+                <!-- Challenges -->
+                <h3 style="color: var(--primary-color); margin: 20px 0">Challenges</h3>
+                <div class="info-item">
+                    <div class="info-value">
+                        <?php if (!empty($challenges)): ?>
+                            <?= nl2br(htmlspecialchars($challenges)) ?>
+                        <?php else: ?>
+                            <span class="text-muted">No challenges recorded.</span>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <!-- Recommendations -->
+                <h3 style="color: var(--primary-color); margin: 20px 0">Recommendations</h3>
+                <div class="info-item">
+                    <div class="info-value">
+                        <?php if (!empty($recommendation)): ?>
+                            <?= nl2br(htmlspecialchars($recommendation)) ?>
+                        <?php else: ?>
+                            <span class="text-muted">No recommendations recorded.</span>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <!-- Conclusion -->
+                <h3 style="color: var(--primary-color); margin: 20px 0">Conclusion</h3>
+                <div class="info-item">
+                    <div class="info-value">
+                        <?php if (!empty($conclusion)): ?>
+                            <?= nl2br(htmlspecialchars($conclusion)) ?>
+                        <?php else: ?>
+                            <span class="text-muted">No conclusion recorded.</span>
+                        <?php endif; ?>
+                    </div>
                 </div>
             </div>
+        <?php endif; ?>
 
-            <!-- Supporting Documents -->
-            <h3 style="color: var(--primary-color); margin: 20px 0">Supporting Documents</h3>
+        <!-- Supporting Documents -->
+        <div class="section">
+            <h2 class="section-title">Supporting Documents</h2>
 
             <?php
-            // 🔹 Budget Statement File (if exists)
-            $statement_path = $budgetsummary['Statement'] ?? '';
-            if (!empty($statement_path) && file_exists($statement_path)): ?>
-                <div class="report-item">
-                    <span><strong>Budget Statement</strong></span>
-                    <a class="btn btn-primary" href="<?= $statement_path ?>" target="_blank">
-                        📄 View PDF
-                    </a>
-                </div>
-            <?php else: ?>
+            // Fixed Budget Statement File Display
+            if (!empty($summary['statement'])): 
+                $statement_path = $summary['statement'];
+                
+                // Check multiple possible paths
+                $possibleStatementPaths = [
+                    $statement_path,
+                    'uploads/statements/' . basename($statement_path),
+                    '../uploads/statements/' . basename($statement_path),
+                    '../../uploads/statements/' . basename($statement_path)
+                ];
+                
+                $foundStatementPath = null;
+                foreach ($possibleStatementPaths as $path) {
+                    if (file_exists($path)) {
+                        $foundStatementPath = $path;
+                        break;
+                    }
+                }
+                
+                if ($foundStatementPath): ?>
+                    <div class="report-item">
+                        <span><strong>Budget Statement</strong></span>
+                        <a class="btn btn-primary" href="<?= htmlspecialchars($foundStatementPath) ?>" target="_blank">
+                            📄 View PDF
+                        </a>
+                    </div>
+                <?php else: ?>
+                    <div class="report-item text-muted">
+                        Budget statement file not found.
+                        <small style="display: block;">Path: <?= htmlspecialchars($statement_path) ?></small>
+                    </div>
+                <?php endif;
+            else: ?>
                 <div class="report-item text-muted">No budget statement uploaded.</div>
             <?php endif; ?>
 
-            <!-- 🔹 Individual Reports (from committee table where COCUClaimer = 1) -->
+            <!-- Fixed Individual Reports -->
             <h4 style="color: var(--primary-color); margin: 15px 0">Individual Reports</h4>
 
             <?php
-            $indiv_query = $conn->query("SELECT * FROM committee WHERE Ev_ID = '$id' AND Com_COCUClaimers = 1");
-            if ($indiv_query->num_rows > 0):
-                while ($cocu = $indiv_query->fetch_assoc()):
+            // Reset committees result pointer and check for COCU reports
+            $committees->data_seek(0);
+            $hasReports = false;
+            while ($cocu = $committees->fetch_assoc()):
+                if (strtolower($cocu['Com_COCUClaimers']) === 'yes'):
+                    $hasReports = true;
                     $name = $cocu['Com_Name'];
                     $id_number = $cocu['Com_ID'];
                     $position = $cocu['Com_Position'];
-                    $filepath = $cocu['student_statement'];
+                    $filepath = $cocu['student_statement'] ?? '';
 
-                    if (!empty($filepath) && file_exists($filepath)): ?>
-                        <div class="report-item">
-                            <div>
-                                <strong><?= htmlspecialchars($name) ?></strong><br />
-                                <small>ID: <?= htmlspecialchars($id_number) ?> - <?= htmlspecialchars($position) ?>
-                                    Report</small>
+                    if (!empty($filepath)): 
+                        // Check multiple possible paths for individual reports
+                        $possibleReportPaths = [
+                            $filepath,
+                            'uploads/cocustatement/' . basename($filepath),
+                            '../uploads/cocustatement/' . basename($filepath),
+                            '../../uploads/cocustatement/' . basename($filepath)
+                        ];
+                        
+                        $foundReportPath = null;
+                        foreach ($possibleReportPaths as $path) {
+                            if (file_exists($path)) {
+                                $foundReportPath = $path;
+                                break;
+                            }
+                        }
+                        
+                        if ($foundReportPath): ?>
+                            <div class="report-item">
+                                <div>
+                                    <strong><?= htmlspecialchars($name) ?></strong><br />
+                                    <small>ID: <?= htmlspecialchars($id_number) ?> - <?= htmlspecialchars($position) ?> Report</small>
+                                </div>
+                                <a class="btn btn-secondary" href="<?= htmlspecialchars($foundReportPath) ?>" target="_blank">
+                                    📄 View Report
+                                </a>
                             </div>
-                            <a class="btn btn-secondary" href="<?= $filepath ?>" target="_blank">
-                                📄 View Report
-                            </a>
-                        </div>
-                    <?php else: ?>
+                        <?php else: ?>
+                            <div class="report-item text-muted">
+                                <?= htmlspecialchars($name) ?>'s report file not found.
+                                <small style="display: block;">Path: <?= htmlspecialchars($filepath) ?></small>
+                            </div>
+                        <?php endif;
+                    else: ?>
                         <div class="report-item text-muted">
                             <?= htmlspecialchars($name) ?>'s report not uploaded yet.
                         </div>
                     <?php endif;
-                endwhile;
-            else: ?>
+                endif;
+            endwhile;
+            
+            if (!$hasReports): ?>
                 <div class="report-item text-muted">No COCU individual reports available.</div>
             <?php endif; ?>
+        </div>
+    </div>
 
-            <!-- Poster Modal -->
-            <div id="posterModal" class="modal">
-                <span class="close" onclick="closeModal('posterModal')">&times;</span>
-                <div class="modal-content">
-                    <img src="uploads/posters/event-poster.jpg" alt="Event Poster" />
+    <!-- Poster Modal -->
+    <div id="posterModal" class="modal">
+        <span class="close" onclick="closeModal('posterModal')">&times;</span>
+        <div class="modal-content">
+            <?php if (!empty($posterPath) && file_exists($posterPath)): ?>
+                <img src="<?= htmlspecialchars($posterPath) ?>" alt="Event Poster" />
+            <?php else: ?>
+                <div style="color: white; text-align: center; padding: 50px;">
+                    <h3>Poster not available</h3>
                 </div>
-            </div>
+            <?php endif; ?>
+        </div>
+    </div>
 
-            <!-- Photo Modals -->
-            <div id="photoModal1" class="modal">
-                <span class="close" onclick="closeModal('photoModal1')">&times;</span>
-                <div class="modal-content">
-                    <img src="uploads/photos/opening.jpg" alt="Opening Ceremony" />
-                </div>
-            </div>
-            <div id="photoModal2" class="modal">
-                <span class="close" onclick="closeModal('photoModal2')">&times;</span>
-                <div class="modal-content">
-                    <img src="uploads/photos/keynote.jpg" alt="Keynote Speech" />
-                </div>
-            </div>
-            <div id="photoModal3" class="modal">
-                <span class="close" onclick="closeModal('photoModal3')">&times;</span>
-                <div class="modal-content">
-                    <img src="uploads/photos/workshop.jpg" alt="Workshop Session" />
-                </div>
-            </div>
-            <div id="photoModal4" class="modal">
-                <span class="close" onclick="closeModal('photoModal4')">&times;</span>
-                <div class="modal-content">
-                    <img src="uploads/photos/networking.jpg" alt="Networking" />
-                </div>
-            </div>
-            <div id="photoModal5" class="modal">
-                <span class="close" onclick="closeModal('photoModal5')">&times;</span>
-                <div class="modal-content">
-                    <img src="uploads/photos/group.jpg" alt="Group Photo" />
-                </div>
-            </div>
-            <div id="photoModal6" class="modal">
-                <span class="close" onclick="closeModal('photoModal6')">&times;</span>
-                <div class="modal-content">
-                    <img src="uploads/photos/closing.jpg" alt="Closing Ceremony" />
-                </div>
-            </div>
+    <script>
+        // Navigation and Modal Functions
+        (() => {
+            /* Navigation */
+            function goBack() {
+                history.back();
+            }
 
-            <script>
-                // 🛠️ Inline JavaScript for legacy and modern modals
-                (() => {
-                    /* 1️⃣  Navigation */
-                    function goBack() {
-                        history.back();
-                    }
+            /* Legacy poster modal */
+            function openModal(id) {
+                const m = document.getElementById(id);
+                if (m) m.style.display = "block";
+            }
+            
+            function closeModal(id) {
+                const m = document.getElementById(id);
+                if (m) m.style.display = "none";
+            }
 
-                    /* 2️⃣  Legacy poster modal (still used for #posterModal) */
-                    function openModal(id) {
-                        const m = document.getElementById(id);
-                        if (m) m.style.display = "block";
-                    }
-                    function closeModal(id) {
-                        const m = document.getElementById(id);
-                        if (m) m.style.display = "none";
-                    }
+            /* Modern image backdrop modal for photo gallery */
+            function openImageModal(src) {
+                const backdrop = document.createElement("div");
+                backdrop.className = "modal-backdrop";
+                backdrop.innerHTML = `
+                    <div class="modal-content-img">
+                        <span class="close-btn" data-close>&times;</span>
+                        <img src="${src}" alt="Event Photo" style="max-width:100%;height:auto;">
+                    </div>`;
+                document.body.appendChild(backdrop);
+            }
 
-                    /* 3️⃣  Modern image backdrop modal (for dynamic photo gallery) */
-                    function openImageModal(src) {
-                        const backdrop = document.createElement("div");
-                        backdrop.className = "modal-backdrop";
-                        backdrop.innerHTML = `
-            <div class="modal-content-img">
-                <span class="close-btn" data-close>&times;</span>
-                <img src="${src}" alt="Event Photo" style="max-width:100%;height:auto;">
-            </div>`;
-                        document.body.appendChild(backdrop);
-                    }
+            /* Global click listener to close backdrop modals */
+            document.addEventListener("click", (e) => {
+                if (e.target.matches("[data-close]") || e.target.classList.contains("modal-backdrop")) {
+                    e.target.closest(".modal-backdrop")?.remove();
+                }
+            });
 
-                    /* 4️⃣  Global click listener to close any backdrop */
-                    document.addEventListener("click", (e) => {
-                        // click on X or on dark backdrop
-                        if (
-                            e.target.matches("[data-close]") ||
-                            e.target.classList.contains("modal-backdrop")
-                        ) {
-                            e.target.closest(".modal-backdrop")?.remove();
-                        }
-                    });
+            /* Expose functions to global scope */
+            window.goBack = goBack;
+            window.openModal = openModal;
+            window.closeModal = closeModal;
+            window.openImageModal = openImageModal;
+        })();
+    </script>
 
-                    /* 5️⃣  Expose the few helpers we actually call from inline HTML */
-                    window.goBack = goBack;
-                    window.openModal = openModal;       // for #posterModal
-                    window.closeModal = closeModal;     // for #posterModal
-                    window.openImageModal = openImageModal; // for photo gallery
-                })();
-            </script>
-
-
-            <?php if ($mode === 'edit'): ?>
+    <?php if ($mode === 'edit'): ?>
         </form>
     <?php endif; ?>
 
 </body>
-
 </html>

@@ -1,3 +1,6 @@
+// Updated JavaScript functions for stuprogresspage.js
+
+// Original function (keep this for proposal feedback)
 function showFeedback(type, feedbackText, eventId) {
   const modalElement = document.getElementById("feedbackModal");
   const modalInstance = bootstrap.Modal.getOrCreateInstance(modalElement);
@@ -15,6 +18,30 @@ function showFeedback(type, feedbackText, eventId) {
   modalInstance.show();
 }
 
+// New function for data attributes approach (recommended)
+function showFeedbackFromData(buttonElement) {
+  const type = buttonElement.getAttribute("data-feedback-type");
+  const feedbackText = buttonElement.getAttribute("data-feedback-text");
+  const eventId = buttonElement.getAttribute("data-event-id");
+
+  const modalElement = document.getElementById("feedbackModal");
+  const modalInstance = bootstrap.Modal.getOrCreateInstance(modalElement);
+
+  // Update modal content
+  const titleElement = document.getElementById("feedbackTitle");
+  const contentElement = document.getElementById("feedbackContent");
+
+  titleElement.textContent = `${type} Feedback - ${eventId}`;
+  contentElement.innerHTML =
+    feedbackText && feedbackText.trim() !== ""
+      ? `<div class="feedback-content">${feedbackText}</div>`
+      : '<div class="no-data">No feedback available yet.</div>';
+
+  // Show modal
+  modalInstance.show();
+}
+
+// Rest of your existing functions remain the same...
 function editProposal(eventId) {
   window.location.href = `../student/proposal/editModifyForm.php?mode=edit&id=${eventId}`;
 }
@@ -58,7 +85,6 @@ function createPostmortem(eventId) {
 }
 
 function exportProposal(eventId) {
-  // Generate and download proposal PDF
   window.open(`../components/pdf/generate_pdf.php?id=${eventId}`, "_blank");
 }
 
@@ -69,12 +95,12 @@ function editPostEvent(repId) {
 function modifyPostEvent(repId) {
   window.location.href = `../student/postevent/PostEventEdit_Form.php?mode=modify&rep_id=${repId}`;
 }
+
 function viewPostEvent(repId) {
   window.location.href = `../model/viewPostEvent.php?rep_id=${repId}`;
 }
 
 function exportPostEvent(eventId) {
-  // Generate and download post event report PDF
   window.open(
     `../components/pdf/reportgeneratepdf.php?id=${eventId}`,
     "_blank"
@@ -83,6 +109,5 @@ function exportPostEvent(eventId) {
 
 // Initialize page
 document.addEventListener("DOMContentLoaded", function () {
-  // Any initialization code here
   console.log("Event Track Progress page loaded");
 });

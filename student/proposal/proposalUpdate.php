@@ -238,9 +238,9 @@ try {
 
     $stmt = $conn->prepare("UPDATE budgetsummary SET Total_Income = ?, Total_Expense = ?, Surplus_Deficit = ?, Prepared_By = ?, statement = NULL WHERE Ev_ID = ?");
     $stmt->bind_param("dddss", $income, $expense, $surplus, $prepared_by, $ev_id);
-    $stmt->execute(); 
+    $stmt->execute();
 
-    
+
     if ($mode === 'modify' && $new_status == 3) {
         $stu_id = $_SESSION['Stu_ID'];
         $stmt = $conn->prepare("SELECT Stu_Name FROM student WHERE Stu_ID = ?");

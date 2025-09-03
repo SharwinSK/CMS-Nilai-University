@@ -141,7 +141,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 
@@ -150,9 +149,78 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Post Event Review - Coordinator Decision Form</title>
     <link href="../assets/css/coordinator/coorpostevent.css?v=<?= time() ?>" rel="stylesheet" />
+    <style>
+        /* Loading Screen Styles */
+        .loading-screen {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .loading-content {
+            background: var(--container-beige);
+            padding: 2rem;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--header-green);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading-text {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        /* Disabled button styles */
+        .approve-btn:disabled {
+            background: #6c757d !important;
+            cursor: not-allowed !important;
+            opacity: 0.6;
+        }
+
+        .approve-btn:disabled:hover {
+            transform: none !important;
+            background: #6c757d !important;
+        }
+    </style>
 </head>
 
 <body>
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="loading-screen">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <div class="loading-text" id="loadingText">Processing...</div>
+        </div>
+    </div>
+
     <div class="header">
         <div class="header-left">
             <button class="back-btn" onclick="history.back()">←</button>
@@ -198,7 +266,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $poster_path = str_replace('../../', '../', htmlspecialchars($details['Ev_Poster']));
                     }
                     ?>
-
 
                     <div class="poster-container">
                         <?php if (!empty($poster_path)): ?>
@@ -528,7 +595,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <!-- Action Buttons -->
         <div class="action-buttons">
-            <button class="approve-btn" onclick="approveEvent()">
+            <button class="approve-btn" id="approveEventBtn" onclick="approveEvent()" disabled>
                 ✓ Approve Event
             </button>
             <button class="reject-btn" onclick="showRejectModal()">
@@ -585,8 +652,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </div>
     </div>
-
+    <!-- Scroll Arrow Buttons -->
+    <div class="scroll-arrows" id="scrollArrows">
+        <button class="scroll-arrow-btn scroll-up" id="scrollUpBtn" title="Scroll to top"></button>
+        <button class="scroll-arrow-btn scroll-down" id="scrollDownBtn" title="Scroll to bottom"></button>
+    </div>
     <script>
+        // Global variables for validation
+        const sections = ["poster", "details", "flow", "meeting", "challenges", "photos", "budget", "reports"];
+
+        // Show loading screen
+        function showLoading(message) {
+            const loadingScreen = document.getElementById("loadingScreen");
+            const loadingText = document.getElementById("loadingText");
+            loadingText.textContent = message;
+            loadingScreen.style.display = "flex";
+        }
+
+        // Hide loading screen
+        function hideLoading() {
+            const loadingScreen = document.getElementById("loadingScreen");
+            loadingScreen.style.display = "none";
+        }
+
+        // Validate approval button state
+        function validateApprovalButton() {
+            const approveBtn = document.getElementById("approveEventBtn");
+            let allApproved = true;
+
+            sections.forEach((section) => {
+                const approveCheckbox = document.getElementById(`${section}-approve`);
+                const rejectCheckbox = document.getElementById(`${section}-reject`);
+
+                // If nothing is selected OR reject is selected, disable approve
+                if (!approveCheckbox.checked || rejectCheckbox.checked) {
+                    allApproved = false;
+                }
+            });
+
+            approveBtn.disabled = !allApproved;
+        }
+
         // Checkbox functionality
         document.addEventListener("DOMContentLoaded", function () {
             // Handle checkbox interactions
@@ -596,50 +702,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     const section = this.name;
                     const value = this.value;
                     const otherValue = value === "approve" ? "reject" : "approve";
-                    const otherCheckbox = document.getElementById(
-                        `${section}-${otherValue}`
-                    );
+                    const otherCheckbox = document.getElementById(`${section}-${otherValue}`);
 
                     if (this.checked) {
                         otherCheckbox.checked = false;
                     }
+
+                    // Validate approval button after each change
+                    validateApprovalButton();
                 });
             });
+
+            // Initial validation
+            validateApprovalButton();
         });
 
         function approveAll() {
-            const approveCheckboxes = document.querySelectorAll(
-                'input[value="approve"]'
-            );
-            const rejectCheckboxes = document.querySelectorAll(
-                'input[value="reject"]'
-            );
+            const approveCheckboxes = document.querySelectorAll('input[value="approve"]');
+            const rejectCheckboxes = document.querySelectorAll('input[value="reject"]');
 
             approveCheckboxes.forEach((checkbox) => (checkbox.checked = true));
             rejectCheckboxes.forEach((checkbox) => (checkbox.checked = false));
+
+            validateApprovalButton();
         }
 
         function rejectAll() {
-            const approveCheckboxes = document.querySelectorAll(
-                'input[value="approve"]'
-            );
-            const rejectCheckboxes = document.querySelectorAll(
-                'input[value="reject"]'
-            );
+            const approveCheckboxes = document.querySelectorAll('input[value="approve"]');
+            const rejectCheckboxes = document.querySelectorAll('input[value="reject"]');
 
             approveCheckboxes.forEach((checkbox) => (checkbox.checked = false));
             rejectCheckboxes.forEach((checkbox) => (checkbox.checked = true));
+
+            validateApprovalButton();
         }
 
         function clearAll() {
-            const allCheckboxes = document.querySelectorAll(
-                'input[type="checkbox"]'
-            );
+            const allCheckboxes = document.querySelectorAll('input[type="checkbox"]');
             allCheckboxes.forEach((checkbox) => (checkbox.checked = false));
+
+            validateApprovalButton();
         }
 
         function approveEvent() {
             if (confirm("Are you sure you want to approve this post-event report?")) {
+                showLoading("Approving event...");
+
                 const form = document.createElement('form');
                 form.method = 'POST';
                 form.action = '';
@@ -652,7 +760,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 form.submit();
             }
         }
-
 
         function showRejectModal() {
             const rejectedSections = getRejectedSections();
@@ -679,16 +786,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         function getRejectedSections() {
-            const sections = [
-                "poster",
-                "details",
-                "flow",
-                "meeting",
-                "challenges",
-                "photos",
-                "budget",
-                "reports",
-            ];
             const rejectedSections = [];
 
             sections.forEach((section) => {
@@ -726,6 +823,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             if (confirm("Are you sure you want to reject this event with feedback?")) {
+                showLoading("Rejecting event...");
+
                 // Create hidden form
                 const form = document.createElement('form');
                 form.method = 'POST';
@@ -756,28 +855,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
-
         function exportToPDF() {
-            alert(
-                "Exporting to PDF... This feature would integrate with your backend PDF generation system."
-            );
-            // Here you would typically call your PDF generation endpoint
+            showLoading("Generating PDF...");
+            // Link to the PDF generation with the current report ID
+            window.open(`../components/pdf/reportgeneratepdf.php?id=<?= $rep_id ?>`, '_blank');
+            setTimeout(() => {
+                hideLoading();
+            }, 2000); // Hide loading after 2 seconds
         }
 
         function viewBudget() {
             <?php if (!empty($details['BudgetStatement'])): ?>
                 window.open("<?= '../uploads/statements/' . basename($details['BudgetStatement']) ?>", "_blank");
-
             <?php else: ?>
                 alert("No budget statement uploaded.");
             <?php endif; ?>
         }
 
-
         function viewReport(filePath) {
             window.open(filePath, "_blank");
         }
-
 
         function openPhotoModal(photoPath) {
             const modal = document.getElementById("photoModal");
@@ -790,7 +887,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             modal.style.display = "block";
             document.body.style.overflow = "hidden";
         }
-
 
         function closePhotoModal() {
             const modal = document.getElementById("photoModal");
@@ -813,6 +909,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 closePhotoModal();
             }
         });
+
+
     </script>
 </body>
 
