@@ -96,4 +96,31 @@ function postEventRejected($eventName, $studentName, $studentEmail)
     $body = "Dear $studentName,\n\nYour post-event report for \"$eventName\" has been rejected by the coordinator. Please make the necessary modifications and resubmit it.\n\nThank you.";
     sendNotificationEmail($studentEmail, $subject, $body);
 }
+// Add this function at the bottom of your sendMailTemplates.php file
+function sendRegistrationOTP($studentEmail, $otp)
+{
+    $subject = 'Email Verification - Student Registration';
+    $body = "
+        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;'>
+            <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;'>
+                <h1 style='color: white; margin: 0; font-size: 28px;'>Email Verification</h1>
+            </div>
+            
+            <div style='background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px; border: 1px solid #e9ecef;'>
+                <p style='font-size: 16px; color: #333; margin-bottom: 20px;'>
+                    Thank you for registering. Please use the following OTP to verify your email:
+                </p>
+                
+                <div style='background: white; padding: 25px; text-align: center; border-radius: 8px; border: 2px solid #007bff; margin: 25px 0;'>
+                    <h2 style='color: #007bff; font-size: 36px; margin: 0; letter-spacing: 8px;'>$otp</h2>
+                </div>
+                
+                <p style='color: #666; font-size: 14px;'>• This OTP is valid for 10 minutes only</p>
+                <p style='color: #666; font-size: 14px;'>• Do not share this code with anyone</p>
+            </div>
+        </div>
+    ";
+
+    return sendNotificationEmail($studentEmail, $subject, $body);
+}
 ?>

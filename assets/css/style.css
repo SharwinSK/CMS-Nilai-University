@@ -8,7 +8,8 @@ body {
     justify-content: center;
     align-items: center;
     height: 100vh;
-    overflow: hidden; /* Prevent scrolling on small screens */
+    overflow-x: hidden; /* Only prevent horizontal scrolling */
+    position: relative; /* For proper positioning of floating elements */
 }
 
 .container {
@@ -67,6 +68,45 @@ button:hover {
     transform: translateY(-5px); /* Add slight hover movement */
 }
 
+button:disabled {
+    background-color: #6c757d !important;
+    cursor: not-allowed;
+    transform: none;
+}
+
+button:disabled:hover {
+    background-color: #6c757d !important;
+    transform: none;
+}
+
+button.btn-success {
+    background-color: #28a745;
+}
+
+button.btn-success:hover {
+    background-color: #218838;
+}
+
+button.btn-secondary {
+    background-color: #6c757d;
+    margin-top: 10px;
+}
+
+button.btn-secondary:hover {
+    background-color: #545b62;
+    transform: translateY(-2px);
+}
+
+button.btn-warning {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+button.btn-warning:hover {
+    background-color: #e0a800;
+    transform: translateY(-2px);
+}
+
 a {
     text-decoration: none;
     color: #007bff;
@@ -85,11 +125,152 @@ a {
     visibility: visible; /* Make error visible when needed */
 }
 
- .tooltip-inner {
-            max-width: 200px;
-            text-align: left;
-            font-size: 0.9em;
-        }
+.tooltip-inner {
+    max-width: 200px;
+    text-align: left;
+    font-size: 0.9em;
+}
+
+/* OTP specific styles */
+input[name="otp"] {
+    font-size: 24px;
+    letter-spacing: 8px;
+    text-align: center;
+    font-weight: bold;
+    color: #007bff;
+}
+
+.alert {
+    padding: 15px;
+    margin-bottom: 20px;
+    border: 1px solid transparent;
+    border-radius: 5px;
+    font-size: 14px;
+}
+
+.alert-success {
+    color: #155724;
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+}
+
+.alert-warning {
+    color: #856404;
+    background-color: #fff3cd;
+    border-color: #ffeeba;
+}
+
+.text-muted {
+    color: #6c757d !important;
+    font-size: 12px;
+    display: block;
+    margin-top: 5px;
+}
+
+/* Enhanced OTP Email Info Styles */
+.otp-email-info {
+    background-color: rgba(40, 167, 69, 0.05);
+    border: 1px solid rgba(40, 167, 69, 0.2);
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.otp-email-info small {
+    font-size: 11px;
+    color: #28a745;
+    font-weight: 500;
+    line-height: 1.3;
+}
+
+/* OTP Countdown Timer Styles */
+.otp-countdown {
+    font-size: 16px;
+    font-weight: bold;
+    color: #28a745;
+    margin: 10px 0 15px 0;
+    padding: 8px 12px;
+    background-color: rgba(40, 167, 69, 0.08);
+    border: 1px solid rgba(40, 167, 69, 0.2);
+    border-radius: 6px;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.otp-countdown.warning {
+    color: #ffc107;
+    background-color: rgba(255, 193, 7, 0.08);
+    border-color: rgba(255, 193, 7, 0.2);
+}
+
+.otp-countdown.danger {
+    color: #dc3545;
+    background-color: rgba(220, 53, 69, 0.08);
+    border-color: rgba(220, 53, 69, 0.2);
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.4);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(220, 53, 69, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+    }
+}
+
+/* Button Row Styles */
+.button-row {
+    display: flex;
+    gap: 10px;
+    margin: 10px 0;
+}
+
+
+.button-row button,
+.button-row .btn {
+    flex: 1;
+    margin: 0;
+    padding: 10px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+/* Text Success Color for Email Info */
+.text-success {
+    color: #28a745 !important;
+    font-weight: 500;
+}
+
+/* Loading animation for button states */
+.btn-loading {
+    position: relative;
+    pointer-events: none;
+}
+
+.btn-loading::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    top: 50%;
+    left: 50%;
+    margin-left: -8px;
+    margin-top: -8px;
+    border: 2px solid transparent;
+    border-top: 2px solid #ffffff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
 
 /* Responsive Styles for Smaller Screens */
 @media screen and (max-width: 768px) {
@@ -102,6 +283,34 @@ a {
     }
     .logo {
         width: 200px; /* Make the logo smaller */
+    }
+    
+    .step-title {
+        font-size: 18px;
+    }
+    
+    input[name="otp"] {
+        font-size: 20px;
+        letter-spacing: 6px;
+    }
+    
+    .otp-countdown {
+        font-size: 14px;
+    }
+    
+    .otp-message small {
+        font-size: 10px;
+    }
+    
+    .button-row {
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .button-row button,
+    .button-row .btn {
+        width: 100%;
+        margin: 5px 0;
     }
 }
 
@@ -118,5 +327,27 @@ a {
     }
     input, select, button {
         font-size: 14px; /* Adjust font size for inputs */
+    }
+    
+    .step-title {
+        font-size: 16px;
+    }
+    
+    input[name="otp"] {
+        font-size: 18px;
+        letter-spacing: 4px;
+    }
+    
+    .otp-countdown {
+        font-size: 12px;
+        padding: 6px 10px;
+    }
+    
+    .otp-sent {
+        font-size: 10px;
+    }
+    
+    .check-email {
+        font-size: 7px;
     }
 }
