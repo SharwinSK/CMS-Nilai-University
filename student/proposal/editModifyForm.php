@@ -49,9 +49,10 @@ $stmt->bind_param("s", $ev_id);
 $stmt->execute();
 $event_result = $stmt->get_result();
 $event = $event_result->fetch_assoc();
-
+$event_category = $event['Ev_Category'];
 $event_name = $event['Ev_Name'];
 $event_objectives = $event['Ev_Objectives'];
+$proposal_position = $event['Proposal_Position'];
 $student_id = $event['Stu_ID'];
 $student_name = $event['Stu_Name'];
 $club_id = $event['Club_ID'];
@@ -189,17 +190,15 @@ $button_label = ($mode === 'modify') ? 'Resubmit' : 'Edit Submit';
                             </div>
                         </div>
                         <div class="form-col">
-                            <div class="mb-3">
-                                <label class="form-label">Organizing Club</label>
-                                <select name="Club_ID" class="form-select">
-                                    <?php foreach ($clubs as $club): ?>
-                                        <option value="<?= $club['Club_ID'] ?>" <?= ($club_id == $club['Club_ID']) ? 'selected' : '' ?>>
-                                            <?= $club['Club_Name'] ?>
-                                        </option>
-                                    <?php endforeach; ?>
+                            <div class="form-group">
+                                <label for="proposalPosition" class="required">Position</label>
+                                <select name="Proposal_Position" class="form-select" required>
+                                    <option value="Chairperson" <?= ($proposal_position == 'Chairperson') ? 'selected' : '' ?>>Chairperson</option>
+                                    <option value="Secretary" <?= ($proposal_position == 'Secretary') ? 'selected' : '' ?>>
+                                        Secretary</option>
                                 </select>
+                                <div class="error-message">Please select position</div>
                             </div>
-
                         </div>
                         <div class="form-col">
                             <div class="form-group">
@@ -210,11 +209,26 @@ $button_label = ($mode === 'modify') ? 'Resubmit' : 'Edit Submit';
                             </div>
                         </div>
                     </div>
+                    <div class="form-row">
+                        <div class="form-col">
+                            <div class="mb-3">
+                                <label class="form-label">Organizing Club</label>
+                                <select name="Club_ID" class="form-select">
+                                    <?php foreach ($clubs as $club): ?>
+                                        <option value="<?= $club['Club_ID'] ?>" <?= ($club_id == $club['Club_ID']) ? 'selected' : '' ?>>
+                                            <?= $club['Club_Name'] ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Section 2: Event Details -->
                 <div class="section">
                     <h2 class="section-title">Event Details</h2>
+
                     <div class="form-row">
                         <div class="form-col">
                             <div class="form-group">
@@ -240,8 +254,20 @@ $button_label = ($mode === 'modify') ? 'Resubmit' : 'Edit Submit';
                                         Category C: Community Service
                                     </option>
                                 </select>
-
                                 <div class="error-message">Please select event nature</div>
+                            </div>
+                        </div>
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="eventCategory" class="required">Event Category</label>
+                                <select id="eventCategory" name="Ev_Category" required>
+                                    <option value="">Select Category</option>
+                                    <option value="Indoor" <?= $event_category == 'Indoor' ? 'selected' : '' ?>>Indoor
+                                    </option>
+                                    <option value="Outdoor" <?= $event_category == 'Outdoor' ? 'selected' : '' ?>>Outdoor
+                                    </option>
+                                </select>
+                                <div class="error-message">Please select event category</div>
                             </div>
                         </div>
                     </div>
@@ -464,40 +490,36 @@ $button_label = ($mode === 'modify') ? 'Resubmit' : 'Edit Submit';
                     </div>
                 </div>
 
-                <!-- Section 5: Committee Members -->
+                <!-- Section 5A: Committee Members - Basic Information -->
                 <div class="section">
-                    <h2 class="section-title">Committee Members</h2>
-                    <div class="file-info">
-                        Note: Shall upload PDF files only, maximum file size: 2MB
-                    </div>
+                    <h2 class="section-title">Committee Members - Basic Information</h2>
 
                     <div class="table-container">
-                        <table id="committeeTable">
+                        <table id="committeeBasicTable">
                             <thead>
                                 <tr>
                                     <th>Student ID</th>
                                     <th>Name</th>
                                     <th>Position</th>
+                                    <th>Email</th>
                                     <th>Department</th>
-                                    <th>Phone</th>
-                                    <th>Job Scope</th>
-                                    <th>COCU Claimer</th>
-                                    <th>Upload COCU Statement</th>
+                                    <th>Phone Number</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
-                            <tbody id="committeeBody">
+                            <tbody id="committeeBasicBody">
                                 <?php foreach ($committees as $index => $com):
                                     $rowId = "committee" . $index;
-                                    $cocu = strtolower($com['Com_COCUClaimers']);
                                     ?>
-                                    <tr>
+                                    <tr data-row-id="<?= $rowId ?>">
                                         <td><input type="text" name="committeeId[]"
                                                 value="<?= htmlspecialchars($com['Com_ID']) ?>" required></td>
                                         <td><input type="text" name="committeeName[]"
                                                 value="<?= htmlspecialchars($com['Com_Name']) ?>" required></td>
                                         <td><input type="text" name="committeePosition[]"
                                                 value="<?= htmlspecialchars($com['Com_Position']) ?>" required></td>
+                                        <td><input type="email" name="committeeEmail[]"
+                                                value="<?= htmlspecialchars($com['Com_Email']) ?>" required></td>
                                         <td>
                                             <select name="committeeDepartment[]" required>
                                                 <option value="">Select Department</option>
@@ -512,6 +534,44 @@ $button_label = ($mode === 'modify') ? 'Resubmit' : 'Edit Submit';
                                         </td>
                                         <td><input type="text" name="committeePhone[]"
                                                 value="<?= htmlspecialchars($com['Com_PhnNum']) ?>" required></td>
+                                        <td><button type="button" class="btn btn-danger btn-sm"
+                                                onclick="deleteCommitteeRow(this)">Delete</button></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+
+                        <button type="button" class="btn btn-add" id="addCommitteeBasicBtn">
+                            + Add New Committee Member
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Section 5B: Committee Members - Additional Details -->
+                <div class="section">
+                    <h2 class="section-title">Committee Members - Additional Details</h2>
+                    <div class="file-info">
+                        Note: Shall upload PDF files only, maximum file size: 2MB
+                    </div>
+
+                    <div class="table-container">
+                        <table id="committeeDetailsTable">
+                            <thead>
+                                <tr>
+                                    <th>Student Name</th>
+                                    <th>Job Scope</th>
+                                    <th>Register</th>
+                                    <th>COCU Claimer</th>
+                                    <th>Upload COCU Statement</th>
+                                </tr>
+                            </thead>
+                            <tbody id="committeeDetailsBody">
+                                <?php foreach ($committees as $index => $com):
+                                    $rowId = "committee" . $index;
+                                    $cocu = strtolower($com['Com_COCUClaimers']);
+                                    ?>
+                                    <tr data-row-id="<?= $rowId ?>">
+                                        <td class="student-name-display"><?= htmlspecialchars($com['Com_Name']) ?></td>
                                         <td>
                                             <div style="display: flex; gap: 5px;">
                                                 <button type="button" class="btn btn-secondary btn-sm"
@@ -521,6 +581,14 @@ $button_label = ($mode === 'modify') ? 'Resubmit' : 'Edit Submit';
                                             </div>
                                             <input type="hidden" name="committeeJobScope[]" id="jobScope_<?= $rowId ?>"
                                                 value="<?= htmlspecialchars($com['Com_JobScope']) ?>">
+                                        </td>
+                                        <td>
+                                            <select name="committeeRegister[]" required>
+                                                <option value="No" <?= $com['Com_Register'] === "No" ? "selected" : "" ?>>No
+                                                </option>
+                                                <option value="Yes" <?= $com['Com_Register'] === "Yes" ? "selected" : "" ?>>Yes
+                                                </option>
+                                            </select>
                                         </td>
                                         <td>
                                             <select name="cocuClaimer[]" onchange="toggleCocuUpload(this, '<?= $rowId ?>')"
@@ -539,19 +607,13 @@ $button_label = ($mode === 'modify') ? 'Resubmit' : 'Edit Submit';
                                             <input type="file" name="cocuStatement[]" id="cocuFile_<?= $rowId ?>"
                                                 accept=".pdf" <?= $cocu === "yes" ? "" : "disabled" ?>>
                                         </td>
-                                        <td><button type="button" class="btn btn-danger btn-sm"
-                                                onclick="deleteRow(this)">Delete</button></td>
                                     </tr>
                                 <?php endforeach; ?>
                             </tbody>
-
                         </table>
-
-                        <button type="button" class="btn btn-add" id="addCommitteeBtn">
-                            + Add New Row
-                        </button>
                     </div>
                 </div>
+
 
                 <!-- Section 6: Budget -->
                 <div class="section">
@@ -739,52 +801,161 @@ $button_label = ($mode === 'modify') ? 'Resubmit' : 'Edit Submit';
             populateTimeOptions();
             calculateBudget(); // Calculate initial budget if there are existing items
             updateRemainingHours(); // Update hours if there are existing flows
+            setupScrollButtons();
+            setupNameSyncForExistingRows();
         });
-        document.addEventListener("DOMContentLoaded", function () {
+
+        let committeeRowCounter = document.querySelectorAll('#committeeBasicBody tr').length;
+
+        function setupEventListeners() {
+            // File upload handlers
+            const posterUpload = document.getElementById("eventPoster");
+            if (posterUpload) {
+                posterUpload.addEventListener("change", function () {
+                    handlePosterChange(this);
+                });
+            }
+
+            const additionalDoc = document.getElementById("additionalDocument");
+            if (additionalDoc) {
+                additionalDoc.addEventListener("change", function () {
+                    handleDocumentChange(this);
+                });
+            }
+
+            // Button handlers - Check if elements exist before adding listeners
+            const addEventFlowBtn = document.getElementById("addEventFlowBtn");
+            if (addEventFlowBtn) {
+                addEventFlowBtn.addEventListener("click", addEventFlowRow);
+            }
+
+            // Updated committee button listener
+            const addCommitteeBasicBtn = document.getElementById("addCommitteeBasicBtn");
+            if (addCommitteeBasicBtn) {
+                addCommitteeBasicBtn.addEventListener("click", addCommitteeBasicRow);
+            }
+
+            const addBudgetBtn = document.getElementById("addBudgetBtn");
+            if (addBudgetBtn) {
+                addBudgetBtn.addEventListener("click", addBudgetRow);
+            }
+
+            // Modal handlers
+            setupModalHandlers();
+
+            // Form submission
+            const backBtn = document.getElementById("backBtn");
+            const headerBackBtn = document.getElementById("headerBackBtn");
+            const proposalForm = document.getElementById("proposalForm");
+
+            if (backBtn) backBtn.addEventListener("click", handleBack);
+            if (headerBackBtn) headerBackBtn.addEventListener("click", handleBack);
+
+            // Form submission with confirmation
+            if (proposalForm) {
+                proposalForm.addEventListener("submit", function (e) {
+                    e.preventDefault(); // Stop normal form submit
+
+                    const form = this; // Capture the form reference
+
+                    Swal.fire({
+                        title: "Are you sure?",
+                        text: "You want to submit this proposal?",
+                        icon: "question",
+                        showCancelButton: true,
+                        confirmButtonText: "Yes, submit it!"
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            form.submit(); // Submit if confirmed
+                        }
+                    });
+                });
+            }
+
+            // Budget calculation - Use event delegation
+            const budgetBody = document.getElementById("budgetBody");
+            if (budgetBody) {
+                budgetBody.addEventListener("input", calculateBudget);
+                budgetBody.addEventListener("change", calculateBudget);
+            }
+
+            // Event flow hours calculation - Use event delegation
+            const eventFlowBody = document.getElementById("eventFlowBody");
+            if (eventFlowBody) {
+                eventFlowBody.addEventListener("input", function (e) {
+                    if (e.target.name === "eventFlowStart[]" || e.target.name === "eventFlowEnd[]") {
+                        calculateHoursForRow(e.target);
+                    }
+                });
+                eventFlowBody.addEventListener("change", function (e) {
+                    if (e.target.name === "eventFlowStart[]" || e.target.name === "eventFlowEnd[]") {
+                        calculateHoursForRow(e.target);
+                    }
+                });
+            }
+        }
+
+        function setupScrollButtons() {
             const scrollToTopBtn = document.getElementById('scrollToTop');
             const scrollToBottomBtn = document.getElementById('scrollToBottom');
 
-            // Scroll to top function
-            scrollToTopBtn.addEventListener('click', function () {
-                window.scrollTo({
-                    top: 0,
-                    behavior: 'smooth'
+            if (scrollToTopBtn && scrollToBottomBtn) {
+                // Scroll to top function
+                scrollToTopBtn.addEventListener('click', function () {
+                    window.scrollTo({
+                        top: 0,
+                        behavior: 'smooth'
+                    });
+                });
+
+                // Scroll to bottom function
+                scrollToBottomBtn.addEventListener('click', function () {
+                    window.scrollTo({
+                        top: document.body.scrollHeight,
+                        behavior: 'smooth'
+                    });
+                });
+
+                // Show/hide buttons based on scroll position
+                window.addEventListener('scroll', function () {
+                    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                    const scrollHeight = document.body.scrollHeight;
+                    const clientHeight = window.innerHeight;
+
+                    // Show/hide top button
+                    if (scrollTop > 300) {
+                        scrollToTopBtn.style.opacity = '0.8';
+                        scrollToTopBtn.style.pointerEvents = 'auto';
+                    } else {
+                        scrollToTopBtn.style.opacity = '0.4';
+                        scrollToTopBtn.style.pointerEvents = 'auto';
+                    }
+
+                    // Show/hide bottom button
+                    if (scrollTop < (scrollHeight - clientHeight - 300)) {
+                        scrollToBottomBtn.style.opacity = '0.8';
+                        scrollToBottomBtn.style.pointerEvents = 'auto';
+                    } else {
+                        scrollToBottomBtn.style.opacity = '0.4';
+                        scrollToBottomBtn.style.pointerEvents = 'auto';
+                    }
+                });
+            }
+        }
+
+        function setupNameSyncForExistingRows() {
+            // Add listeners for name updates on existing rows
+            document.querySelectorAll('input[name="committeeName[]"]').forEach(input => {
+                input.addEventListener('input', function () {
+                    const row = this.closest('tr');
+                    const rowId = row.getAttribute('data-row-id');
+                    if (rowId) {
+                        updateNameInDetails(rowId);
+                    }
                 });
             });
+        }
 
-            // Scroll to bottom function
-            scrollToBottomBtn.addEventListener('click', function () {
-                window.scrollTo({
-                    top: document.body.scrollHeight,
-                    behavior: 'smooth'
-                });
-            });
-
-            // Optional: Show/hide buttons based on scroll position
-            window.addEventListener('scroll', function () {
-                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-                const scrollHeight = document.body.scrollHeight;
-                const clientHeight = window.innerHeight;
-
-                // Show/hide top button
-                if (scrollTop > 300) {
-                    scrollToTopBtn.style.opacity = '0.8';
-                    scrollToTopBtn.style.pointerEvents = 'auto';
-                } else {
-                    scrollToTopBtn.style.opacity = '0.4';
-                    scrollToTopBtn.style.pointerEvents = 'auto';
-                }
-
-                // Show/hide bottom button
-                if (scrollTop < (scrollHeight - clientHeight - 300)) {
-                    scrollToBottomBtn.style.opacity = '0.8';
-                    scrollToBottomBtn.style.pointerEvents = 'auto';
-                } else {
-                    scrollToBottomBtn.style.opacity = '0.4';
-                    scrollToBottomBtn.style.pointerEvents = 'auto';
-                }
-            });
-        });
         function populateTimeOptions() {
             const startTimeSelect = document.getElementById("startTime");
             const endTimeSelect = document.getElementById("endTime");
@@ -813,72 +984,6 @@ $button_label = ($mode === 'modify') ? 'Resubmit' : 'Edit Submit';
             }
         }
 
-        function setupEventListeners() {
-            // File upload handlers
-            const posterUpload = document.getElementById("eventPoster");
-            if (posterUpload) {
-                posterUpload.addEventListener("change", function () {
-                    handlePosterChange(this);
-                });
-            }
-
-            const additionalDoc = document.getElementById("additionalDocument");
-            if (additionalDoc) {
-                additionalDoc.addEventListener("change", function () {
-                    handleDocumentChange(this);
-                });
-            }
-
-            // Button handlers - Check if elements exist before adding listeners
-            const addEventFlowBtn = document.getElementById("addEventFlowBtn");
-            if (addEventFlowBtn) {
-                addEventFlowBtn.addEventListener("click", addEventFlowRow);
-            }
-
-            const addCommitteeBtn = document.getElementById("addCommitteeBtn");
-            if (addCommitteeBtn) {
-                addCommitteeBtn.addEventListener("click", addCommitteeRow);
-            }
-
-            const addBudgetBtn = document.getElementById("addBudgetBtn");
-            if (addBudgetBtn) {
-                addBudgetBtn.addEventListener("click", addBudgetRow);
-            }
-
-            // Modal handlers
-            setupModalHandlers();
-
-            // Form submission
-            const backBtn = document.getElementById("backBtn");
-            const headerBackBtn = document.getElementById("headerBackBtn");
-            const proposalForm = document.getElementById("proposalForm");
-
-            if (backBtn) backBtn.addEventListener("click", handleBack);
-            if (headerBackBtn) headerBackBtn.addEventListener("click", handleBack);
-
-            // Budget calculation - Use event delegation
-            const budgetBody = document.getElementById("budgetBody");
-            if (budgetBody) {
-                budgetBody.addEventListener("input", calculateBudget);
-                budgetBody.addEventListener("change", calculateBudget);
-            }
-
-            // Event flow hours calculation - Use event delegation
-            const eventFlowBody = document.getElementById("eventFlowBody");
-            if (eventFlowBody) {
-                eventFlowBody.addEventListener("input", function (e) {
-                    if (e.target.name === "eventFlowStart[]" || e.target.name === "eventFlowEnd[]") {
-                        calculateHoursForRow(e.target);
-                    }
-                });
-                eventFlowBody.addEventListener("change", function (e) {
-                    if (e.target.name === "eventFlowStart[]" || e.target.name === "eventFlowEnd[]") {
-                        calculateHoursForRow(e.target);
-                    }
-                });
-            }
-        }
-
         function calculateHoursForRow(changedInput) {
             const row = changedInput.closest('tr');
             const startInput = row.querySelector('input[name="eventFlowStart[]"]');
@@ -901,8 +1006,8 @@ $button_label = ($mode === 'modify') ? 'Resubmit' : 'Edit Submit';
             const minDate = new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000);
             const minDateStr = minDate.toISOString().split("T")[0];
 
-            const eventDateEl = document.getElementById("eventDate");
-            const altDateEl = document.getElementById("alternativeDate");
+            const eventDateEl = document.querySelector('input[name="Ev_Date"]');
+            const altDateEl = document.querySelector('input[name="Ev_AlternativeDate"]');
 
             if (eventDateEl) eventDateEl.min = minDateStr;
             if (altDateEl) altDateEl.min = minDateStr;
@@ -1001,6 +1106,7 @@ $button_label = ($mode === 'modify') ? 'Resubmit' : 'Edit Submit';
             }
         }
 
+        // Event Flow Functions
         function addEventFlowRow() {
             const tbody = document.getElementById("eventFlowBody");
             if (!tbody) return;
@@ -1025,21 +1131,28 @@ $button_label = ($mode === 'modify') ? 'Resubmit' : 'Edit Submit';
     `;
 
             tbody.appendChild(row);
-            console.log("Added new event flow row"); // Debug log
             updateRemainingHours();
         }
 
-        function addCommitteeRow() {
-            const tbody = document.getElementById("committeeBody");
-            if (!tbody) return;
+        // Committee Functions
+        function addCommitteeBasicRow() {
+            const basicBody = document.getElementById("committeeBasicBody");
+            const detailsBody = document.getElementById("committeeDetailsBody");
 
-            const row = document.createElement("tr");
+            if (!basicBody || !detailsBody) return;
+
             const rowId = "committee_" + Date.now();
+            committeeRowCounter++;
 
-            row.innerHTML = `
+            // Add row to basic information table
+            const basicRow = document.createElement("tr");
+            basicRow.setAttribute("data-row-id", rowId);
+
+            basicRow.innerHTML = `
         <td><input type="text" name="committeeId[]" required></td>
-        <td><input type="text" name="committeeName[]" required></td>
+        <td><input type="text" name="committeeName[]" class="committee-name-input" oninput="updateNameInDetails('${rowId}')" required></td>
         <td><input type="text" name="committeePosition[]" required></td>
+        <td><input type="email" name="committeeEmail[]" required></td>
         <td>
             <select name="committeeDepartment[]" required>
                 <option value="">Select Department</option>
@@ -1076,12 +1189,27 @@ $button_label = ($mode === 'modify') ? 'Resubmit' : 'Edit Submit';
             </select>
         </td>
         <td><input type="tel" name="committeePhone[]" placeholder="012-3456789" required></td>
+        <td><button type="button" class="btn btn-danger btn-sm" onclick="deleteCommitteeRow(this)">Delete</button></td>
+    `;
+
+            // Add row to details table
+            const detailsRow = document.createElement("tr");
+            detailsRow.setAttribute("data-row-id", rowId);
+
+            detailsRow.innerHTML = `
+        <td class="student-name-display">-</td>
         <td>
             <div style="display: flex; gap: 5px;">
                 <button type="button" class="btn btn-secondary btn-sm" onclick="addJobScope('${rowId}')">Add</button>
                 <button type="button" class="btn btn-primary btn-sm" onclick="viewJobScope('${rowId}')" disabled>View</button>
             </div>
             <input type="hidden" name="committeeJobScope[]" id="jobScope_${rowId}">
+        </td>
+        <td>
+            <select name="committeeRegister[]" required>
+                <option value="No" selected>No</option>
+                <option value="Yes">Yes</option>
+            </select>
         </td>
         <td>
             <select name="cocuClaimer[]" onchange="toggleCocuUpload(this, '${rowId}')" required>
@@ -1092,13 +1220,45 @@ $button_label = ($mode === 'modify') ? 'Resubmit' : 'Edit Submit';
         <td>
             <input type="file" name="cocuStatement[]" id="cocuFile_${rowId}" accept=".pdf" disabled>
         </td>
-        <td><button type="button" class="btn btn-danger btn-sm" onclick="deleteRow(this)">Delete</button></td>
     `;
 
-            tbody.appendChild(row);
-            console.log("Added new committee row"); // Debug log
+            basicBody.appendChild(basicRow);
+            detailsBody.appendChild(detailsRow);
+
+            console.log("Added new committee member rows");
         }
 
+        function deleteCommitteeRow(button) {
+            if (confirm("Are you sure you want to delete this committee member?")) {
+                const basicRow = button.closest("tr");
+                const rowId = basicRow.getAttribute("data-row-id");
+
+                // Remove from basic table
+                basicRow.remove();
+
+                // Remove from details table
+                const detailsRow = document.querySelector(`#committeeDetailsBody tr[data-row-id="${rowId}"]`);
+                if (detailsRow) {
+                    detailsRow.remove();
+                }
+            }
+        }
+
+        function updateNameInDetails(rowId) {
+            const basicRow = document.querySelector(`#committeeBasicBody tr[data-row-id="${rowId}"]`);
+            const detailsRow = document.querySelector(`#committeeDetailsBody tr[data-row-id="${rowId}"]`);
+
+            if (basicRow && detailsRow) {
+                const nameInput = basicRow.querySelector('input[name="committeeName[]"]');
+                const nameDisplay = detailsRow.querySelector('.student-name-display');
+
+                if (nameInput && nameDisplay) {
+                    nameDisplay.textContent = nameInput.value || '-';
+                }
+            }
+        }
+
+        // Budget Functions
         function addBudgetRow() {
             const tbody = document.getElementById("budgetBody");
             if (!tbody) return;
@@ -1120,9 +1280,50 @@ $button_label = ($mode === 'modify') ? 'Resubmit' : 'Edit Submit';
     `;
 
             tbody.appendChild(row);
-            console.log("Added new budget row"); // Debug log
         }
 
+        function calculateBudget() {
+            const amounts = document.querySelectorAll('input[name="budgetAmount[]"]');
+            const types = document.querySelectorAll('select[name="budgetType[]"]');
+
+            let totalIncome = 0;
+            let totalExpense = 0;
+
+            amounts.forEach((amountInput, index) => {
+                const amount = parseFloat(amountInput.value) || 0;
+                const type = types[index] ? types[index].value : "";
+
+                if (type === "income") {
+                    totalIncome += amount;
+                } else if (type === "expense") {
+                    totalExpense += amount;
+                }
+            });
+
+            const surplusDeficit = totalIncome - totalExpense;
+
+            // Update display elements if they exist
+            const totalIncomeEl = document.getElementById("totalIncome");
+            const totalExpenseEl = document.getElementById("totalExpense");
+            const surplusDeficitEl = document.getElementById("surplusDeficit");
+
+            if (totalIncomeEl) totalIncomeEl.textContent = `RM ${totalIncome.toFixed(2)}`;
+            if (totalExpenseEl) totalExpenseEl.textContent = `RM ${totalExpense.toFixed(2)}`;
+            if (surplusDeficitEl) {
+                surplusDeficitEl.textContent = `RM ${surplusDeficit.toFixed(2)}`;
+
+                // Change color based on surplus/deficit
+                if (surplusDeficit > 0) {
+                    surplusDeficitEl.style.color = "#27ae60";
+                } else if (surplusDeficit < 0) {
+                    surplusDeficitEl.style.color = "#e74c3c";
+                } else {
+                    surplusDeficitEl.style.color = "#333";
+                }
+            }
+        }
+
+        // General delete function for event flow and budget rows
         function deleteRow(button) {
             if (confirm("Are you sure you want to delete this row?")) {
                 button.closest("tr").remove();
@@ -1131,6 +1332,7 @@ $button_label = ($mode === 'modify') ? 'Resubmit' : 'Edit Submit';
             }
         }
 
+        // Modal Functions
         function setupModalHandlers() {
             // Activity Description Modal
             const activityModal = document.getElementById("activityModal");
@@ -1282,47 +1484,7 @@ $button_label = ($mode === 'modify') ? 'Resubmit' : 'Edit Submit';
             }
         }
 
-        function calculateBudget() {
-            const amounts = document.querySelectorAll('input[name="budgetAmount[]"]');
-            const types = document.querySelectorAll('select[name="budgetType[]"]');
-
-            let totalIncome = 0;
-            let totalExpense = 0;
-
-            amounts.forEach((amountInput, index) => {
-                const amount = parseFloat(amountInput.value) || 0;
-                const type = types[index] ? types[index].value : "";
-
-                if (type === "income") {
-                    totalIncome += amount;
-                } else if (type === "expense") {
-                    totalExpense += amount;
-                }
-            });
-
-            const surplusDeficit = totalIncome - totalExpense;
-
-            // Update display elements if they exist
-            const totalIncomeEl = document.getElementById("totalIncome");
-            const totalExpenseEl = document.getElementById("totalExpense");
-            const surplusDeficitEl = document.getElementById("surplusDeficit");
-
-            if (totalIncomeEl) totalIncomeEl.textContent = `RM ${totalIncome.toFixed(2)}`;
-            if (totalExpenseEl) totalExpenseEl.textContent = `RM ${totalExpense.toFixed(2)}`;
-            if (surplusDeficitEl) {
-                surplusDeficitEl.textContent = `RM ${surplusDeficit.toFixed(2)}`;
-
-                // Change color based on surplus/deficit
-                if (surplusDeficit > 0) {
-                    surplusDeficitEl.style.color = "#27ae60";
-                } else if (surplusDeficit < 0) {
-                    surplusDeficitEl.style.color = "#e74c3c";
-                } else {
-                    surplusDeficitEl.style.color = "#333";
-                }
-            }
-        }
-
+        // Form Validation
         function validateForm() {
             const requiredFields = document.querySelectorAll("input[required], select[required], textarea[required]");
             let isValid = true;
@@ -1350,9 +1512,9 @@ $button_label = ($mode === 'modify') ? 'Resubmit' : 'Edit Submit';
                 }
             }
 
-            // Table validations
+            // Table validations - Updated selectors
             const eventFlowRows = document.querySelectorAll("#eventFlowBody tr");
-            const committeeRows = document.querySelectorAll("#committeeBody tr");
+            const committeeBasicRows = document.querySelectorAll("#committeeBasicBody tr");
             const budgetRows = document.querySelectorAll("#budgetBody tr");
 
             if (eventFlowRows.length === 0) {
@@ -1364,7 +1526,7 @@ $button_label = ($mode === 'modify') ? 'Resubmit' : 'Edit Submit';
                 isValid = false;
             }
 
-            if (committeeRows.length === 0) {
+            if (committeeBasicRows.length === 0) {
                 if (typeof Swal !== 'undefined') {
                     Swal.fire("Missing Data", "Please add at least one committee member.", "error");
                 } else {
@@ -1406,55 +1568,6 @@ $button_label = ($mode === 'modify') ? 'Resubmit' : 'Edit Submit';
             }
         }
 
-        function handleFormSubmit(e) {
-            e.preventDefault();
-
-            const totalHours = getTotalEventFlowHours();
-            if (totalHours < 40) {
-                if (typeof Swal !== 'undefined') {
-                    Swal.fire({
-                        icon: "error",
-                        title: "Minimum 40 Hours Required",
-                        text: `You only have ${totalHours.toFixed(1)} hours. Minimum 40 hours needed.`,
-                    });
-                } else {
-                    alert(`Minimum 40 hours required. You only have ${totalHours.toFixed(1)} hours.`);
-                }
-                return;
-            }
-
-            if (!validateForm()) {
-                return;
-            }
-
-            // SweetAlert confirmation
-            if (typeof Swal !== 'undefined') {
-                Swal.fire({
-                    title: "Submit Proposal?",
-                    text: "Once submitted, you can only modify it if rejected.",
-                    icon: "question",
-                    showCancelButton: true,
-                    confirmButtonText: "Yes, Submit",
-                    cancelButtonText: "Cancel",
-                }).then((result) => {
-                    if (result.isConfirmed) {
-
-                        // Show success message since we can't actually submit
-                        Swal.fire({
-                            icon: "success",
-                            title: "Proposal Submitted!",
-                            text: "Your proposal has been submitted successfully.",
-                            confirmButtonText: "OK",
-                        });
-                    }
-                });
-            } else {
-                if (confirm("Submit proposal? Once submitted, you can only modify it if rejected.")) {
-                    alert("Proposal submitted successfully!");
-                }
-            }
-        }
-
         function getTotalEventFlowHours() {
             const hourInputs = document.querySelectorAll('input[name="eventFlowHours[]"]');
             let total = 0;
@@ -1463,23 +1576,6 @@ $button_label = ($mode === 'modify') ? 'Resubmit' : 'Edit Submit';
             });
             return total;
         }
-        document.getElementById("proposalForm").addEventListener("submit", function (e) {
-            e.preventDefault(); // Stop normal form submit
-
-            const form = this; // Capture the form reference
-
-            Swal.fire({
-                title: "Are you sure?",
-                text: "You want to submit this proposal?",
-                icon: "question",
-                showCancelButton: true,
-                confirmButtonText: "Yes, submit it!"
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    form.submit(); // Submit if confirmed
-                }
-            });
-        });
     </script>
 </body>
 

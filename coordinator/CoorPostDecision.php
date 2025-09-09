@@ -80,15 +80,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $feedback = $_POST['feedback'] ?? '';
     $rejectedSections = $_POST['rejected_sections'] ?? [];
 
-    // Fetch Ev_ID
-    $ev_query = $conn->prepare("SELECT Ev_ID FROM eventpostmortem WHERE Rep_ID = ?");
+    // Fetch Ev_ID and Event Details for notifications
+    $ev_query = $conn->prepare("
+        SELECT ep.Ev_ID, e.Ev_Name, e.Ev_RefNum 
+        FROM eventpostmortem ep 
+        JOIN events e ON ep.Ev_ID = e.Ev_ID 
+        WHERE ep.Rep_ID = ?
+    ");
     $ev_query->bind_param("s", $rep_id);
     $ev_query->execute();
     $ev_result = $ev_query->get_result();
-    $ev_id = $ev_result->fetch_assoc()['Ev_ID'] ?? null;
+    $event_data = $ev_result->fetch_assoc();
+
+    $ev_id = $event_data['Ev_ID'] ?? null;
+    $event_name = $event_data['Ev_Name'] ?? '';
+    $event_ref_num = $event_data['Ev_RefNum'] ?? '';
 
     if (!$ev_id) {
         die("Invalid report reference.");
+    }
+
+    // Fetch committee members with COCU claims for this event
+    $committee_query = $conn->prepare("
+        SELECT Com_Name, Com_Email, Com_ID 
+        FROM committee 
+        WHERE Ev_ID = ? AND Com_COCUClaimers IN ('yes', '1')
+    ");
+    $committee_query->bind_param("s", $ev_id);
+    $committee_query->execute();
+    $committee_result = $committee_query->get_result();
+
+    $committee_members = [];
+    while ($member = $committee_result->fetch_assoc()) {
+        $committee_members[] = $member;
     }
 
     if ($action === 'approve') {
@@ -97,13 +121,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->bind_param("is", $status_id, $rep_id);
         $stmt->execute();
 
-        // ✅ Send post-event approval email
+        // ✅ Send post-event approval email to student and advisor
         $eventName = $details['Ev_Name'];
         $studentEmail = $details['Stu_Email'];
         $advisorEmail = $details['Adv_Email'];
-        $advisorName = $details['Adv_Name']; // 👈 NEW
+        $advisorName = $details['Adv_Name']; // You might need to add this to the main query if it doesn't exist
 
-        postEventApproved($eventName, $studentEmail, $advisorEmail, $advisorName); // 👈 UPDATED
+        postEventApproved($eventName, $studentEmail, $advisorEmail, $advisorName);
+
+        // ✅ Send notification to committee members with COCU claims
+        if (!empty($committee_members)) {
+            if (!empty($event_ref_num)) {
+                postEventApprovedCommittee($event_name, $event_ref_num, $committee_members);
+            } else {
+                // Log warning: Event has no reference number
+                error_log("Warning: Event {$ev_id} approved but has no reference number for COCU notification");
+            }
+        } else {
+            // Optional: Log info that no committee members have COCU claims
+            error_log("Info: Event {$ev_id} has no committee members with COCU claims");
+        }
 
         header("Location: ../coordinator/CoordinatorDashboard.php");
         exit();
@@ -208,6 +245,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .approve-btn:disabled:hover {
             transform: none !important;
             background: #6c757d !important;
+        }
+
+        /* Individual report checkbox styles */
+        .individual-report-checkboxes {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 0.5rem;
+        }
+
+        .individual-report-checkboxes .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .individual-report-checkboxes input[type="checkbox"] {
+            width: 14px;
+            height: 14px;
+            accent-color: var(--header-green);
+        }
+
+        .individual-report-checkboxes label {
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .report-status {
+            padding: 0.2rem 0.5rem;
+            border-radius: 3px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            margin-top: 0.3rem;
+        }
+
+        .report-status.approved {
+            background-color: var(--header-green);
+            color: white;
+        }
+
+        .report-status.rejected {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .report-status.pending {
+            background-color: #ffc107;
+            color: #212529;
         }
     </style>
 </head>
@@ -398,7 +484,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <?php endwhile; ?>
                         <?php else: ?>
                             <tr>
-                                <td colspan="3" class="text-center">No post-event meetings submitted.</td>
+                                <td colspan="5" class="text-center">No post-event meetings submitted.</td>
                             </tr>
                         <?php endif; ?>
                     </tbody>
@@ -515,21 +601,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </div>
 
+        <!-- Section 8: Individual Reports for COCU Claimers -->
         <div class="section" data-section="reports">
             <div class="section-header">
                 <div class="section-title">
                     8. Individual Reports for COCU Claimers
                 </div>
-                <div class="checkbox-group">
-                    <div class="checkbox-item">
-                        <input type="checkbox" id="reports-approve" name="reports" value="approve" />
-                        <label for="reports-approve">Approve</label>
-                    </div>
-                    <div class="checkbox-item">
-                        <input type="checkbox" id="reports-reject" name="reports" value="reject" />
-                        <label for="reports-reject">Reject</label>
-                    </div>
-                </div>
+                <!-- No overall checkbox group here since we have individual ones -->
             </div>
             <div class="section-content">
                 <table class="table">
@@ -540,10 +618,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <th>Position</th>
                             <th>Attendance %</th>
                             <th>Report</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php
+                        // Reset the result pointer for individual reports
+                        $report_stmt = $conn->prepare("
+                          SELECT 
+                              c.Com_ID,
+                              c.Com_Name,
+                              c.Com_Position,
+                              ir.IR_File
+                          FROM eventpostmortem ep
+                          JOIN committee c
+                                ON c.Ev_ID = ep.Ev_ID
+                               AND c.Com_COCUClaimers = 'yes'
+                          LEFT JOIN individualreport ir
+                                ON ir.Rep_ID = ep.Rep_ID
+                               AND ir.Com_ID = c.Com_ID
+                          WHERE ep.Rep_ID = ?
+                          ORDER BY c.Com_Position, c.Com_Name
+                        ");
+                        $report_stmt->bind_param("s", $rep_id);
+                        $report_stmt->execute();
+                        $individual_reports = $report_stmt->get_result();
+
                         // Fetch total meetings
                         $totalMeetingQuery = $conn->prepare("SELECT COUNT(*) AS total FROM posteventmeeting WHERE Rep_ID = ?");
                         $totalMeetingQuery->bind_param("s", $rep_id);
@@ -556,10 +656,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                             // Fetch attendance count
                             $attendQuery = $conn->prepare("
-        SELECT COUNT(*) AS attended 
-        FROM committeeattendance 
-        WHERE Rep_ID = ? AND Com_ID = ? AND Attendance_Status = 'Present'
-    ");
+                                SELECT COUNT(*) AS attended 
+                                FROM committeeattendance 
+                                WHERE Rep_ID = ? AND Com_ID = ? AND Attendance_Status = 'Present'
+                            ");
                             $attendQuery->bind_param("ss", $rep_id, $com_id);
                             $attendQuery->execute();
                             $attendResult = $attendQuery->get_result();
@@ -568,7 +668,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $percentage = ($totalMeetings > 0) ? round(($attended / $totalMeetings) * 100, 2) : 0;
                             $attendanceClass = ($percentage >= 80) ? 'good' : (($percentage >= 60) ? 'average' : 'poor');
 
-                            $reportFile = '../uploads/individualreports/' . basename($report['IR_File']);
+                            $reportFile = !empty($report['IR_File']) ? '../uploads/individualreports/' . basename($report['IR_File']) : '';
                             ?>
                             <tr>
                                 <td><?= htmlspecialchars($report['Com_Name']) ?></td>
@@ -578,17 +678,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 </td>
                                 <td>
                                     <?php if (!empty($reportFile)): ?>
-                                        <button class="view-btn"
-                                            onclick="viewReport('<?= str_replace('../../', '../', $reportFile) ?>')">View
+                                        <button class="view-btn" onclick="viewReport('<?= $reportFile ?>')">View
                                             Report</button>
                                     <?php else: ?>
                                         <span class="text-muted">No report</span>
                                     <?php endif; ?>
                                 </td>
+                                <td>
+                                    <?php if (!empty($reportFile)): ?>
+                                        <div class="individual-report-checkboxes">
+                                            <div class="checkbox-item">
+                                                <input type="checkbox" id="report-<?= $com_id ?>-approve"
+                                                    name="report-<?= $com_id ?>" value="approve" data-com-id="<?= $com_id ?>"
+                                                    data-com-name="<?= htmlspecialchars($report['Com_Name']) ?>" />
+                                                <label for="report-<?= $com_id ?>-approve">✓</label>
+                                            </div>
+                                            <div class="checkbox-item">
+                                                <input type="checkbox" id="report-<?= $com_id ?>-reject"
+                                                    name="report-<?= $com_id ?>" value="reject" data-com-id="<?= $com_id ?>"
+                                                    data-com-name="<?= htmlspecialchars($report['Com_Name']) ?>" />
+                                                <label for="report-<?= $com_id ?>-reject">✗</label>
+                                            </div>
+                                        </div>
+                                    <?php else: ?>
+                                        <span class="text-muted">N/A</span>
+                                    <?php endif; ?>
+                                </td>
                             </tr>
                         <?php endwhile; ?>
                     </tbody>
-
                 </table>
             </div>
         </div>
@@ -659,7 +777,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
     <script>
         // Global variables for validation
-        const sections = ["poster", "details", "flow", "meeting", "challenges", "photos", "budget", "reports"];
+        const sections = ["poster", "details", "flow", "meeting", "challenges", "photos", "budget"];
+        const individualReportIds = []; // Will be populated dynamically
 
         // Show loading screen
         function showLoading(message) {
@@ -675,11 +794,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             loadingScreen.style.display = "none";
         }
 
+        // Get all individual report committee IDs
+        function getIndividualReportIds() {
+            const reportCheckboxes = document.querySelectorAll('input[data-com-id]');
+            const ids = new Set();
+            reportCheckboxes.forEach(checkbox => {
+                ids.add(checkbox.getAttribute('data-com-id'));
+            });
+            return Array.from(ids);
+        }
+
         // Validate approval button state
         function validateApprovalButton() {
             const approveBtn = document.getElementById("approveEventBtn");
             let allApproved = true;
 
+            // Check main sections
             sections.forEach((section) => {
                 const approveCheckbox = document.getElementById(`${section}-approve`);
                 const rejectCheckbox = document.getElementById(`${section}-reject`);
@@ -690,13 +820,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             });
 
+            // Check individual reports - all must be approved
+            const reportIds = getIndividualReportIds();
+            reportIds.forEach((comId) => {
+                const approveCheckbox = document.getElementById(`report-${comId}-approve`);
+                const rejectCheckbox = document.getElementById(`report-${comId}-reject`);
+
+                // If report exists but not approved or is rejected, disable approve
+                if (approveCheckbox && (!approveCheckbox.checked || (rejectCheckbox && rejectCheckbox.checked))) {
+                    allApproved = false;
+                }
+            });
+
             approveBtn.disabled = !allApproved;
         }
 
         // Checkbox functionality
         document.addEventListener("DOMContentLoaded", function () {
-            // Handle checkbox interactions
-            const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+            // Handle main section checkbox interactions
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]:not([data-com-id])');
             checkboxes.forEach((checkbox) => {
                 checkbox.addEventListener("change", function () {
                     const section = this.name;
@@ -704,11 +846,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     const otherValue = value === "approve" ? "reject" : "approve";
                     const otherCheckbox = document.getElementById(`${section}-${otherValue}`);
 
-                    if (this.checked) {
+                    if (this.checked && otherCheckbox) {
                         otherCheckbox.checked = false;
                     }
 
-                    // Validate approval button after each change
+                    validateApprovalButton();
+                });
+            });
+
+            // Handle individual report checkbox interactions
+            const reportCheckboxes = document.querySelectorAll('input[data-com-id]');
+            reportCheckboxes.forEach((checkbox) => {
+                checkbox.addEventListener("change", function () {
+                    const comId = this.getAttribute('data-com-id');
+                    const value = this.value;
+                    const otherValue = value === "approve" ? "reject" : "approve";
+                    const otherCheckbox = document.getElementById(`report-${comId}-${otherValue}`);
+
+                    if (this.checked && otherCheckbox) {
+                        otherCheckbox.checked = false;
+                    }
+
                     validateApprovalButton();
                 });
             });
@@ -718,21 +876,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         });
 
         function approveAll() {
-            const approveCheckboxes = document.querySelectorAll('input[value="approve"]');
-            const rejectCheckboxes = document.querySelectorAll('input[value="reject"]');
+            // Approve all main sections
+            const approveCheckboxes = document.querySelectorAll('input[value="approve"]:not([data-com-id])');
+            const rejectCheckboxes = document.querySelectorAll('input[value="reject"]:not([data-com-id])');
 
             approveCheckboxes.forEach((checkbox) => (checkbox.checked = true));
             rejectCheckboxes.forEach((checkbox) => (checkbox.checked = false));
+
+            // Approve all individual reports
+            const reportApproveCheckboxes = document.querySelectorAll('input[data-com-id][value="approve"]');
+            const reportRejectCheckboxes = document.querySelectorAll('input[data-com-id][value="reject"]');
+
+            reportApproveCheckboxes.forEach((checkbox) => (checkbox.checked = true));
+            reportRejectCheckboxes.forEach((checkbox) => (checkbox.checked = false));
 
             validateApprovalButton();
         }
 
         function rejectAll() {
-            const approveCheckboxes = document.querySelectorAll('input[value="approve"]');
-            const rejectCheckboxes = document.querySelectorAll('input[value="reject"]');
+            // Reject all main sections
+            const approveCheckboxes = document.querySelectorAll('input[value="approve"]:not([data-com-id])');
+            const rejectCheckboxes = document.querySelectorAll('input[value="reject"]:not([data-com-id])');
 
             approveCheckboxes.forEach((checkbox) => (checkbox.checked = false));
             rejectCheckboxes.forEach((checkbox) => (checkbox.checked = true));
+
+            // Reject all individual reports
+            const reportApproveCheckboxes = document.querySelectorAll('input[data-com-id][value="approve"]');
+            const reportRejectCheckboxes = document.querySelectorAll('input[data-com-id][value="reject"]');
+
+            reportApproveCheckboxes.forEach((checkbox) => (checkbox.checked = false));
+            reportRejectCheckboxes.forEach((checkbox) => (checkbox.checked = true));
 
             validateApprovalButton();
         }
@@ -788,6 +962,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         function getRejectedSections() {
             const rejectedSections = [];
 
+            // Check main sections
             sections.forEach((section) => {
                 const rejectCheckbox = document.getElementById(`${section}-reject`);
                 if (rejectCheckbox && rejectCheckbox.checked) {
@@ -798,10 +973,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         meeting: "Meeting Details",
                         challenges: "Challenges and Recommendations",
                         photos: "Event Photos",
-                        budget: "Budget Statement",
-                        reports: "Individual Reports",
+                        budget: "Budget Statement"
                     };
                     rejectedSections.push(sectionNames[section]);
+                }
+            });
+
+            // Check individual reports
+            const reportIds = getIndividualReportIds();
+            reportIds.forEach((comId) => {
+                const rejectCheckbox = document.getElementById(`report-${comId}-reject`);
+                if (rejectCheckbox && rejectCheckbox.checked) {
+                    const comName = rejectCheckbox.getAttribute('data-com-name');
+                    rejectedSections.push(`Individual Report - ${comName}`);
                 }
             });
 
@@ -829,11 +1013,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 const form = document.createElement('form');
                 form.method = 'POST';
                 form.action = '';
-
-                const rejectedInput = document.createElement('input');
-                rejectedInput.type = 'hidden';
-                rejectedInput.name = 'rejected_sections[]';
-                rejectedInput.value = rejectedSections.join(', ');
 
                 form.innerHTML = `
             <input type="hidden" name="action" value="reject">
@@ -909,7 +1088,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 closePhotoModal();
             }
         });
-
 
     </script>
 </body>

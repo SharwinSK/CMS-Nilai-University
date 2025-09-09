@@ -48,6 +48,7 @@ try {
     $ev_nature = $_POST['Ev_ProjectNature']; // dropdown
     $ev_intro = $_POST['Ev_Intro'];
     $ev_details = $_POST['Ev_Details'];
+    $proposal_position = $_POST['Proposal_Position'];
     $ev_pax = $_POST['Ev_Pax'];
     $ev_date = $_POST['Ev_Date'];
     $ev_start = $_POST['Ev_StartTime'];
@@ -56,6 +57,7 @@ try {
     $alt_venue = $_POST['altVenue'];
     $alt_date = $_POST['Ev_AlternativeDate'];
     $club_id = $_POST['Club_ID'];
+    $ev_category = $_POST['Ev_Category'];
     $prepared_by = $_POST['preparedBy'];
 
     // PIC
@@ -77,17 +79,13 @@ try {
         $additional_path = '../../uploads/additional/' . uniqid("addinfo_") . "." . $ext;
         move_uploaded_file($_FILES['additionalDocument']['tmp_name'], $additional_path);
     }
-
     // Update event
     $update_sql = "
-        UPDATE events SET 
-        Ev_Name = ?, Ev_ProjectNature = ?, Ev_Intro = ?, Ev_Details = ?, 
-        Ev_Objectives = ?, Ev_Pax = ?, Ev_Date = ?, Ev_StartTime = ?, Ev_EndTime = ?, 
-        Ev_VenueID = ?, Ev_AltVenueID = ?, Ev_AlternativeDate = ?, Club_ID = ?, 
-        Status_ID = ?
-        " . ($poster_path ? ", Ev_Poster = ?" : "") .
-        ($additional_path ? ", Ev_AdditionalInfo = ?" : "") .
-        " WHERE Ev_ID = ?";
+    UPDATE events SET 
+    Ev_Name = ?, Ev_ProjectNature = ?, Ev_Intro = ?, Ev_Details = ?, 
+    Ev_Objectives = ?, Ev_Pax = ?, Ev_Date = ?, Ev_StartTime = ?, Ev_EndTime = ?, 
+    Ev_VenueID = ?, Ev_AltVenueID = ?, Ev_AlternativeDate = ?, Club_ID = ?, 
+    Proposal_Position = ?, Ev_Category = ?, Status_ID = ?";
 
     $params = [
         $ev_name,
@@ -103,12 +101,24 @@ try {
         $alt_venue,
         $alt_date,
         $club_id,
+        $proposal_position,
+        $ev_category,
         $new_status
     ];
-    if ($poster_path)
+
+    // Add poster and additional document fields if they exist
+    if ($poster_path) {
+        $update_sql .= ", Ev_Poster = ?";
         $params[] = $poster_path;
-    if ($additional_path)
+    }
+
+    if ($additional_path) {
+        $update_sql .= ", Ev_AdditionalInfo = ?";
         $params[] = $additional_path;
+    }
+
+    // Add WHERE clause
+    $update_sql .= " WHERE Ev_ID = ?";
     $params[] = $ev_id;
 
     $stmt = $conn->prepare($update_sql);
@@ -138,52 +148,90 @@ try {
     // Reinsert committee
     $com_ids = $_POST['committeeId'];
     $com_names = $_POST['committeeName'];
+    $com_emails = $_POST['committeeEmail'];  // Add this line
     $com_positions = $_POST['committeePosition'];
     $com_departments = $_POST['committeeDepartment'];
     $com_phones = $_POST['committeePhone'];
     $com_jobscopes = $_POST['committeeJobScope'];
     $cocu_claimers = $_POST['cocuClaimer'];
+    $com_registers = $_POST['committeeRegister'];  // Add this line
 
     foreach ($com_ids as $i => $com_id) {
         $name = $com_names[$i];
+        $email = $com_emails[$i];
         $pos = $com_positions[$i];
         $dept = $com_departments[$i];
         $phone = $com_phones[$i];
         $jobscope = $com_jobscopes[$i];
         $is_cocu = $cocu_claimers[$i];
+        $register = $com_registers[$i];
+
+        // Initialize COCU PDF path
         $cocu_pdf_path = null;
 
-        // Try to reuse old file if no new upload
-        if ($is_cocu === 'yes') {
-            if (isset($_FILES['cocuStatement']['error'][$i]) && $_FILES['cocuStatement']['error'][$i] === 0) {
-                $ext = pathinfo($_FILES['cocuStatement']['name'][$i], PATHINFO_EXTENSION);
-                $cocu_pdf_path = "../../uploads/cocustatement/{$com_id}_cocu_" . time() . ".{$ext}";
-                move_uploaded_file($_FILES['cocuStatement']['tmp_name'][$i], $cocu_pdf_path);
-            } else {
-                $cocu_pdf_path = $existing_committee[$com_id] ?? null;
+        // Check if this committee member has existing COCU statement
+        if (isset($existing_committee[$com_id])) {
+            $cocu_pdf_path = $existing_committee[$com_id]; // Keep existing file
+        }
+
+        // Handle COCU statement file upload
+        if (
+            $is_cocu === 'yes' && isset($_FILES['cocuStatement']['name'][$i]) &&
+            !empty($_FILES['cocuStatement']['name'][$i]) &&
+            $_FILES['cocuStatement']['error'][$i] == 0
+        ) {
+
+            $file_tmp = $_FILES['cocuStatement']['tmp_name'][$i];
+            $file_name = $_FILES['cocuStatement']['name'][$i];
+            $file_size = $_FILES['cocuStatement']['size'][$i];
+            $file_ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
+
+            // Validate file
+            if ($file_ext === 'pdf' && $file_size <= 2 * 1024 * 1024) { // 2MB limit
+                // Create unique filename
+                $new_filename = uniqid("cocu_statement_") . "_" . $com_id . ".pdf";
+                $upload_path = '../../uploads/cocu_statements/' . $new_filename;
+
+                // Create directory if it doesn't exist
+                if (!file_exists('../../uploads/cocu_statements/')) {
+                    mkdir('../../uploads/cocu_statements/', 0777, true);
+                }
+
+                // Move uploaded file
+                if (move_uploaded_file($file_tmp, $upload_path)) {
+                    $cocu_pdf_path = $upload_path;
+
+                    // Delete old file if exists and different
+                    if (
+                        isset($existing_committee[$com_id]) &&
+                        $existing_committee[$com_id] &&
+                        $existing_committee[$com_id] !== $upload_path &&
+                        file_exists($existing_committee[$com_id])
+                    ) {
+                        unlink($existing_committee[$com_id]);
+                    }
+                }
             }
         }
 
-        // Insert or update
+        // If COCU claimer is 'no', remove any existing file
+        if (
+            $is_cocu === 'no' && isset($existing_committee[$com_id]) &&
+            $existing_committee[$com_id] && file_exists($existing_committee[$com_id])
+        ) {
+            unlink($existing_committee[$com_id]);
+            $cocu_pdf_path = null;
+        }
+
+        // Insert/Update committee record
         $stmt = $conn->prepare("REPLACE INTO committee 
-        (Com_ID, Ev_ID, Com_Position, Com_Name, Com_Department, Com_PhnNum, Com_JobScope, Com_COCUClaimers, student_statement) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("sssssssss", $com_id, $ev_id, $pos, $name, $dept, $phone, $jobscope, $is_cocu, $cocu_pdf_path);
+        (Com_ID, Ev_ID, Com_Position, Com_Name, Com_Email, Com_Department, Com_PhnNum, Com_JobScope, Com_COCUClaimers, Com_Register, student_statement) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("sssssssssss", $com_id, $ev_id, $pos, $name, $email, $dept, $phone, $jobscope, $is_cocu, $register, $cocu_pdf_path);
         $stmt->execute();
 
         $used_committee_ids[] = $com_id;
     }
-
-    if (!empty($used_committee_ids)) {
-        $placeholders = implode(',', array_fill(0, count($used_committee_ids), '?'));
-        $types = str_repeat('s', count($used_committee_ids));
-        $params = $used_committee_ids;
-
-        $stmt = $conn->prepare("DELETE FROM committee WHERE Ev_ID = ? AND Com_ID NOT IN ($placeholders)");
-        $stmt->bind_param("s" . $types, $ev_id, ...$params);
-        $stmt->execute();
-    }
-
 
 
     // Reinsert event flow

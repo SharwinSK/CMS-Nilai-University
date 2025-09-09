@@ -89,6 +89,7 @@ body {
     overflow: hidden;
     border: 1px solid #e0e0e0;
 }
+
 .loading-screen {
     display: none;
     position: fixed;
@@ -99,6 +100,7 @@ body {
     background: rgba(0, 0, 0, 0.7);
     z-index: 9999;
 }
+
 .section-header {
     background: var(--header-green); /* Solid header green */
     color: white;
@@ -271,6 +273,18 @@ body {
 .approve-btn:hover {
     background: var(--hover-orange); /* Orange hover */
     transform: translateY(-2px);
+}
+
+/* Disabled button styles */
+.approve-btn:disabled {
+    background: #6c757d !important;
+    cursor: not-allowed !important;
+    opacity: 0.6;
+}
+
+.approve-btn:disabled:hover {
+    transform: none !important;
+    background: #6c757d !important;
 }
 
 .reject-btn {
@@ -529,6 +543,86 @@ body {
     font-size: 1rem;
 }
 
+/* Individual report checkbox styles */
+.individual-report-checkboxes {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    align-items: center;
+}
+
+.individual-report-checkboxes .checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.individual-report-checkboxes .checkbox-item:hover {
+    background-color: rgba(255, 122, 48, 0.1);
+}
+
+.individual-report-checkboxes input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--header-green);
+    cursor: pointer;
+}
+
+.individual-report-checkboxes label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.2s;
+}
+
+/* Color coding for individual report checkboxes */
+.individual-report-checkboxes .checkbox-item:first-child label {
+    color: var(--header-green); /* Approve - green */
+}
+
+.individual-report-checkboxes .checkbox-item:last-child label {
+    color: #dc3545; /* Reject - red */
+}
+
+.individual-report-checkboxes .checkbox-item:first-child input:checked + label {
+    color: var(--header-green);
+    font-weight: 700;
+}
+
+.individual-report-checkboxes .checkbox-item:last-child input:checked + label {
+    color: #dc3545;
+    font-weight: 700;
+}
+
+.report-status {
+    padding: 0.2rem 0.5rem;
+    border-radius: 3px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-align: center;
+    margin-top: 0.3rem;
+    display: inline-block;
+}
+
+.report-status.approved {
+    background-color: var(--header-green);
+    color: white;
+}
+
+.report-status.rejected {
+    background-color: #dc3545;
+    color: white;
+}
+
+.report-status.pending {
+    background-color: #ffc107;
+    color: #212529;
+}
+
 /* Add these CSS styles for attendance percentage */
 .attendance-percentage {
     padding: 0.3rem 0.6rem;
@@ -557,6 +651,38 @@ body {
 .table td:nth-child(4) {
     text-align: center;
     white-space: nowrap;
+}
+
+/* Center align action column for individual reports */
+.table th:nth-child(6),
+.table td:nth-child(6) {
+    text-align: center;
+    vertical-align: middle;
+}
+
+/* Responsive adjustments for individual report table */
+@media (max-width: 1024px) {
+    .individual-report-checkboxes {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .individual-report-checkboxes .checkbox-item {
+        justify-content: center;
+        padding: 0.3rem 0.8rem;
+        border-radius: 6px;
+        border: 1px solid #ddd;
+    }
+
+    .individual-report-checkboxes .checkbox-item:first-child {
+        background-color: rgba(45, 214, 39, 0.1);
+        border-color: var(--header-green);
+    }
+
+    .individual-report-checkboxes .checkbox-item:last-child {
+        background-color: rgba(220, 53, 69, 0.1);
+        border-color: #dc3545;
+    }
 }
 
 @media (max-width: 768px) {
@@ -597,5 +723,29 @@ body {
         flex-direction: column;
         gap: 1rem;
         text-align: center;
+    }
+
+    /* Make table responsive on mobile */
+    .table {
+        font-size: 0.9rem;
+    }
+
+    .table th,
+    .table td {
+        padding: 0.5rem;
+    }
+
+    /* Stack individual report checkboxes vertically on mobile */
+    .individual-report-checkboxes {
+        flex-direction: column;
+        gap: 0.3rem;
+    }
+
+    .individual-report-checkboxes .checkbox-item {
+        justify-content: center;
+        padding: 0.4rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        background-color: rgba(255, 255, 255, 0.8);
     }
 }

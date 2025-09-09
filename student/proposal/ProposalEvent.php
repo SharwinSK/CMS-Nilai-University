@@ -10,8 +10,8 @@ if (empty($_SESSION['Stu_ID'])) {
 
 $stu_id = $_SESSION['Stu_ID'];
 
-// Get student name (prepared)
-$student_stmt = $conn->prepare("SELECT Stu_Name FROM student WHERE Stu_ID = ?");
+// Get student information (prepared) - INCLUDING EMAIL
+$student_stmt = $conn->prepare("SELECT Stu_Name, Stu_Program, Stu_Email FROM student WHERE Stu_ID = ?");
 $student_stmt->bind_param("s", $stu_id);
 $student_stmt->execute();
 $student = $student_stmt->get_result()->fetch_assoc();
@@ -30,7 +30,6 @@ while ($v = $venue_result->fetch_assoc()) {
 // CREATE mode only
 $action = 'ProposalHandler.php?mode=create';
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 
@@ -40,12 +39,9 @@ $action = 'ProposalHandler.php?mode=create';
     <title>Proposal Form </title>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link href="../../assets/css/student/proposal.css?v=<?= time() ?>" rel="stylesheet" />
-
 </head>
 
 <body>
-
-
     <div class="container">
         <div class="header">
             <h1>Proposal Form</h1>
@@ -90,6 +86,19 @@ $action = 'ProposalHandler.php?mode=create';
                             </div>
                         </div>
                     </div>
+                    <div class="form-row">
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="proposalPosition" class="required">Position</label>
+                                <select id="proposalPosition" name="proposal_position" class="form-select" required>
+                                    <option value="">-- Select Position --</option>
+                                    <option value="Chairperson">Event Chairperson</option>
+                                    <option value="Secretary">Event Secretary</option>
+                                </select>
+                                <div class="error-message">Please select your position</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Section 2: Event Details -->
@@ -120,6 +129,17 @@ $action = 'ProposalHandler.php?mode=create';
                                     </option>
                                 </select>
                                 <div class="error-message">Please select event nature</div>
+                            </div>
+                        </div>
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="eventCategory" class="required">Event Category</label>
+                                <select id="eventCategory" name="eventCategory" required>
+                                    <option value="">Select Category</option>
+                                    <option value="Indoor">Indoor</option>
+                                    <option value="Outdoor">Outdoor</option>
+                                </select>
+                                <div class="error-message">Please select event category</div>
                             </div>
                         </div>
                     </div>
@@ -158,7 +178,6 @@ $action = 'ProposalHandler.php?mode=create';
                                     Please enter estimated participants
                                 </div>
                             </div>
-
                         </div>
                         <div class="form-group">
                             <label for="eventDate" class="required">Event Date</label>
@@ -345,6 +364,8 @@ $action = 'ProposalHandler.php?mode=create';
                             <li>Upload PDF files only, maximum file size: 2MB</li>
                             <li>Click "Add" button in Job Scope column to enter detailed job description</li>
                             <li>For COCU claimers, upload the COCU statement document</li>
+                            <li>Email must be in format: n00020547@students.nilai.edu.my</li>
+                            <li>File upload is enabled only when both Register and COCU Claimer are "Yes"</li>
                         </ul>
                     </div>
 
@@ -355,9 +376,11 @@ $action = 'ProposalHandler.php?mode=create';
                                     <th>Student ID</th>
                                     <th>Name</th>
                                     <th>Position</th>
+                                    <th>Email</th>
                                     <th>Department</th>
                                     <th>Phone</th>
                                     <th>Job Scope</th>
+                                    <th>Register</th>
                                     <th>COCU Claimer</th>
                                     <th>Upload COCU</th>
                                     <th>Actions</th>
@@ -373,6 +396,7 @@ $action = 'ProposalHandler.php?mode=create';
                         </button>
                     </div>
                 </div>
+
                 <!-- Section 6: Budget -->
                 <div class="section">
                     <h2 class="section-title">Budget</h2>
@@ -436,7 +460,6 @@ $action = 'ProposalHandler.php?mode=create';
                             </div>
                         </div>
 
-
                         <div class="form-col">
                             <div class="form-group">
                                 <label for="alternativeVenue" class="required">Alternative Venue</label>
@@ -453,7 +476,6 @@ $action = 'ProposalHandler.php?mode=create';
                                 </div>
                             </div>
                         </div>
-
                     </div>
                     <div class="form-col">
                         <div class="form-group">
@@ -469,9 +491,9 @@ $action = 'ProposalHandler.php?mode=create';
                             <div class="preview-container" id="additionalDocPreview"></div>
                         </div>
                     </div>
-
                 </div>
-                <!-- View Modal -->
+
+                <!-- Modals -->
                 <div id="viewModal" class="modal view-modal">
                     <div class="modal-content">
                         <div class="modal-header">
@@ -481,6 +503,51 @@ $action = 'ProposalHandler.php?mode=create';
                         <textarea id="viewModalContent" readonly></textarea>
                     </div>
                 </div>
+
+                <div id="activityModal" class="modal">
+                    <div class="modal-content">
+                        <span class="close">&times;</span>
+                        <h3>Activity Description</h3>
+                        <textarea id="activityDescription" placeholder="Enter activity description..."
+                            style="width: 100%; height: 150px; margin: 15px 0"></textarea>
+                        <button type="button" class="btn btn-primary" id="saveActivityBtn">
+                            Save
+                        </button>
+                    </div>
+                </div>
+
+                <div id="jobScopeModal" class="modal">
+                    <div class="modal-content">
+                        <span class="close">&times;</span>
+                        <h3>Job Scope</h3>
+                        <textarea id="jobScopeDescription" placeholder="Enter job scope..."
+                            style="width: 100%; height: 150px; margin: 15px 0"></textarea>
+                        <button type="button" class="btn btn-primary" id="saveJobScopeBtn">
+                            Save
+                        </button>
+                    </div>
+                </div>
+
+                <div id="loadingOverlay" class="loading-overlay">
+                    <div class="loading-content">
+                        <div class="loading-spinner"></div>
+                        <h3 id="loadingTitle">Processing Your Proposal</h3>
+                        <p id="loadingMessage">Please wait while we submit your proposal to the advisor...</p>
+                        <div class="loading-progress">
+                            <div class="progress-bar" id="progressBar"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="scroll-buttons">
+                    <button class="scroll-btn" id="scrollTopBtn" onclick="scrollToTop()" title="Scroll to Top">
+                        ↑
+                    </button>
+                    <button class="scroll-btn" id="scrollBottomBtn" onclick="scrollToBottom()" title="Scroll to Bottom">
+                        ↓
+                    </button>
+                </div>
+
                 <!-- Form Actions -->
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" id="backBtn">
@@ -499,66 +566,49 @@ $action = 'ProposalHandler.php?mode=create';
         </div>
     </div>
 
-    <!-- Activity Description Modal -->
-    <div id="activityModal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <h3>Activity Description</h3>
-            <textarea id="activityDescription" placeholder="Enter activity description..."
-                style="width: 100%; height: 150px; margin: 15px 0"></textarea>
-            <button type="button" class="btn btn-primary" id="saveActivityBtn">
-                Save
-            </button>
-        </div>
-    </div>
-
-    <!-- Job Scope Modal -->
-    <div id="jobScopeModal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <h3>Job Scope</h3>
-            <textarea id="jobScopeDescription" placeholder="Enter job scope..."
-                style="width: 100%; height: 150px; margin: 15px 0"></textarea>
-            <button type="button" class="btn btn-primary" id="saveJobScopeBtn">
-                Save
-            </button>
-        </div>
-    </div>
-    <!-- Loading Overlay -->
-    <div id="loadingOverlay" class="loading-overlay">
-        <div class="loading-content">
-            <div class="loading-spinner"></div>
-            <h3 id="loadingTitle">Processing Your Proposal</h3>
-            <p id="loadingMessage">Please wait while we submit your proposal to the advisor...</p>
-            <div class="loading-progress">
-                <div class="progress-bar" id="progressBar"></div>
-            </div>
-        </div>
-    </div>
-    <!-- Scroll Buttons -->
-    <div class="scroll-buttons">
-        <button class="scroll-btn" id="scrollTopBtn" onclick="scrollToTop()" title="Scroll to Top">
-            ↑
-        </button>
-        <button class="scroll-btn" id="scrollBottomBtn" onclick="scrollToBottom()" title="Scroll to Bottom">
-            ↓
-        </button>
-    </div>
-
     <script>
         // Initialize form
         document.addEventListener("DOMContentLoaded", function () {
             initializeForm();
             setupEventListeners();
             setMinimumDates();
+            addInitialCommitteeRow(); // Add the logged-in student as first committee member
         });
 
         function initializeForm() {
             // Add initial rows
             addEventFlowRow();
-            addCommitteeRow();
             addBudgetRow();
-            updateRemainingHours(); // 👉 Add this to calculate hours immediately
+            updateRemainingHours();
+        }
+
+        // Add logged-in student as first committee member
+        function addInitialCommitteeRow() {
+            const studentName = document.getElementById('studentName').value;
+            const studentId = document.querySelector('input[name="student_id"]').value;
+            const studentProgram = '<?= $student['Stu_Program'] ?>';
+            const studentEmail = '<?= $student['Stu_Email'] ?>';
+
+            addCommitteeRow(true, {
+                name: studentName,
+                id: studentId,
+                email: studentEmail,
+                department: studentProgram
+            });
+        }
+
+        // Fixed Email validation function
+        function validateCommitteeEmail(email) {
+            // Trim whitespace and convert to lowercase for consistency
+            const cleanEmail = email.trim().toLowerCase();
+
+            // Must start with 'n' followed by exactly 8 digits and end with @students.nilai.edu.my
+            const emailPattern = /^n\d{8}@students\.nilai\.edu\.my$/;
+
+            console.log('Validating email:', cleanEmail); // Debug log
+            console.log('Pattern test result:', emailPattern.test(cleanEmail)); // Debug log
+
+            return emailPattern.test(cleanEmail);
         }
 
         // Scroll functions
@@ -598,37 +648,39 @@ $action = 'ProposalHandler.php?mode=create';
             }
         });
 
-
         function setupEventListeners() {
             // File upload handlers
             setupFileUpload("posterUpload", "eventPoster", handlePosterUpload);
             setupFileUpload("additionalDocUpload", "additionalDocument", handleAdditionalDocUpload);
+
             // Button handlers
-            document
-                .getElementById("addEventFlowBtn")
-                .addEventListener("click", addEventFlowRow);
-            document
-                .getElementById("addCommitteeBtn")
-                .addEventListener("click", addCommitteeRow);
-            document
-                .getElementById("addBudgetBtn")
-                .addEventListener("click", addBudgetRow);
+            document.getElementById("addEventFlowBtn").addEventListener("click", addEventFlowRow);
+            document.getElementById("addCommitteeBtn").addEventListener("click", () => addCommitteeRow(false));
+            document.getElementById("addBudgetBtn").addEventListener("click", addBudgetRow);
 
             // Modal handlers
             setupModalHandlers();
 
             // Form submission
-            document
-                .getElementById("previewBtn")
-                .addEventListener("click", showPreviewMessage);
-            document
-                .getElementById("backBtn")
-                .addEventListener("click", handleBack);
+            document.getElementById("previewBtn").addEventListener("click", showPreviewMessage);
+            document.getElementById("backBtn").addEventListener("click", handleBack);
 
             // Budget calculation
-            document
-                .getElementById("budgetBody")
-                .addEventListener("input", calculateBudget);
+            document.getElementById("budgetBody").addEventListener("input", calculateBudget);
+
+            // Position change handler
+            document.getElementById("proposalPosition").addEventListener("change", updateFirstCommitteeMemberPosition);
+
+            // FIXED: Set up form submission handler
+            setupFormSubmissionHandler();
+        }
+
+        function updateFirstCommitteeMemberPosition() {
+            const position = document.getElementById("proposalPosition").value;
+            const firstPositionInput = document.querySelector('#committeeBody tr:first-child input[name="committeePosition[]"]');
+            if (firstPositionInput && position) {
+                firstPositionInput.value = position;
+            }
         }
 
         function setMinimumDates() {
@@ -639,7 +691,6 @@ $action = 'ProposalHandler.php?mode=create';
             if (eventDate) eventDate.min = minDate;
             if (altDate) altDate.min = minDate;
         }
-
 
         function setupFileUpload(uploadAreaId, inputId, callback) {
             const uploadArea = document.getElementById(uploadAreaId);
@@ -705,28 +756,27 @@ $action = 'ProposalHandler.php?mode=create';
             }
         }
 
-
         function addEventFlowRow() {
             const tbody = document.getElementById("eventFlowBody");
             const row = document.createElement("tr");
             const rowId = "eventFlow_" + Date.now();
 
             row.innerHTML = `
-                <td><input type="date" name="eventFlowDate[]" required></td>
-                <td><input type="time" name="eventFlowStart[]" required></td>
-                <td><input type="time" name="eventFlowEnd[]" required></td>
-                <td><input type="number" name="eventFlowHours[]" class="hours-input" step="0.5" min="0" readonly></td>
-                <td>
-                    <div class="button-container">
-                        <span class="status-dot" id="dot_${rowId}" style="display: none;">🟢</span>
-                        <button type="button" class="btn btn-secondary btn-sm" onclick="addActivityDescription('${rowId}')" title="Click to add activity description">Add</button>
-                        <button type="button" class="btn btn-primary btn-sm" onclick="viewActivityDescription('${rowId}')" disabled>View</button>
-                    </div>
-                        <input type="hidden" name="eventFlowActivity[]" id="activity_${rowId}">
-                </td>
-                <td><input type="text" name="eventFlowRemarks[]" placeholder="Meeting/Eventflow" style="background-color: #f8f9fa;" required></td>
-                <td><button type="button" class="btn btn-danger btn-sm" onclick="deleteRow(this)">Delete</button></td>
-            `;
+        <td><input type="date" name="eventFlowDate[]" required></td>
+        <td><input type="time" name="eventFlowStart[]" required></td>
+        <td><input type="time" name="eventFlowEnd[]" required></td>
+        <td><input type="number" name="eventFlowHours[]" class="hours-input" step="0.5" min="0" readonly></td>
+        <td>
+            <div class="button-container">
+                <span class="status-dot" id="dot_${rowId}" style="display: none;">🟢</span>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="addActivityDescription('${rowId}')" title="Click to add activity description">Add</button>
+                <button type="button" class="btn btn-primary btn-sm" onclick="viewActivityDescription('${rowId}')" disabled>View</button>
+            </div>
+                <input type="hidden" name="eventFlowActivity[]" id="activity_${rowId}">
+        </td>
+        <td><input type="text" name="eventFlowRemarks[]" placeholder="Meeting/Eventflow" style="background-color: #f8f9fa;" required></td>
+        <td><button type="button" class="btn btn-danger btn-sm" onclick="deleteRow(this)">Delete</button></td>
+    `;
 
             updateRemainingHours();
             tbody.appendChild(row);
@@ -761,85 +811,184 @@ $action = 'ProposalHandler.php?mode=create';
                 hoursStatus.textContent = `✅ Minimum requirement met: ${totalHours.toFixed(
                     1
                 )} hours`;
-                hoursStatus.style.color = "#27ae60"; // green
+                hoursStatus.style.color = "#27ae60";
             } else {
                 hoursStatus.textContent = `🕒 ${remaining.toFixed(
                     1
                 )} hours remaining to reach minimum requirement`;
-                hoursStatus.style.color = "#e67e22"; // orange
+                hoursStatus.style.color = "#e67e22";
             }
         }
 
-        function addCommitteeRow() {
+
+        // FIXED: Updated addCommitteeRow function with proper form field handling
+        function addCommitteeRow(isLoggedInStudent = false, studentData = null) {
             const tbody = document.getElementById("committeeBody");
             const row = document.createElement("tr");
             const rowId = "committee_" + Date.now();
 
+            // For logged-in student: make ID, Email, Name, Position readonly but still submittable
+            // For others: all fields except file upload are editable
+            const idReadonly = isLoggedInStudent ? 'readonly' : '';
+            const nameReadonly = isLoggedInStudent ? 'readonly' : '';
+            const positionReadonly = isLoggedInStudent ? 'readonly' : '';
+            const emailReadonly = isLoggedInStudent ? 'readonly' : '';
+
+            // CRITICAL FIX: Use readonly instead of disabled for department
+            // Disabled fields don't get submitted, causing array index misalignment
+            const departmentReadonly = isLoggedInStudent ? 'readonly style="background-color: #f8f9fa; pointer-events: none;"' : '';
+
+            const requiredAttr = 'required'; // All fields are required
+
             row.innerHTML = `
-                <td><input type="text" style="width: 100%;" name="committeeId[]" placeholder="00020547" required></td>
-                <td><input type="text" style="width: 100%;" name="committeeName[]" placeholder="Sharwin" required></td>
-                <td><input type="text" style="width: 100%;" name="committeePosition[]" placeholder="Publicity" required></td>
-                <td>
-                    <select style="width: 100%;" name="committeeDepartment[]" required>
-                        <option value="">Select Department</option>
-                        <option value="Foundation in Business">Foundation in Business</option>
-                        <option value="Foundation in Science">Foundation in Science</option>
-                        <option value="DCS">Diploma in Computer Science</option>
-                        <option value="DIA">Diploma in Accounting</option>
-                        <option value="DAME">Diploma in Aircraft Maintenance Engineering</option>
-                        <option value="DIT">Diploma in Information Technology</option>
-                        <option value="DHM">Diploma in Hotel Management</option>
-                        <option value="DCA">Diploma in Culinary Arts</option>
-                        <option value="DBA">Diploma in Business Administration</option>
-                        <option value="DIN">Diploma in Nursing</option>
-                        <option value="BOF">Bachelor of Finance</option>
-                        <option value="BAAF">Bachelor of Arts in Accounting & Finance</option>
-                        <option value="BBAF">Bachelor of Business Administration in Finance</option>
-                        <option value="BSB">Bachelor of Science Biotechnology</option>
-                        <option value="BCSAI">Bachelor of Computer Science Artificial Intelligence</option>
-                        <option value="BITC">Bachelor of Information Technology Cybersecurity</option>
-                        <option value="BSE">Bachelor of Software Engineering</option>
-                        <option value="BCSDS">Bachelor of Computer Science Data Science</option>
-                        <option value="BIT">Bachelor of Information Technology</option>
-                        <option value="BITIECC">Bachelor of Information Technology Internet Engineering and Cloud Computing</option>
-                        <option value="BEM">Bachelor of Event Management</option>
-                        <option value="BHMBM">Bachelor of Hospitality Management with Business Management</option>
-                        <option value="BBAGL">Bachelor of Business Administration in Global Logistic</option>
-                        <option value="BBADM">Bachelor of Business Administration in Digital Marketing</option>
-                        <option value="BBAM">Bachelor of Business Administration in Marketing</option>
-                        <option value="BBAMT">Bachelor of Business Administration in Management</option>
-                        <option value="BBAIB">Bachelor of Business Administration in International Business</option>
-                        <option value="BBAHRM">Bachelor of Business Administration in Human Resource Management</option>
-                        <option value="BBA">Bachelor of Business Administration</option>
-                        <option value="BSN">Bachelor of Science in Nursing</option>
-                    </select>
-                </td>
-                <td><input type="tel" style="width: 100%;" name="committeePhone[]" placeholder="0123456789" required></td>
-                <td>
-    <div class="button-container">
-        <span class="status-dot" id="jobDot_${rowId}" style="display: none;">🟢</span>
-        <button type="button" class="btn btn-secondary btn-sm" onclick="addJobScope('${rowId}')">Add</button>
-        <button type="button" class="btn btn-primary btn-sm" onclick="viewJobScope('${rowId}')" disabled>View</button>
-    </div>
-    <input type="hidden" name="committeeJobScope[]" id="jobScope_${rowId}">
-</td>
-                <td>
-                    <select name="cocuClaimer[]" style="width: 100%;" onchange="toggleCocuUpload(this, '${rowId}')" required>
-                        <option value="no" selected>No</option>
-                        <option value="yes">Yes</option>
-                    </select>
-                </td>
-                <td>
-                    <input type="file" name="cocuStatement[]" id="cocuFile_${rowId}" accept=".pdf" disabled style="font-size: 11px; width: 100%;">
-                </td>
-                <td>
-                    <button type="button" class="btn-delete-icon" onclick="deleteRow(this)" title="Delete row">
-                        🗑️
-                    </button>
-                </td>
-            `;
+        <td><input type="text" style="width: 100%;" name="committeeId[]" placeholder="00020547" 
+            value="${studentData ? studentData.id : ''}" ${idReadonly} ${requiredAttr}></td>
+        <td><input type="text" style="width: 100%;" name="committeeName[]" placeholder="Sharwin" 
+            value="${studentData ? studentData.name : ''}" ${nameReadonly} ${requiredAttr}></td>
+        <td><input type="text" style="width: 100%;" name="committeePosition[]" placeholder="Publicity" ${positionReadonly} ${requiredAttr}></td>
+        <td><input type="email" style="width: 100%;" name="committeeEmail[]" 
+            placeholder="n00020547@students.nilai.edu.my" 
+            value="${studentData ? studentData.email : ''}"
+            title="Email must be in format: n00020547@students.nilai.edu.my" ${emailReadonly} ${requiredAttr}></td>
+        <td>
+            ${isLoggedInStudent ?
+                    `<input type="text" style="width: 100%; background-color: #f8f9fa;" name="committeeDepartment[]" 
+                 value="${studentData ? studentData.department : ''}" readonly ${requiredAttr}>` :
+                    `<select style="width: 100%;" name="committeeDepartment[]" ${requiredAttr}>
+                    <option value="">Select Department</option>
+                    <option value="Foundation in Business">Foundation in Business</option>
+                    <option value="Foundation in Science">Foundation in Science</option>
+                    <option value="DCS">Diploma in Computer Science</option>
+                    <option value="DIA">Diploma in Accounting</option>
+                    <option value="DAME">Diploma in Aircraft Maintenance Engineering</option>
+                    <option value="DIT">Diploma in Information Technology</option>
+                    <option value="DHM">Diploma in Hotel Management</option>
+                    <option value="DCA">Diploma in Culinary Arts</option>
+                    <option value="DBA">Diploma in Business Administration</option>
+                    <option value="DIN">Diploma in Nursing</option>
+                    <option value="BOF">Bachelor of Finance</option>
+                    <option value="BAAF">Bachelor of Arts in Accounting & Finance</option>
+                    <option value="BBAF">Bachelor of Business Administration in Finance</option>
+                    <option value="BSB">Bachelor of Science Biotechnology</option>
+                    <option value="BCSAI">Bachelor of Computer Science Artificial Intelligence</option>
+                    <option value="BITC">Bachelor of Information Technology Cybersecurity</option>
+                    <option value="BSE">Bachelor of Software Engineering</option>
+                    <option value="BCSDS">Bachelor of Computer Science Data Science</option>
+                    <option value="BIT">Bachelor of Information Technology</option>
+                    <option value="BITIECC">Bachelor of Information Technology Internet Engineering and Cloud Computing</option>
+                    <option value="BEM">Bachelor of Event Management</option>
+                    <option value="BHMBM">Bachelor of Hospitality Management with Business Management</option>
+                    <option value="BBAGL">Bachelor of Business Administration in Global Logistic</option>
+                    <option value="BBADM">Bachelor of Business Administration in Digital Marketing</option>
+                    <option value="BBAM">Bachelor of Business Administration in Marketing</option>
+                    <option value="BBAMT">Bachelor of Business Administration in Management</option>
+                    <option value="BBAIB">Bachelor of Business Administration in International Business</option>
+                    <option value="BBAHRM">Bachelor of Business Administration in Human Resource Management</option>
+                    <option value="BBA">Bachelor of Business Administration</option>
+                    <option value="BSN">Bachelor of Science in Nursing</option>
+                </select>`
+                }
+        </td>
+        <td><input type="tel" style="width: 100%;" name="committeePhone[]" placeholder="0123456789" ${requiredAttr}></td>
+        <td>
+            <div class="button-container">
+                <span class="status-dot" id="jobDot_${rowId}" style="display: none;">🟢</span>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="addJobScope('${rowId}')">Add</button>
+                <button type="button" class="btn btn-primary btn-sm" onclick="viewJobScope('${rowId}')" disabled>View</button>
+            </div>
+            <input type="hidden" name="committeeJobScope[]" id="jobScope_${rowId}">
+        </td>
+        <td>
+            <select name="committeeRegister[]" style="width: 100%;" onchange="toggleCocuUpload('${rowId}')" ${requiredAttr}>
+                <option value="No" selected>No</option>
+                <option value="Yes">Yes</option>
+            </select>
+        </td>
+        <td>
+            <select name="cocuClaimer[]" style="width: 100%;" onchange="toggleCocuUpload('${rowId}')" ${requiredAttr}>
+                <option value="no" selected>No</option>
+                <option value="yes">Yes</option>
+            </select>
+        </td>
+        <td>
+            <input type="file" name="cocuStatement[]" id="cocuFile_${rowId}" accept=".pdf" disabled style="font-size: 11px; width: 100%;">
+        </td>
+        <td>
+            <button type="button" class="btn-delete-icon" onclick="deleteRow(this)" title="Delete row" ${isLoggedInStudent ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}>
+                🗑️
+            </button>
+        </td>
+    `;
 
             tbody.appendChild(row);
+
+            // Add email validation for ALL email inputs (both logged-in and new students)
+            const emailInput = row.querySelector('input[name="committeeEmail[]"]');
+
+            // Track if we've already shown an error for this field to prevent infinite loops
+            let errorShown = false;
+
+            // Add real-time validation on input change
+            emailInput.addEventListener('input', function () {
+                this.value = this.value.toLowerCase(); // Convert to lowercase as user types
+
+                // Reset error tracking when user starts typing
+                errorShown = false;
+
+                // Remove any error styling
+                this.style.borderColor = '';
+                this.style.backgroundColor = '';
+            });
+
+            // Add validation on blur (when user leaves the field) - FIXED VERSION
+            emailInput.addEventListener('blur', function () {
+                const email = this.value.trim();
+
+                // Only validate if there's an email and we haven't already shown an error
+                if (email && !validateCommitteeEmail(email) && !errorShown) {
+                    // Set flag to prevent multiple alerts
+                    errorShown = true;
+
+                    // Add error styling
+                    this.style.borderColor = '#e74c3c';
+                    this.style.backgroundColor = '#fdf2f2';
+
+                    // Show the error without refocusing (which causes the loop)
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Invalid Email Format',
+                        text: 'Email must be in format: n00020547@students.nilai.edu.my (starting with "n" followed by exactly 8 digits)',
+                        confirmButtonColor: '#e74c3c'
+                    }).then(() => {
+                        // After user clicks OK, clear the field to force them to re-enter
+                        this.value = '';
+                        this.style.borderColor = '';
+                        this.style.backgroundColor = '';
+                        errorShown = false; // Reset error flag
+                    });
+                } else if (email && validateCommitteeEmail(email)) {
+                    // Remove error styling if valid
+                    this.style.borderColor = '#27ae60';
+                    this.style.backgroundColor = '#f8fff8';
+                    errorShown = false; // Reset error flag for valid emails
+                }
+            });
+        }
+
+        function toggleCocuUpload(rowId) {
+            const registerSelect = document.querySelector(`tr:has(#cocuFile_${rowId}) select[name="committeeRegister[]"]`);
+            const cocuSelect = document.querySelector(`tr:has(#cocuFile_${rowId}) select[name="cocuClaimer[]"]`);
+            const fileInput = document.getElementById(`cocuFile_${rowId}`);
+
+            // Enable file upload only if both Register and COCU Claimer are "Yes"
+            const registerValue = registerSelect.value;
+            const cocuValue = cocuSelect.value;
+
+            fileInput.disabled = !(registerValue === "Yes" && cocuValue === "yes");
+
+            if (fileInput.disabled) {
+                fileInput.value = "";
+            }
         }
 
         function addBudgetRow() {
@@ -847,23 +996,39 @@ $action = 'ProposalHandler.php?mode=create';
             const row = document.createElement("tr");
 
             row.innerHTML = `
-                <td><input type="text" name="budgetDescription[]" placeholder="Enter budget description" required></td>
-                <td><input type="number" name="budgetAmount[]" step="0.01" min="0" placeholder="enter amount = 250" required></td>
-                <td>
-                    <select name="budgetType[]" required>
-                        <option value="">Select</option>
-                        <option value="income">Income</option>
-                        <option value="expense">Expense</option>
-                    </select>
-                </td>
-                <td><input type="text" name="budgetRemarks[]" placeholder="Enter remarks (optional)"></td>
-                <td><button type="button" class="btn btn-danger btn-sm" onclick="deleteRow(this)">Delete</button></td>
-            `;
+        <td><input type="text" name="budgetDescription[]" placeholder="Enter budget description" required></td>
+        <td><input type="number" name="budgetAmount[]" step="0.01" min="0" placeholder="enter amount = 250" required></td>
+        <td>
+            <select name="budgetType[]" required>
+                <option value="">Select</option>
+                <option value="income">Income</option>
+                <option value="expense">Expense</option>
+            </select>
+        </td>
+        <td><input type="text" name="budgetRemarks[]" placeholder="Enter remarks (optional)"></td>
+        <td><button type="button" class="btn btn-danger btn-sm" onclick="deleteRow(this)">Delete</button></td>
+    `;
 
             tbody.appendChild(row);
         }
 
         function deleteRow(button) {
+            // Check if this is the first committee row (logged-in student)
+            const row = button.closest("tr");
+            const tbody = row.parentNode;
+            const isCommitteeTable = tbody.id === "committeeBody";
+            const isFirstRow = isCommitteeTable && row === tbody.firstElementChild;
+
+            if (isFirstRow) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Cannot Delete',
+                    text: 'Cannot delete your own committee entry.',
+                    confirmButtonColor: '#6c757d'
+                });
+                return;
+            }
+
             Swal.fire({
                 title: 'Are you sure?',
                 text: "You want to delete this row?",
@@ -874,7 +1039,7 @@ $action = 'ProposalHandler.php?mode=create';
                 confirmButtonText: 'Yes, delete it!'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    button.closest("tr").remove();
+                    row.remove();
                     calculateBudget();
                     updateRemainingHours();
                     Swal.fire(
@@ -898,59 +1063,47 @@ $action = 'ProposalHandler.php?mode=create';
                 });
             });
 
-
-
-
             // Save activity description
-            document
-                .getElementById("saveActivityBtn")
-                .addEventListener("click", function () {
-                    const description = document.getElementById(
-                        "activityDescription"
-                    ).value;
-                    if (description.trim()) {
-                        const rowId = activityModal.getAttribute("data-row-id");
-                        document.getElementById("activity_" + rowId).value = description;
+            document.getElementById("saveActivityBtn").addEventListener("click", function () {
+                const description = document.getElementById("activityDescription").value;
+                if (description.trim()) {
+                    const rowId = activityModal.getAttribute("data-row-id");
+                    document.getElementById("activity_" + rowId).value = description;
 
-                        // Enable view button
-                        const viewBtn = document.querySelector(
-                            `button[onclick="viewActivityDescription('${rowId}')"]`
-                        );
-                        viewBtn.disabled = false;
+                    // Enable view button
+                    const viewBtn = document.querySelector(
+                        `button[onclick="viewActivityDescription('${rowId}')"]`
+                    );
+                    viewBtn.disabled = false;
 
-                        // Show the green dot to indicate description is added
-                        document.getElementById("dot_" + rowId).style.display = "inline";
+                    // Show the green dot to indicate description is added
+                    document.getElementById("dot_" + rowId).style.display = "inline";
 
-                        activityModal.style.display = "none";
-                        document.getElementById("activityDescription").value = "";
-                    }
-                });
+                    activityModal.style.display = "none";
+                    document.getElementById("activityDescription").value = "";
+                }
+            });
 
             // Save job scope
-            // Save job scope
-            document
-                .getElementById("saveJobScopeBtn")
-                .addEventListener("click", function () {
-                    const description = document.getElementById(
-                        "jobScopeDescription"
-                    ).value;
-                    if (description.trim()) {
-                        const rowId = jobScopeModal.getAttribute("data-row-id");
-                        document.getElementById("jobScope_" + rowId).value = description;
+            document.getElementById("saveJobScopeBtn").addEventListener("click", function () {
+                const description = document.getElementById("jobScopeDescription").value;
+                if (description.trim()) {
+                    const rowId = jobScopeModal.getAttribute("data-row-id");
+                    document.getElementById("jobScope_" + rowId).value = description;
 
-                        // Enable view button
-                        const viewBtn = document.querySelector(
-                            `button[onclick="viewJobScope('${rowId}')"]`
-                        );
-                        viewBtn.disabled = false;
+                    // Enable view button
+                    const viewBtn = document.querySelector(
+                        `button[onclick="viewJobScope('${rowId}')"]`
+                    );
+                    viewBtn.disabled = false;
 
-                        // Show the green dot to indicate job scope is added
-                        document.getElementById("jobDot_" + rowId).style.display = "inline";
+                    // Show the green dot to indicate job scope is added
+                    document.getElementById("jobDot_" + rowId).style.display = "inline";
 
-                        jobScopeModal.style.display = "none";
-                        document.getElementById("jobScopeDescription").value = "";
-                    }
-                });
+                    jobScopeModal.style.display = "none";
+                    document.getElementById("jobScopeDescription").value = "";
+                }
+            });
         }
 
         function addActivityDescription(rowId) {
@@ -959,11 +1112,8 @@ $action = 'ProposalHandler.php?mode=create';
             modal.style.display = "block";
 
             // Load existing description if any
-            const existingDescription = document.getElementById(
-                "activity_" + rowId
-            ).value;
-            document.getElementById("activityDescription").value =
-                existingDescription;
+            const existingDescription = document.getElementById("activity_" + rowId).value;
+            document.getElementById("activityDescription").value = existingDescription;
         }
 
         function viewActivityDescription(rowId) {
@@ -977,35 +1127,23 @@ $action = 'ProposalHandler.php?mode=create';
             modal.style.display = "block";
 
             // Load existing job scope if any
-            const existingJobScope = document.getElementById(
-                "jobScope_" + rowId
-            ).value;
+            const existingJobScope = document.getElementById("jobScope_" + rowId).value;
             document.getElementById("jobScopeDescription").value = existingJobScope;
         }
+
         function showViewModal(title, content) {
             document.getElementById("viewModalTitle").textContent = title;
             document.getElementById("viewModalContent").value = content;
             document.getElementById("viewModal").style.display = "block";
         }
 
-
         function viewJobScope(rowId) {
             const jobScope = document.getElementById("jobScope_" + rowId).value;
             showViewModal("Job Scope", jobScope || "No job scope has been added for this activity yet.");
         }
 
-        function toggleCocuUpload(select, rowId) {
-            const fileInput = document.getElementById("cocuFile_" + rowId);
-            fileInput.disabled = select.value !== "yes";
-            if (select.value !== "yes") {
-                fileInput.value = "";
-            }
-        }
-
         function calculateBudget() {
-            const amounts = document.querySelectorAll(
-                'input[name="budgetAmount[]"]'
-            );
+            const amounts = document.querySelectorAll('input[name="budgetAmount[]"]');
             const types = document.querySelectorAll('select[name="budgetType[]"]');
 
             let totalIncome = 0;
@@ -1024,15 +1162,9 @@ $action = 'ProposalHandler.php?mode=create';
 
             const surplusDeficit = totalIncome - totalExpense;
 
-            document.getElementById(
-                "totalIncome"
-            ).textContent = `RM ${totalIncome.toFixed(2)}`;
-            document.getElementById(
-                "totalExpense"
-            ).textContent = `RM ${totalExpense.toFixed(2)}`;
-            document.getElementById(
-                "surplusDeficit"
-            ).textContent = `RM ${surplusDeficit.toFixed(2)}`;
+            document.getElementById("totalIncome").textContent = `RM ${totalIncome.toFixed(2)}`;
+            document.getElementById("totalExpense").textContent = `RM ${totalExpense.toFixed(2)}`;
+            document.getElementById("surplusDeficit").textContent = `RM ${surplusDeficit.toFixed(2)}`;
 
             // Change color based on surplus/deficit
             const surplusDeficitElement = document.getElementById("surplusDeficit");
@@ -1046,9 +1178,7 @@ $action = 'ProposalHandler.php?mode=create';
         }
 
         function validateForm() {
-            const requiredFields = document.querySelectorAll(
-                "input[required], select[required], textarea[required]"
-            );
+            const requiredFields = document.querySelectorAll("input[required], select[required], textarea[required]");
             let isValid = true;
 
             requiredFields.forEach((field) => {
@@ -1061,14 +1191,21 @@ $action = 'ProposalHandler.php?mode=create';
                 }
             });
 
+            // Validate committee emails
+            const emailInputs = document.querySelectorAll('input[name="committeeEmail[]"]');
+            emailInputs.forEach((emailInput) => {
+                if (emailInput.value && !validateCommitteeEmail(emailInput.value)) {
+                    emailInput.closest(".form-group") && emailInput.closest(".form-group").classList.add("error");
+                    isValid = false;
+                }
+            });
+
             // Add this after the existing file validation
             const orgChart = document.getElementById("additionalDocument");
             if (!orgChart.files.length) {
                 orgChart.closest(".form-group").classList.add("error");
                 isValid = false;
             }
-
-            // Custom validations
 
             // Event date validation (minimum 14 days from today)
             const eventDate = document.getElementById("eventDate");
@@ -1084,11 +1221,7 @@ $action = 'ProposalHandler.php?mode=create';
             const startTime = document.getElementById("startTime");
             const endTime = document.getElementById("endTime");
 
-            if (
-                startTime.value &&
-                endTime.value &&
-                startTime.value >= endTime.value
-            ) {
+            if (startTime.value && endTime.value && startTime.value >= endTime.value) {
                 endTime.closest(".form-group").classList.add("error");
                 isValid = false;
             }
@@ -1122,6 +1255,7 @@ $action = 'ProposalHandler.php?mode=create';
 
             return isValid;
         }
+
         function markError(field, show) {
             const group = field.closest(".form-group");
             if (group) group.classList.toggle("error", !!show);
@@ -1144,11 +1278,11 @@ $action = 'ProposalHandler.php?mode=create';
 
                 const preview = document.getElementById("additionalDocPreview");
                 preview.innerHTML = `
-    <div style="margin-top: 10px; padding: 10px; background: #e8f5e8; border-radius: 5px;">
-        <span>✅ Organization Chart: ${file.name}</span>
-        <button type="button" class="btn btn-primary btn-sm" style="margin-left: 10px;" onclick="viewPDF('${file.name}')">View PDF</button>
-    </div>
-`;
+            <div style="margin-top: 10px; padding: 10px; background: #e8f5e8; border-radius: 5px;">
+                <span>✅ Organization Chart: ${file.name}</span>
+                <button type="button" class="btn btn-primary btn-sm" style="margin-left: 10px;" onclick="viewPDF('${file.name}')">View PDF</button>
+            </div>
+        `;
             }
         }
 
@@ -1169,6 +1303,7 @@ $action = 'ProposalHandler.php?mode=create';
                 confirmButtonColor: '#ac73ff'
             });
         }
+
         function handleBack() {
             Swal.fire({
                 title: 'Are you sure?',
@@ -1187,9 +1322,7 @@ $action = 'ProposalHandler.php?mode=create';
         }
 
         function getTotalEventFlowHours() {
-            const hourInputs = document.querySelectorAll(
-                'input[name="eventFlowHours[]"]'
-            );
+            const hourInputs = document.querySelectorAll('input[name="eventFlowHours[]"]');
             let total = 0;
             hourInputs.forEach((input) => {
                 total += parseFloat(input.value) || 0;
@@ -1197,39 +1330,16 @@ $action = 'ProposalHandler.php?mode=create';
             return total;
         }
 
-        document.getElementById("proposalForm").addEventListener("submit", function (e) {
-            e.preventDefault(); // Prevent auto-submit
-
-            const totalHours = calculateTotalHours();
-            if (totalHours < 40) {
-                Swal.fire({
-                    icon: "error",
-                    title: "Minimum 40 Hours Required",
-                    text: `You only have ${totalHours} hours. Minimum 40 hours needed.`,
-                });
-                return;
-            }
-
-            // SweetAlert confirmation
-            Swal.fire({
-                title: "Submit Proposal?",
-                text: "Once submitted, you can only modify it if rejected.",
-                icon: "question",
-                showCancelButton: true,
-                confirmButtonText: "Yes, Submit",
-                cancelButtonText: "Cancel",
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // Show loading overlay immediately after confirmation
-                    showLoadingScreen();
-
-                    // Add a small delay to show the loading screen, then submit
-                    setTimeout(() => {
-                        document.getElementById("proposalForm").submit();
-                    }, 500);
+        function calculateTotalHours() {
+            let total = 0;
+            document.querySelectorAll(".hours-input").forEach((input) => {
+                const val = parseFloat(input.value);
+                if (!isNaN(val)) {
+                    total += val;
                 }
             });
-        });
+            return total;
+        }
 
         function showLoadingScreen() {
             const loadingOverlay = document.getElementById('loadingOverlay');
@@ -1249,15 +1359,74 @@ $action = 'ProposalHandler.php?mode=create';
             }, 3000);
         }
 
-        function calculateTotalHours() {
-            let total = 0;
-            document.querySelectorAll(".hours-input").forEach((input) => {
-                const val = parseFloat(input.value);
-                if (!isNaN(val)) {
-                    total += val;
+        // FIXED: Form submission handler - no infinite loop, no duplicate handlers
+        function setupFormSubmissionHandler() {
+            document.getElementById("proposalForm").addEventListener("submit", function (e) {
+                e.preventDefault(); // Prevent auto-submit
+
+                const totalHours = calculateTotalHours();
+                if (totalHours < 40) {
+                    Swal.fire({
+                        icon: "error",
+                        title: "Minimum 40 Hours Required",
+                        text: `You only have ${totalHours} hours. Minimum 40 hours needed.`,
+                    });
+                    return;
                 }
+
+                // Validate email formats - FIXED VERSION (no infinite loop)
+                const emailInputs = document.querySelectorAll('input[name="committeeEmail[]"]');
+                let firstInvalidEmail = null;
+
+                for (let i = 0; i < emailInputs.length; i++) {
+                    const emailInput = emailInputs[i];
+                    const email = emailInput.value.trim();
+
+                    if (email && !validateCommitteeEmail(email)) {
+                        firstInvalidEmail = emailInput;
+                        break; // Stop at first invalid email
+                    }
+                }
+
+                // If we found an invalid email, show error and stop submission
+                if (firstInvalidEmail) {
+                    // Highlight the problematic field
+                    firstInvalidEmail.style.borderColor = '#e74c3c';
+                    firstInvalidEmail.style.backgroundColor = '#fdf2f2';
+
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Invalid Email Format',
+                        text: `Email "${firstInvalidEmail.value}" is not valid. All committee emails must be in format: n00020547@students.nilai.edu.my`,
+                        confirmButtonColor: '#e74c3c'
+                    }).then(() => {
+                        // Scroll to the problematic field but DON'T focus (to avoid blur event)
+                        firstInvalidEmail.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    });
+
+                    return; // Stop submission
+                }
+
+                // SweetAlert confirmation if all validations pass
+                Swal.fire({
+                    title: "Submit Proposal?",
+                    text: "Once submitted, you can only modify it if rejected.",
+                    icon: "question",
+                    showCancelButton: true,
+                    confirmButtonText: "Yes, Submit",
+                    cancelButtonText: "Cancel",
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Show loading overlay immediately after confirmation
+                        showLoadingScreen();
+
+                        // Add a small delay to show the loading screen, then submit
+                        setTimeout(() => {
+                            document.getElementById("proposalForm").submit();
+                        }, 500);
+                    }
+                });
             });
-            return total;
         }
     </script>
 </body>

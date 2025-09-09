@@ -44,8 +44,6 @@ if ($result->num_rows === 0) {
 $event = $result->fetch_assoc();
 
 // Determine status display (based on role)
-
-
 $status_text = 'Ongoing';
 $status_class = 'status-approved';
 if ($user_type === 'student') {
@@ -101,7 +99,6 @@ $summary_stmt->execute();
 $summary_result = $summary_stmt->get_result();
 $summary = $summary_result->fetch_assoc();
 
-
 ?>
 
 <!DOCTYPE html>
@@ -140,6 +137,10 @@ $summary = $summary_result->fetch_assoc();
                         <div class="info-value"><?= htmlspecialchars($event['Stu_ID']) ?></div>
                     </div>
                     <div class="info-item">
+                        <div class="info-label">Position</div>
+                        <div class="info-value"><?= htmlspecialchars($event['Proposal_Position']) ?></div>
+                    </div>
+                    <div class="info-item">
                         <div class="info-label">Club</div>
                         <div class="info-value"><?= htmlspecialchars($event['Club_Name']) ?></div>
                     </div>
@@ -157,6 +158,10 @@ $summary = $summary_result->fetch_assoc();
                     <div class="info-item">
                         <div class="info-label">Event Nature</div>
                         <div class="info-value"><?= htmlspecialchars($event['Ev_ProjectNature']) ?></div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Event Category</div>
+                        <div class="info-value"><?= htmlspecialchars($event['Ev_Category']) ?></div>
                     </div>
                     <div class="info-item">
                         <div class="info-label">Event Date</div>
@@ -270,9 +275,9 @@ $summary = $summary_result->fetch_assoc();
                 </div>
             </div>
 
-            <!-- Section 5: Committee Members -->
+            <!-- Section 5: Committee Members - Basic Information -->
             <div class="section">
-                <h2 class="section-title">Committee Members</h2>
+                <h2 class="section-title">Committee Members - Basic Information</h2>
                 <div class="table-container">
                     <table>
                         <thead>
@@ -281,21 +286,65 @@ $summary = $summary_result->fetch_assoc();
                                 <th>Name</th>
                                 <th>Position</th>
                                 <th>Department</th>
-                                <th>Phone</th>
-                                <th>Job Scope</th>
-                                <th>COCU Claimer</th>
-                                <th>COCU Statement</th>
+                                <th>Email</th>
+                                <th>Phone Number</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php while ($row = $com_result->fetch_assoc()): ?>
+                            <?php
+                            // Reset the committee query for first table
+                            $com_stmt1 = $conn->prepare("SELECT * FROM committee WHERE Ev_ID = ?");
+                            $com_stmt1->bind_param("s", $ev_id);
+                            $com_stmt1->execute();
+                            $com_result1 = $com_stmt1->get_result();
+
+                            while ($row = $com_result1->fetch_assoc()): ?>
                                 <tr>
                                     <td><?= htmlspecialchars($row['Com_ID']) ?></td>
                                     <td><?= htmlspecialchars($row['Com_Name']) ?></td>
                                     <td><?= htmlspecialchars($row['Com_Position']) ?></td>
                                     <td><?= htmlspecialchars($row['Com_Department']) ?></td>
+                                    <td><?= htmlspecialchars($row['Com_Email']) ?></td>
                                     <td><?= htmlspecialchars($row['Com_PhnNum']) ?></td>
+                                </tr>
+                            <?php endwhile; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Section 6: Committee Members - Role & Documentation -->
+            <div class="section">
+                <h2 class="section-title">Committee Members - Role & Documentation</h2>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Student Name</th>
+                                <th>Job Scope</th>
+                                <th>Registered</th>
+                                <th>COCU Claimer</th>
+                                <th>COCU Statement</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php
+                            // Reset the committee query for second table
+                            $com_stmt2 = $conn->prepare("SELECT * FROM committee WHERE Ev_ID = ?");
+                            $com_stmt2->bind_param("s", $ev_id);
+                            $com_stmt2->execute();
+                            $com_result2 = $com_stmt2->get_result();
+
+                            while ($row = $com_result2->fetch_assoc()): ?>
+                                <tr>
+                                    <td><?= htmlspecialchars($row['Com_Name']) ?></td>
                                     <td><?= htmlspecialchars($row['Com_JobScope']) ?></td>
+                                    <td>
+                                        <span
+                                            class="register-badge <?= $row['Com_Register'] === 'Yes' ? 'registered' : 'not-registered' ?>">
+                                            <?= $row['Com_Register'] ?>
+                                        </span>
+                                    </td>
                                     <td><?= ucfirst($row['Com_COCUClaimers']) ?></td>
                                     <td>
                                         <?php
@@ -315,6 +364,8 @@ $summary = $summary_result->fetch_assoc();
                     </table>
                 </div>
             </div>
+
+            <!-- Section 7: Budget -->
 
             <!-- Section 6: Budget -->
             <div class="section">
@@ -365,7 +416,7 @@ $summary = $summary_result->fetch_assoc();
             </div>
 
 
-            <!-- Section 7: Additional Information -->
+            <!-- Section 8: Additional Information -->
             <div class="section">
                 <h2 class="section-title">Additional Information</h2>
                 <div class="info-grid">
@@ -432,8 +483,6 @@ $summary = $summary_result->fetch_assoc();
         // Set current date for print
         document.getElementById('printDate').textContent = new Date().toLocaleDateString();
         // PHP will insert the real Status_ID here
-
-
 
         const statusID = <?= (int) $event['Status_ID'] ?>;
         function editProposal() {
@@ -553,8 +602,6 @@ $summary = $summary_result->fetch_assoc();
             });
         }
 
-
-
         // Add loading animation for heavy content
         window.addEventListener('load', function () {
             document.querySelectorAll('.section').forEach((section, index) => {
@@ -578,14 +625,14 @@ $summary = $summary_result->fetch_assoc();
             let message = '';
 
             switch (status) {
-                case 'Pending Advisor':
+                case 'pending advisor':
+                    message = 'This proposal is waiting for approval from the Advisor.';
+                    break;
+                case 'pending coordinator':
                     message = 'This proposal is waiting for approval from the Coordinator.';
                     break;
-                case 'Pending Coordinator':
+                case 'ongoing':
                     message = 'This proposal has been approved and the event can proceed.';
-                    break;
-                case 'Ongoing':
-                    message = 'This proposal was rejected. You can edit and resubmit.';
                     break;
             }
 
@@ -627,13 +674,6 @@ $summary = $summary_result->fetch_assoc();
                 }, 300);
             }
         });
-
-
-
-        // Add dynamic status update functionality (for real implementation)
-
-
-
 
         // Add responsive table scrolling indicator
         function addScrollIndicators() {

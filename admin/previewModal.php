@@ -508,6 +508,26 @@ $conclusion = $postevent['Rep_Conclusion'] ?? '';
             font-style: italic;
         }
 
+        /* Status Badge Styles */
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .status-registered {
+            background-color: var(--success);
+            color: white;
+        }
+
+        .status-not-registered {
+            background-color: var(--danger);
+            color: white;
+        }
+
         @media (max-width: 768px) {
             .header-content {
                 flex-direction: column;
@@ -677,6 +697,12 @@ $conclusion = $postevent['Rep_Conclusion'] ?? '';
                         <div class="info-value"><?= htmlspecialchars($event['Stu_ID'] ?? 'N/A') ?></div>
                     </div>
 
+                    <!-- NEW: Student Position -->
+                    <div class="info-item">
+                        <div class="info-label">Student Position</div>
+                        <div class="info-value"><?= htmlspecialchars($event['Proposal_Position'] ?? 'N/A') ?></div>
+                    </div>
+
                     <div class="info-item">
                         <div class="info-label">Club Name</div>
                         <div class="info-value"><?= htmlspecialchars($event['Club_Name'] ?? 'N/A') ?></div>
@@ -690,6 +716,12 @@ $conclusion = $postevent['Rep_Conclusion'] ?? '';
                     <div class="info-item">
                         <div class="info-label">Event Nature</div>
                         <div class="info-value"><?= htmlspecialchars($event['Ev_ProjectNature'] ?? 'N/A') ?></div>
+                    </div>
+
+                    <!-- NEW: Event Category -->
+                    <div class="info-item">
+                        <div class="info-label">Event Category</div>
+                        <div class="info-value"><?= htmlspecialchars($event['Ev_Category'] ?? 'N/A') ?></div>
                     </div>
 
                     <div class="info-item">
@@ -853,10 +885,12 @@ $conclusion = $postevent['Rep_Conclusion'] ?? '';
                                     <th>Committee ID</th>
                                     <th>Position</th>
                                     <th>Name</th>
+                                    <th>Email</th>
                                     <th>Department</th>
                                     <th>Phone Number</th>
                                     <th>Job Scope</th>
                                     <th>COCU Claimers</th>
+                                    <th>Registration Status</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -865,10 +899,18 @@ $conclusion = $postevent['Rep_Conclusion'] ?? '';
                                         <td><?= htmlspecialchars($com['Com_ID']) ?></td>
                                         <td><?= htmlspecialchars($com['Com_Position']) ?></td>
                                         <td><?= htmlspecialchars($com['Com_Name']) ?></td>
+                                        <td><?= htmlspecialchars($com['Com_Email']) ?></td>
                                         <td><?= htmlspecialchars($com['Com_Department']) ?></td>
                                         <td><?= htmlspecialchars($com['Com_PhnNum']) ?></td>
                                         <td><?= htmlspecialchars($com['Com_JobScope']) ?></td>
                                         <td><?= strtolower($com['Com_COCUClaimers']) == 'yes' ? 'Yes' : 'No' ?></td>
+                                        <td>
+                                            <?php if (strtolower($com['Com_Register']) == 'yes'): ?>
+                                                <span class="status-badge status-registered">Registered</span>
+                                            <?php else: ?>
+                                                <span class="status-badge status-not-registered">Not Registered</span>
+                                            <?php endif; ?>
+                                        </td>
                                     </tr>
                                 <?php endwhile; ?>
                             </tbody>
@@ -1116,8 +1158,8 @@ $conclusion = $postevent['Rep_Conclusion'] ?? '';
                     <div class="report-item text-muted">No budget statement uploaded.</div>
                 <?php endif; ?>
 
-                <!-- Fixed Individual Reports -->
-                <h4 style="color: var(--header-green); margin: 15px 0">Individual Reports</h4>
+                <!-- COCU Individual Reports -->
+                <h4 style="color: var(--header-green); margin: 15px 0">COCU Individual Reports</h4>
 
                 <?php
                 // Reset committees result pointer and check for COCU reports
@@ -1130,16 +1172,34 @@ $conclusion = $postevent['Rep_Conclusion'] ?? '';
                             $name = $cocu['Com_Name'];
                             $id_number = $cocu['Com_ID'];
                             $position = $cocu['Com_Position'];
-                            $filepath = $cocu['student_statement'] ?? '';
 
-                            if (!empty($filepath)):
+                            // Check if there's an individual report for this committee member
+                            $individualReportPath = null;
+                            if (!empty($rep_id)) {
+                                $irQuery = "SELECT IR_File FROM individualreport WHERE Rep_ID = ? AND Com_ID = ?";
+                                $irStmt = $conn->prepare($irQuery);
+                                if ($irStmt) {
+                                    $irStmt->bind_param("ss", $rep_id, $id_number);
+                                    $irStmt->execute();
+                                    $irResult = $irStmt->get_result();
+                                    if ($irRow = $irResult->fetch_assoc()) {
+                                        $individualReportPath = $irRow['IR_File'];
+                                    }
+                                    $irStmt->close();
+                                }
+                            }
+
+                            if (!empty($individualReportPath)):
                                 // Check multiple possible paths for individual reports
                                 $possibleReportPaths = [
-                                    $filepath,
-                                    'uploads/cocustatement/' . basename($filepath),
-                                    '../uploads/cocustatement/' . basename($filepath),
-                                    '../../uploads/cocustatement/' . basename($filepath),
-                                    '../' . $filepath
+                                    $individualReportPath,
+                                    'uploads/individual_reports/' . basename($individualReportPath),
+                                    '../uploads/individual_reports/' . basename($individualReportPath),
+                                    '../../uploads/individual_reports/' . basename($individualReportPath),
+                                    'uploads/cocustatement/' . basename($individualReportPath),
+                                    '../uploads/cocustatement/' . basename($individualReportPath),
+                                    '../../uploads/cocustatement/' . basename($individualReportPath),
+                                    '../' . $individualReportPath
                                 ];
 
                                 $foundReportPath = null;
@@ -1164,12 +1224,12 @@ $conclusion = $postevent['Rep_Conclusion'] ?? '';
                                 <?php else: ?>
                                     <div class="report-item text-muted">
                                         <?= htmlspecialchars($name) ?>'s report file not found.
-                                        <small style="display: block;">Path: <?= htmlspecialchars($filepath) ?></small>
+                                        <small style="display: block;">Path: <?= htmlspecialchars($individualReportPath) ?></small>
                                     </div>
                                 <?php endif;
                             else: ?>
                                 <div class="report-item text-muted">
-                                    <?= htmlspecialchars($name) ?>'s report not uploaded yet.
+                                    <?= htmlspecialchars($name) ?>'s individual report not uploaded yet.
                                 </div>
                             <?php endif;
                         endif;

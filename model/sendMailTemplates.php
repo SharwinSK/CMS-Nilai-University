@@ -123,4 +123,19 @@ function sendRegistrationOTP($studentEmail, $otp)
 
     return sendNotificationEmail($studentEmail, $subject, $body);
 }
+
+// 10. Post-Event Approved → Committee Members (COCU Claimers)
+function postEventApprovedCommittee($eventName, $eventRefNum, $committeeMembers)
+{
+    $subject = "Event Completion - COCU Points Available for Collection";
+
+    foreach ($committeeMembers as $member) {
+        $comName = $member['Com_Name'];
+        $comEmail = $member['Com_Email'];
+
+        $body = "Dear $comName,\n\nCongratulations! The event \"$eventName\" has been successfully completed and approved.\n\nEvent Reference Number: $eventRefNum\n\nPlease note this reference number and contact Ms. Rekha to collect your COCU points.\n\nThank you for your participation and contribution to the event.\n\nBest regards,\nCMS Notification System";
+
+        sendNotificationEmail($comEmail, $subject, $body);
+    }
+}
 ?>

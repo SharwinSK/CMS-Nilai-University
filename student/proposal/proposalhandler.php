@@ -62,8 +62,10 @@ if (!empty($_FILES["additionalDocument"]["name"])) {
 
 // === Insert into events ===
 $club_id = $_POST['club'];
+$proposal_position = $_POST['proposal_position']; // New field
 $ev_name = $_POST['eventName'];
 $ev_nature = $_POST['eventNature'];
+$ev_category = $_POST['eventCategory']; // New field
 $ev_objectives = $_POST['eventObjectives'];
 $ev_intro = $_POST['eventIntroduction'];
 $ev_details = $_POST['eventPurpose'];
@@ -76,18 +78,20 @@ $ev_alt_venue_id = !empty($_POST['altVenue']) ? $_POST['altVenue'] : null;
 $ev_alt_date = !empty($_POST['alternativeDate']) ? $_POST['alternativeDate'] : null;
 
 $stmt = $conn->prepare("INSERT INTO events (
-    Ev_ID, Stu_ID, Club_ID, Ev_Name, Ev_ProjectNature, Ev_Objectives, Ev_Intro, Ev_Details,
+    Ev_ID, Stu_ID, Proposal_Position, Club_ID, Ev_Name, Ev_ProjectNature, Ev_Category, Ev_Objectives, Ev_Intro, Ev_Details,
     Ev_Date, Ev_StartTime, Ev_EndTime, Ev_Pax,
     Ev_VenueID, Ev_AltVenueID, Ev_AlternativeDate, Ev_AdditionalInfo, Ev_Poster, Status_ID
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)");
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)");
 
 $stmt->bind_param(
-    "sssssssssssisisss",
+    "sssisssssssssisisss",
     $event_id,
     $stu_id,
+    $proposal_position,
     $club_id,
     $ev_name,
     $ev_nature,
+    $ev_category,
     $ev_objectives,
     $ev_intro,
     $ev_details,
@@ -116,46 +120,96 @@ $stmt->bind_param("ssss", $pic_id, $event_id, $pic_name, $pic_phone);
 $stmt->execute();
 $stmt->close();
 
-// === Insert Committee Members ===
+// === Insert Committee Members === (FIXED VERSION)
 $committee_stmt = $conn->prepare("INSERT INTO Committee 
-    (Com_ID, Ev_ID, Com_Position, Com_Name, Com_Department, Com_PhnNum, Com_JobScope, Com_COCUClaimers, Student_statement)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    (Com_ID, Ev_ID, Com_Position, Com_Name, Com_Email, Com_Department, Com_PhnNum, Com_JobScope, Com_Register, Com_COCUClaimers, Student_statement)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
 $cocu_dir = "../../uploads/cocustatement/";
 if (!is_dir($cocu_dir))
     mkdir($cocu_dir, 0777, true);
-$fileIndex = 0;
 
-foreach ($_POST['committeeName'] as $index => $name) {
-    $id = $_POST['committeeId'][$index];
-    $position = $_POST['committeePosition'][$index];
-    $department = $_POST['committeeDepartment'][$index];
-    $phone = $_POST['committeePhone'][$index];
-    $job = $_POST['committeeJobScope'][$index];
-    $cocu_status = $_POST['cocuClaimer'][$index];
-    $cocu_statement_path = null;
+// Check if committee arrays exist and have data
+if (isset($_POST['committeeName']) && is_array($_POST['committeeName'])) {
+    foreach ($_POST['committeeName'] as $index => $name) {
+        // Validate that all required fields exist for this index
+        if (
+            !isset($_POST['committeeId'][$index]) ||
+            !isset($_POST['committeeEmail'][$index]) ||
+            !isset($_POST['committeePosition'][$index]) ||
+            !isset($_POST['committeeDepartment'][$index]) ||
+            !isset($_POST['committeePhone'][$index]) ||
+            !isset($_POST['committeeJobScope'][$index]) ||
+            !isset($_POST['committeeRegister'][$index]) ||
+            !isset($_POST['cocuClaimer'][$index])
+        ) {
+            continue; // Skip this iteration if any required field is missing
+        }
 
-    if ($cocu_status === "yes") {
-        $filename = $_FILES['cocuStatement']['name'][$fileIndex];
-        $tmp = $_FILES['cocuStatement']['tmp_name'][$fileIndex];
+        $id = trim($_POST['committeeId'][$index]);
+        $email = trim($_POST['committeeEmail'][$index]);
+        $position = trim($_POST['committeePosition'][$index]);
+        $department = trim($_POST['committeeDepartment'][$index]);
+        $phone = trim($_POST['committeePhone'][$index]);
+        $job = trim($_POST['committeeJobScope'][$index]);
+        $register = $_POST['committeeRegister'][$index];
+        $cocu_status = $_POST['cocuClaimer'][$index];
+        $cocu_statement_path = null;
 
-        if (!empty($filename) && !empty($tmp)) {
-            $safe_filename = preg_replace("/[^a-zA-Z0-9\._-]/", "", $filename);
-            $ext = pathinfo($safe_filename, PATHINFO_EXTENSION);
-            $unique = $id . '_cocu_' . time() . '.' . $ext;
-            $dest = $cocu_dir . $unique;
+        // Validate that required fields are not empty
+        if (
+            empty($id) || empty($name) || empty($email) || empty($position) ||
+            empty($department) || empty($phone) || empty($job)
+        ) {
+            die("Error: All committee member fields are required. Missing data for member: " . htmlspecialchars($name));
+        }
 
-            if (move_uploaded_file($tmp, $dest)) {
-                $cocu_statement_path = $dest;
-            } else {
-                die("COCU Statement upload failed.");
+        // FIXED: File upload logic - use the same index as the committee member
+        if ($register === "Yes" && $cocu_status === "yes") {
+            // Use the same $index for file arrays as for committee data
+            if (
+                isset($_FILES['cocuStatement']['name'][$index]) &&
+                isset($_FILES['cocuStatement']['tmp_name'][$index])
+            ) {
+
+                $filename = $_FILES['cocuStatement']['name'][$index];
+                $tmp = $_FILES['cocuStatement']['tmp_name'][$index];
+
+                if (!empty($filename) && !empty($tmp)) {
+                    $safe_filename = preg_replace("/[^a-zA-Z0-9\._-]/", "", $filename);
+                    $ext = pathinfo($safe_filename, PATHINFO_EXTENSION);
+                    $unique = $id . '_cocu_' . time() . '.' . $ext;
+                    $dest = $cocu_dir . $unique;
+
+                    if (move_uploaded_file($tmp, $dest)) {
+                        $cocu_statement_path = $dest;
+                    } else {
+                        die("COCU Statement upload failed for member: " . htmlspecialchars($name));
+                    }
+                }
             }
         }
-        $fileIndex++;
-    }
 
-    $committee_stmt->bind_param("sssssssss", $id, $event_id, $position, $name, $department, $phone, $job, $cocu_status, $cocu_statement_path);
-    $committee_stmt->execute();
+        // Insert the committee member
+        $committee_stmt->bind_param(
+            "sssssssssss",
+            $id,
+            $event_id,
+            $position,
+            $name,
+            $email,
+            $department,
+            $phone,
+            $job,
+            $register,
+            $cocu_status,
+            $cocu_statement_path
+        );
+
+        if (!$committee_stmt->execute()) {
+            die("Error inserting committee member: " . $committee_stmt->error);
+        }
+    }
 }
 $committee_stmt->close();
 
@@ -204,7 +258,7 @@ $stmt->bind_param("sddds", $event_id, $total_income, $total_expense, $surplus, $
 $stmt->execute();
 $stmt->close();
 
-//Email Notifcation for the Advisor 
+//Email Notification for the Advisor 
 $advisorQuery = $conn->prepare("SELECT Adv_ID, Adv_Name, Adv_Email 
                                 FROM advisor 
                                 WHERE Club_ID = ?");
@@ -228,7 +282,7 @@ $studentQuery->close();
 
 $studentName = $studentData['Stu_Name'];
 
-// ✅ Send Email Notification to Advisor
+// Send Email Notification to Advisor
 newProposalToAdvisor($studentName, $ev_name, $advisorName, $advisorEmail);
 
 // Store event details for PDF generation
@@ -603,7 +657,6 @@ $_SESSION['last_event'] = [
                 <i class="fas fa-calendar-alt me-2"></i>
                 <?= htmlspecialchars($ev_name) ?>
             </div>
-
         </div>
 
         <div class="action-buttons">
@@ -632,7 +685,6 @@ $_SESSION['last_event'] = [
             const id = encodeURIComponent("<?= $event_id ?>"); // handle the slash in Ev_ID like "01/25"
             window.open("../../components/pdf/generate_pdf.php?id=" + id, "_blank");
         }
-
 
         function showToast(message, type) {
             const toast = document.createElement('div');

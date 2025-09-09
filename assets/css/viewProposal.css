@@ -589,3 +589,41 @@ select:focus {
 .back-btn:hover {
     background: #FF7A30 !important;
 }
+/* Add this to your existing viewProposal.css file */
+
+/* Register badge styling for committee table */
+.register-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.register-badge.registered {
+    background: linear-gradient(135deg, #27ae60, #2ecc71);
+    color: white;
+    box-shadow: 0 2px 8px rgba(46, 204, 113, 0.3);
+}
+
+.register-badge.not-registered {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    color: white;
+    box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+}
+
+/* Responsive adjustments for committee table */
+@media (max-width: 768px) {
+    .register-badge {
+        font-size: 0.7em;
+        padding: 3px 8px;
+    }
+}
+
+/* Optional: Add hover effect for register badges */
+.register-badge:hover {
+    transform: translateY(-1px);
+    transition: transform 0.2s ease;
+}

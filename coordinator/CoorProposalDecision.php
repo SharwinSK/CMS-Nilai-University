@@ -252,6 +252,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                         <div class="detail-value"><?= $details['Stu_ID'] ?></div>
                     </div>
                     <div class="detail-item">
+                        <div class="detail-label">Position</div>
+                        <div class="detail-value"><?= $details['Proposal_Position'] ?></div>
+                    </div>
+                    <div class="detail-item">
                         <div class="detail-label">Club Name</div>
                         <div class="detail-value"><?= $details['Club_Name'] ?></div>
                     </div>
@@ -262,6 +266,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     <div class="detail-item">
                         <div class="detail-label">Event Nature</div>
                         <div class="detail-value"><?= $details['Ev_ProjectNature'] ?></div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Event Category</div>
+                        <div class="detail-value"><?= $details['Ev_Category'] ?></div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">Event Objectives</div>
@@ -408,10 +416,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                         <tr>
                             <th>Name</th>
                             <th>Position</th>
+                            <th>Email</th>
                             <th>Department</th>
                             <th>Phone</th>
                             <th>Job Scope</th>
                             <th>Cocu Claimers</th>
+                            <th>Registered</th>
                             <th>Cocu Statement</th>
                         </tr>
                     </thead>
@@ -420,10 +430,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                             <tr>
                                 <td><?= htmlspecialchars($row['Com_Name']) ?></td>
                                 <td><?= htmlspecialchars($row['Com_Position']) ?></td>
+                                <td><?= htmlspecialchars($row['Com_Email']) ?></td>
                                 <td><?= htmlspecialchars($row['Com_Department']) ?></td>
                                 <td><?= htmlspecialchars($row['Com_PhnNum']) ?></td>
                                 <td><?= htmlspecialchars($row['Com_JobScope']) ?></td>
                                 <td><?= $row['Com_COCUClaimers'] === 'yes' ? 'Yes' : 'No' ?></td>
+                                <td>
+                                    <span
+                                        class="registration-status <?= $row['Com_Register'] === 'Yes' ? 'registered' : 'not-registered' ?>">
+                                        <?= $row['Com_Register'] ?>
+                                    </span>
+                                </td>
                                 <td>
                                     <?php
                                     $path = $row['student_statement'] ?? '';

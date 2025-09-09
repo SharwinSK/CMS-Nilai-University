@@ -22,7 +22,6 @@ if (!empty($advisor_id)) {
     }
 }
 
-
 // Step 2: Get Event ID
 if (!isset($_GET['event_id'])) {
     die("Event ID is required.");
@@ -66,7 +65,7 @@ $flow_stmt->bind_param("s", $event_id);
 $flow_stmt->execute();
 $event_flows = $flow_stmt->get_result(); // this will be looped in HTML
 
-// 3. Fetch Committee Members
+// 3. Fetch Committee Members with Email and Register status
 $committee_stmt = $conn->prepare("SELECT * FROM committee WHERE Ev_ID = ?");
 $committee_stmt->bind_param("s", $event_id);
 $committee_stmt->execute();
@@ -132,7 +131,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $studentEmail = $studentResult->fetch_assoc()['Stu_Email'];
     $stmt->close();
 
-
     // ✅ Get first coordinator (since no Club_ID-Coor_ID link exists)
     $stmt = $conn->prepare("SELECT Coor_Name, Coor_Email FROM coordinator LIMIT 1");
     $stmt->execute();
@@ -143,7 +141,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $coordinatorEmail = $coorRow['Coor_Email'];
     }
     $stmt->close();
-
 
     // === Send Emails Based on Decision ===
     if ($decision === 'approve') {
@@ -163,7 +160,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }, 3000); // Wait 3 seconds for loading screen effect
     </script>";
     }
-
 
     // 4. Redirect to dashboard
     echo "<script>
@@ -227,6 +223,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div class="info-value"><?php echo $proposal['Stu_Name']; ?></div>
                     </div>
                     <div class="info-item">
+                        <div class="info-label">Student Position</div>
+                        <div class="info-value"><?php echo $proposal['Proposal_Position']; ?></div>
+                    </div>
+                    <div class="info-item">
                         <div class="info-label">Club Name</div>
                         <div class="info-value"><?php echo $proposal['Club_Name']; ?></div>
                     </div>
@@ -237,6 +237,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="info-item">
                         <div class="info-label">Event Nature</div>
                         <div class="info-value"><?php echo $proposal['Ev_ProjectNature']; ?></div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Event Category</div>
+                        <div class="info-value"><?php echo $proposal['Ev_Category']; ?></div>
                     </div>
                     <div class="info-item">
                         <div class="info-label">Event Objectives</div>
@@ -302,9 +306,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <th>Activity</th>
                                 <th>Remarks</th>
                             </tr>
-
                         </thead>
-
                         <tbody>
                             <?php
                             $totalHours = 0;
@@ -342,9 +344,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <thead>
                             <tr>
                                 <th>Name</th>
+                                <th>Email</th>
                                 <th>Position</th>
                                 <th>Department</th>
                                 <th>Job Scope</th>
+                                <th>Registered</th>
                                 <th>Claimers</th>
                                 <th>COCU Statement</th>
                             </tr>
@@ -353,9 +357,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <?php foreach ($committee_members as $member): ?>
                                 <tr>
                                     <td><?= $member['Com_Name'] ?></td>
+                                    <td><?= $member['Com_Email'] ?></td>
                                     <td><?= $member['Com_Position'] ?></td>
                                     <td><?= $member['Com_Department'] ?></td>
                                     <td><?= $member['Com_JobScope'] ?></td>
+                                    <td>
+                                        <span class="status-badge <?= strtolower($member['Com_Register']) === 'yes' ? 'status-yes' : 'status-no' ?>">
+                                            <?= $member['Com_Register'] ?>
+                                        </span>
+                                    </td>
                                     <td>
                                         <?php
                                         echo (strtolower($member['Com_COCUClaimers']) === 'yes') ? 'Yes' : 'No';
@@ -367,7 +377,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                                 onclick="viewCOCUStatement('<?= $member['student_statement'] ?>')">
                                                 View
                                             </button>
-
                                         <?php else: ?>
                                             <span class="text-muted">No file</span>
                                         <?php endif; ?>
@@ -441,7 +450,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="info-item">
                         <div class="info-label">Alternative Venue</div>
                         <div class="info-value">
-                            <?= $proposal['AltVenue'] ?? 'N/A' ?></textarea>
+                            <?= $proposal['AltVenue'] ?? 'N/A' ?>
                         </div>
                     </div>
                     <div class="info-item">
@@ -471,7 +480,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
 
-    <!-- !-- Poster Modal -->
+    <!-- Poster Modal -->
     <div id="posterModal" class="modal poster-modal" style="display: none;">
         <div class="modal-content">
             <span class="close" onclick="closePosterModal()">&times;</span>
@@ -479,6 +488,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 class="poster-large" />
         </div>
     </div>
+    
     <!-- Reject Modal -->
     <div id="rejectModal" class="modal">
         <div class="modal-content">
@@ -525,6 +535,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </div>
     </div>
+    
     <!-- Hidden Forms for Advisor Action -->
     <form id="approveForm" method="POST" style="display: none;">
         <input type="hidden" name="decision" value="approve">
@@ -558,6 +569,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <p id="loadingMessage">Please wait while we process your request.</p>
         </div>
     </div>
+    
     <script>
         // Modal functions
         function enlargePoster() {
@@ -613,6 +625,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         function viewCOCUStatement(filename) {
             window.open('../uploads/statements/' + filename, '_blank');
         }
+        
         function showLoadingScreen(title, message) {
             document.getElementById("loadingTitle").textContent = title;
             document.getElementById("loadingMessage").textContent = message;
@@ -622,6 +635,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         function hideLoadingScreen() {
             document.getElementById("loadingModal").style.display = "none";
         }
+        
         function viewAdditionalDoc() {
             const filePath = "<?php echo isset($proposal['Ev_AdditionalInfo']) ? $proposal['Ev_AdditionalInfo'] : ''; ?>";
             if (filePath) {
@@ -629,10 +643,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 alert("No file uploaded.");
             }
-        }
-
-        function closeDocsModal() {
-            document.getElementById("docsModal").style.display = "none";
         }
 
         function exportPDF() {
