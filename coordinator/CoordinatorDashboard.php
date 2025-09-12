@@ -146,6 +146,28 @@ $event_summary = [];
 while ($row = $event_summary_result->fetch_assoc()) {
     $event_summary[] = $row;
 }
+// Get completed events count by event type (Status_ID = 8 means Postmortem Approved)
+$eventTypeStats = [];
+
+$eventTypeQuery = "
+SELECT 
+    e.Ev_TypeCode,
+    COUNT(*) as total_completed
+FROM events e
+JOIN eventpostmortem ep ON e.Ev_ID = ep.Ev_ID
+WHERE ep.Status_ID = 8
+GROUP BY e.Ev_TypeCode
+ORDER BY e.Ev_TypeCode
+";
+
+$eventTypeResult = $conn->query($eventTypeQuery);
+while ($row = $eventTypeResult->fetch_assoc()) {
+    $eventTypeStats[$row['Ev_TypeCode']] = $row['total_completed'];
+}
+
+$sdgCount = isset($eventTypeStats['SDG']) ? $eventTypeStats['SDG'] : 0;
+$csrCount = isset($eventTypeStats['CSR']) ? $eventTypeStats['CSR'] : 0;
+$usrCount = isset($eventTypeStats['USR']) ? $eventTypeStats['USR'] : 0;
 ?>
 
 <!DOCTYPE html>
@@ -361,7 +383,51 @@ while ($row = $event_summary_result->fetch_assoc()) {
                             <?php endif; ?>
                         </div>
                     </div>
+                    <!-- Event Type Statistics Panel -->
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <i class="fas fa-chart-pie"></i>
+                            Event Type Statistics
+                        </div>
+                        <div class="event-type-stats">
+                            <div class="stat-item sdg-stat">
+                                <div class="stat-icon">
+                                    <i class="fas fa-globe-americas"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <div class="stat-number"><?= $sdgCount ?></div>
+                                    <div class="stat-label">SDG Events</div>
+                                </div>
+                            </div>
 
+                            <div class="stat-item csr-stat">
+                                <div class="stat-icon">
+                                    <i class="fas fa-hands-helping"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <div class="stat-number"><?= $csrCount ?></div>
+                                    <div class="stat-label">CSR Events</div>
+                                </div>
+                            </div>
+
+                            <div class="stat-item usr-stat">
+                                <div class="stat-icon">
+                                    <i class="fas fa-university"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <div class="stat-number"><?= $usrCount ?></div>
+                                    <div class="stat-label">USR Events</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="total-summary">
+                            <div class="total-line">
+                                <span class="total-label">Total Completed:</span>
+                                <span class="total-count"><?= ($sdgCount + $csrCount + $usrCount) ?></span>
+                            </div>
+                        </div>
+                    </div>
                     <!-- Calendar View -->
                     <div class="dashboard-card">
                         <div class="card-header">
@@ -430,30 +496,30 @@ while ($row = $event_summary_result->fetch_assoc()) {
         </div>
     </div>
 
-<div class="modal fade poster-modal" id="posterModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Event Poster</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body text-center">
-                <img id="posterModalImage" src="" alt="Event Poster" class="poster-image">
-                <div class="event-details">
-                    <div class="event-name" id="posterEventName"></div>
-                    <div class="event-date" id="posterEventDate">
-                        <i class="fas fa-calendar-alt"></i>
-                        <span></span>
-                    </div>
-                    <div class="event-club" id="posterEventClub">
-                        <i class="fas fa-users"></i>
-                        <span></span>
+    <div class="modal fade poster-modal" id="posterModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Event Poster</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <img id="posterModalImage" src="" alt="Event Poster" class="poster-image">
+                    <div class="event-details">
+                        <div class="event-name" id="posterEventName"></div>
+                        <div class="event-date" id="posterEventDate">
+                            <i class="fas fa-calendar-alt"></i>
+                            <span></span>
+                        </div>
+                        <div class="event-club" id="posterEventClub">
+                            <i class="fas fa-users"></i>
+                            <span></span>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>

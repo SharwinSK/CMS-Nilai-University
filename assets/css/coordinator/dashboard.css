@@ -669,3 +669,142 @@
         align-self: flex-end;
     }
 }
+/* Add these styles to your dashboard.css file */
+
+/* Event Type Statistics Panel */
+.event-type-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 15px;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 15px;
+    background: #f2f1ed;
+    border-radius: 10px;
+    border-left: 4px solid;
+    transition: all 0.3s ease;
+}
+
+.stat-item:hover {
+    transform: translateX(3px);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    background: #ffffff;
+}
+
+/* SDG Stats */
+.stat-item.sdg-stat {
+    border-left-color: #17a2b8;
+}
+
+.stat-item.sdg-stat .stat-icon {
+    color: #17a2b8;
+}
+
+.stat-item.sdg-stat .stat-number {
+    color: #17a2b8;
+}
+
+/* CSR Stats */
+.stat-item.csr-stat {
+    border-left-color: #28a745;
+}
+
+.stat-item.csr-stat .stat-icon {
+    color: #28a745;
+}
+
+.stat-item.csr-stat .stat-number {
+    color: #28a745;
+}
+
+/* USR Stats */
+.stat-item.usr-stat {
+    border-left-color: #6f42c1;
+}
+
+.stat-item.usr-stat .stat-icon {
+    color: #6f42c1;
+}
+
+.stat-item.usr-stat .stat-number {
+    color: #6f42c1;
+}
+
+.stat-icon {
+    font-size: 1.5rem;
+    margin-right: 15px;
+    width: 40px;
+    text-align: center;
+    opacity: 0.8;
+}
+
+.stat-content {
+    flex: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.stat-number {
+    font-size: 1.8rem;
+    font-weight: bold;
+    margin-left: auto;
+}
+
+.stat-label {
+    font-weight: 500;
+    color: var(--text-dark);
+    font-size: 0.95rem;
+}
+
+/* Total Summary */
+.total-summary {
+    border-top: 2px solid #B4E50D;
+    padding-top: 15px;
+    margin-top: 10px;
+}
+
+.total-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 15px;
+    background: linear-gradient(135deg, var(--header-green) 0%, #3FE139 100%);
+    border-radius: 8px;
+    color: white;
+}
+
+.total-label {
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.total-count {
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .stat-item {
+        padding: 10px 12px;
+    }
+    
+    .stat-icon {
+        font-size: 1.3rem;
+        margin-right: 12px;
+        width: 35px;
+    }
+    
+    .stat-number {
+        font-size: 1.5rem;
+    }
+    
+    .stat-label {
+        font-size: 0.9rem;
+    }
+}
