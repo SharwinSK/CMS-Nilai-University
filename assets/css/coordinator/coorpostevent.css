@@ -1,7 +1,7 @@
 :root {
     --header-green: #2DD627;        /* Header & Offcanvas */
     --hover-orange: #FF7A30;        /* Offcanvas hover */
-    --body-orange: #FFC947;         /* Body background */
+    --body-orange: #e7e0cf;         /* Body background */
     --container-beige: #DDDAD0;     /* All div containers */
     --dark-bg: #2c3e50;
     --text-dark: #333;
@@ -142,7 +142,7 @@ body {
     padding: 2rem;
     border: 2px dashed var(--hover-orange); /* Use hover orange */
     border-radius: 8px;
-    background: #FFBF78; /* Light orange background */
+    background: #fcd3a5; /* Light orange background */
 }
 
 .poster-placeholder {
@@ -177,7 +177,7 @@ body {
 
 .detail-value {
     padding: 0.8rem;
-    background: #FFBF78; /* Light orange background */
+    background: #fcd3a5; /* Light orange background */
     border-radius: 6px;
     border: 1px solid var(--hover-orange); /* Orange border */
 }
@@ -202,7 +202,7 @@ body {
 .table td {
     padding: 1rem;
     border-bottom: 1px solid #e0e0e0;
-    background: #FFBF78; /* Light orange background */
+    background: #fcd3a5; /* Light orange background */
 }
 
 .table tr:nth-child(even) td {
@@ -486,7 +486,7 @@ body {
     border-radius: 6px;
     resize: vertical;
     font-family: inherit;
-    background: #FFBF78; /* Light orange background */
+    background: #fcd3a5; /* Light orange background */
 }
 
 .feedback-textarea:focus {
@@ -521,7 +521,7 @@ body {
 }
 
 .challenges-text {
-    background: #FFBF78; /* Light orange background */
+    background: #fcd3a5; /* Light orange background */
     padding: 1rem;
     border-radius: 6px;
     border: 1px solid var(--hover-orange); /* Orange border */
@@ -533,7 +533,7 @@ body {
     justify-content: space-between;
     align-items: center;
     padding: 1rem;
-    background: #FFBF78; /* Light orange background */
+    background: #fcd3a5; /* Light orange background */
     border-radius: 6px;
     border: 1px solid var(--hover-orange); /* Orange border */
 }

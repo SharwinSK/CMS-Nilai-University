@@ -847,7 +847,7 @@ $action = 'ProposalHandler.php?mode=create';
             value="${studentData ? studentData.name : ''}" ${nameReadonly} ${requiredAttr}></td>
         <td><input type="text" style="width: 100%;" name="committeePosition[]" placeholder="Publicity" ${positionReadonly} ${requiredAttr}></td>
         <td><input type="email" style="width: 100%;" name="committeeEmail[]" 
-            placeholder="n00020547@students.nilai.edu.my" 
+            placeholder="n00020789@students.nilai.edu.my" 
             value="${studentData ? studentData.email : ''}"
             title="Email must be in format: n00020547@students.nilai.edu.my" ${emailReadonly} ${requiredAttr}></td>
         <td>
