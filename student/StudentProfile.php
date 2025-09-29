@@ -168,7 +168,7 @@ if (!isset($_SESSION['csrf_token'])) {
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link href="../assets/css/main.css?v=<?= time() ?>" rel="stylesheet" />
-    <link href="../assets/css/student.css?v=<?= time() ?>" rel="stylesheet" />
+    <link href="../assets/css/student/profile.css?v=<?= time() ?>" rel="stylesheet" />
     <style>
         /* Enhanced validation styles */
         .is-valid {

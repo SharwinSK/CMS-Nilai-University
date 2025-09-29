@@ -56,7 +56,7 @@ $stmt->close();
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Post Event Form</title>
-    <link href="postevnt.css?v=<?= time() ?>" rel="stylesheet" />
+    <link href="../../assets/css/student/postevnt.css?v=<?= time() ?>" rel="stylesheet" />
 
 
 </head>

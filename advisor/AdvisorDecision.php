@@ -180,7 +180,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Advisor Proposal Review - Nilai University</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
-    <link href="../assets/css/advisor3.css?v=<?= time() ?>" rel="stylesheet" />
+    <link href="../assets/css/advisor/advisor3.css?v=<?= time() ?>" rel="stylesheet" />
 </head>
 
 <body>
@@ -362,7 +362,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     <td><?= $member['Com_Department'] ?></td>
                                     <td><?= $member['Com_JobScope'] ?></td>
                                     <td>
-                                        <span class="status-badge <?= strtolower($member['Com_Register']) === 'yes' ? 'status-yes' : 'status-no' ?>">
+                                        <span
+                                            class="status-badge <?= strtolower($member['Com_Register']) === 'yes' ? 'status-yes' : 'status-no' ?>">
                                             <?= $member['Com_Register'] ?>
                                         </span>
                                     </td>
@@ -488,7 +489,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 class="poster-large" />
         </div>
     </div>
-    
+
     <!-- Reject Modal -->
     <div id="rejectModal" class="modal">
         <div class="modal-content">
@@ -535,7 +536,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </div>
     </div>
-    
+
     <!-- Hidden Forms for Advisor Action -->
     <form id="approveForm" method="POST" style="display: none;">
         <input type="hidden" name="decision" value="approve">
@@ -569,7 +570,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <p id="loadingMessage">Please wait while we process your request.</p>
         </div>
     </div>
-    
+
     <script>
         // Modal functions
         function enlargePoster() {
@@ -625,7 +626,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         function viewCOCUStatement(filename) {
             window.open('../uploads/statements/' + filename, '_blank');
         }
-        
+
         function showLoadingScreen(title, message) {
             document.getElementById("loadingTitle").textContent = title;
             document.getElementById("loadingMessage").textContent = message;
@@ -635,7 +636,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         function hideLoadingScreen() {
             document.getElementById("loadingModal").style.display = "none";
         }
-        
+
         function viewAdditionalDoc() {
             const filePath = "<?php echo isset($proposal['Ev_AdditionalInfo']) ? $proposal['Ev_AdditionalInfo'] : ''; ?>";
             if (filePath) {

@@ -114,7 +114,7 @@ while ($row = $calendar_result->fetch_assoc()) {
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
     <!-- Chart.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-    <link href="../assets/css/advisor.css?v=<?= time() ?>" rel="stylesheet" />
+    <link href="../assets/css/advisor/advisor.css?v=<?= time() ?>" rel="stylesheet" />
     <link href="../assets/css/main.css?v=<?= time() ?>" rel="stylesheet" />
 
 </head>
