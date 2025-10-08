@@ -1,6 +1,66 @@
 <?php
 require_once('../../TCPDF-main/tcpdf.php');
 
+
+/**
+ * Convert PNG with alpha channel to JPEG for TCPDF compatibility
+ * Returns the converted path or original path if conversion not needed
+ */
+function convertPNGForTCPDF($imagePath)
+{
+    if (!file_exists($imagePath)) {
+        return $imagePath;
+    }
+
+    $imageInfo = @getimagesize($imagePath);
+    if ($imageInfo === false) {
+        return $imagePath;
+    }
+
+    $mimeType = $imageInfo['mime'] ?? '';
+
+    // Only process PNG images
+    if ($mimeType !== 'image/png') {
+        return $imagePath;
+    }
+
+    // Create temporary JPEG version
+    $tempPath = sys_get_temp_dir() . '/' . md5($imagePath . time()) . '.jpg';
+
+    try {
+        // Check if GD is available
+        if (!function_exists('imagecreatefrompng')) {
+            error_log("GD extension not available for PNG conversion");
+            return $imagePath;
+        }
+
+        $image = @imagecreatefrompng($imagePath);
+        if ($image === false) {
+            return $imagePath;
+        }
+
+        // Create white background
+        $width = imagesx($image);
+        $height = imagesy($image);
+        $output = imagecreatetruecolor($width, $height);
+        $white = imagecolorallocate($output, 255, 255, 255);
+        imagefill($output, 0, 0, $white);
+
+        // Merge PNG onto white background (removes alpha channel)
+        imagecopy($output, $image, 0, 0, 0, 0, $width, $height);
+
+        // Save as JPEG
+        imagejpeg($output, $tempPath, 90);
+
+        imagedestroy($image);
+        imagedestroy($output);
+
+        return $tempPath;
+    } catch (Exception $e) {
+        error_log("PNG conversion error: " . $e->getMessage());
+        return $imagePath;
+    }
+}
 // ✅ ENHANCED HEADER WITH PROPER CENTERING AND NILAI UNIVERSITY LOGO
 class MYPDF extends TCPDF
 {
@@ -13,10 +73,21 @@ class MYPDF extends TCPDF
 
     public function Header()
     {
-        // Add Nilai University Logo on the left
+        // Add Nilai University Logo on the left with PNG conversion
         $logo_path = '../../assets/img/NU logo.png';
         if (file_exists($logo_path)) {
-            $this->Image($logo_path, 15, 10, 25, 0, '', '', '', false, 300, '', false, false, 0);
+            $convertedLogo = convertPNGForTCPDF($logo_path);
+
+            try {
+                $this->Image($convertedLogo, 15, 10, 25, 0, '', '', '', false, 300, '', false, false, 0);
+            } catch (Exception $e) {
+                error_log("Error adding header logo: " . $e->getMessage());
+            }
+
+            // Clean up temp file if conversion happened
+            if ($convertedLogo !== $logo_path && file_exists($convertedLogo)) {
+                @unlink($convertedLogo);
+            }
         }
 
         // Get page dimensions for proper centering
@@ -54,7 +125,6 @@ class MYPDF extends TCPDF
         // Set proper spacing after header
         $this->SetY($line_y + 5);
     }
-
     public function Footer()
     {
         $this->SetY(-15);
@@ -206,9 +276,24 @@ function renderCoverPage($pdf, $event, $student = null, $club_logo = null)
 {
     $pdf->SetTextColor(0, 0, 0);
 
-    // Club logo with better positioning
+    // Club logo with PNG conversion support
     if (!empty($club_logo) && file_exists($club_logo)) {
-        $pdf->Image($club_logo, 85, 50, 40);
+        $convertedLogo = convertPNGForTCPDF($club_logo);
+
+        try {
+            $pdf->Image($convertedLogo, 85, 50, 40);
+        } catch (Exception $e) {
+            error_log("Error adding club logo: " . $e->getMessage());
+            // Show placeholder if image fails
+            $pdf->SetFont('times', '', 12);
+            $pdf->SetXY(85, 55);
+            $pdf->Cell(40, 8, '[Club Logo]', 1, 1, 'C');
+        }
+
+        // Clean up temp file if conversion happened
+        if ($convertedLogo !== $club_logo && file_exists($convertedLogo)) {
+            @unlink($convertedLogo);
+        }
     } else {
         $pdf->SetFont('times', '', 12);
         $pdf->SetXY(85, 55);
@@ -728,13 +813,29 @@ function renderEventPoster($pdf, $poster_path)
         $current_y = $pdf->GetY();
         $page_height = $pdf->getPageHeight();
         $margin_bottom = $pdf->getBreakMargin();
-        $available_height = $page_height - $current_y - $margin_bottom - 20; // 20 for safety margin
+        $available_height = $page_height - $current_y - $margin_bottom - 20;
 
         // Center the poster image on the same page with proper scaling
-        $max_width = 160; // Maximum width for poster
-        $max_height = min($available_height, 200); // Use available space or max 200
+        $max_width = 160;
+        $max_height = min($available_height, 200);
 
-        $pdf->Image($poster_path, 25, $current_y, $max_width, $max_height, '', '', '', true, 300, '', false, false, 1);
+        // Convert PNG if needed
+        $convertedPoster = convertPNGForTCPDF($poster_path);
+
+        try {
+            $pdf->Image($convertedPoster, 25, $current_y, $max_width, $max_height, '', '', '', true, 300, '', false, false, 1);
+        } catch (Exception $e) {
+            error_log("Error adding event poster: " . $e->getMessage());
+            // Show error message in PDF
+            $pdf->SetFont('times', '', 12);
+            $pdf->SetXY(25, $current_y);
+            $pdf->Cell(160, 20, 'Error loading event poster', 1, 1, 'C');
+        }
+
+        // Clean up temp file if conversion happened
+        if ($convertedPoster !== $poster_path && file_exists($convertedPoster)) {
+            @unlink($convertedPoster);
+        }
     } else {
         $pdf->SetFont('times', '', 12);
         $current_y = $pdf->GetY();
@@ -744,7 +845,6 @@ function renderEventPoster($pdf, $poster_path)
         $pdf->Cell(160, 10, 'Please attach the poster separately', 0, 1, 'C');
     }
 }
-
 // FIXED: Budget section with reduced spacing
 function renderBudgetSection($pdf, $budget_result, $summary)
 {
