@@ -68,7 +68,77 @@ function appendPDF($fpdi, $filePath, $description = "Unknown PDF", $addSeparator
         return false;
     }
 }
+// ─────────────────────────────
+// Helper Function to Append Images (JPG/PNG)
+// ─────────────────────────────
+function appendImage($fpdi, $imagePath, $description = "Image", $addSeparator = false)
+{
+    try {
+        // Validate file existence
+        if (!file_exists($imagePath)) {
+            error_log("Image Append Warning: File not found - $imagePath ($description)");
+            return false;
+        }
 
+        // Validate file size
+        if (filesize($imagePath) == 0) {
+            error_log("Image Append Warning: Empty file - $imagePath ($description)");
+            return false;
+        }
+
+        // Add separator if needed (same as PDF)
+        if ($addSeparator) {
+            $fpdi->AddPage();
+            $fpdi->SetFont('times', 'B', 16);
+            $fpdi->Cell(0, 30, '', 0, 1);
+            $fpdi->Cell(0, 15, 'APPENDIX', 0, 1, 'C');
+            $fpdi->SetLineWidth(0.5);
+            $fpdi->Line(50, $fpdi->GetY() + 5, 160, $fpdi->GetY() + 5);
+            $fpdi->Ln(20);
+
+            $fpdi->SetFont('times', '', 12);
+            $fpdi->Cell(0, 8, 'This section contains:', 0, 1, 'L');
+            $fpdi->Cell(0, 6, '• COCU Statements from committee members', 0, 1, 'L');
+            $fpdi->Cell(0, 6, '• Additional event information and documents', 0, 1, 'L');
+        }
+
+        // Add new page for the image
+        $fpdi->AddPage();
+
+        // Get page dimensions
+        $pageWidth = $fpdi->getPageWidth();
+        $pageHeight = $fpdi->getPageHeight();
+        $margin = 20;
+
+        // Calculate available space
+        $maxWidth = $pageWidth - (2 * $margin);
+        $maxHeight = $pageHeight - (2 * $margin) - 40; // Extra space for header
+
+        // Get image dimensions
+        list($imgWidth, $imgHeight) = getimagesize($imagePath);
+
+        // Calculate scaling to fit page while maintaining aspect ratio
+        $widthScale = $maxWidth / $imgWidth;
+        $heightScale = $maxHeight / $imgHeight;
+        $scale = min($widthScale, $heightScale);
+
+        $newWidth = $imgWidth * $scale;
+        $newHeight = $imgHeight * $scale;
+
+        // Center the image
+        $x = ($pageWidth - $newWidth) / 2;
+        $y = $margin + 20;
+
+        // Add the image
+        $fpdi->Image($imagePath, $x, $y, $newWidth, $newHeight, '', '', '', true, 300, '', false, false, 0);
+
+        return true;
+
+    } catch (Exception $e) {
+        error_log("Image Append Error: " . $e->getMessage() . " - File: $imagePath ($description)");
+        return false;
+    }
+}
 // ─────────────────────────────
 // 2. Enhanced Merge Function for Proposal Report
 // ─────────────────────────────
@@ -105,12 +175,25 @@ function mergeAppendices($temp_file, $event, $budget_summary, $cocu_pdfs)
         $appendix_count = 0;
         $first_appendix = true;
 
-        // Append Additional Information PDF if exists
+        // Append Additional Information (PDF or Image) if exists
         if (!empty($event['Ev_AdditionalInfo'])) {
             $additional_info_path = $event['Ev_AdditionalInfo'];
-            if (appendPDF($finalPdf, $additional_info_path, "Additional Event Information", $first_appendix)) {
-                $appendix_count++;
-                $first_appendix = false; // Only show separator page once
+
+            // Check file extension
+            $extension = strtolower(pathinfo($additional_info_path, PATHINFO_EXTENSION));
+
+            if (in_array($extension, ['jpg', 'jpeg', 'png'])) {
+                // Handle image file
+                if (appendImage($finalPdf, $additional_info_path, "Organization Chart", $first_appendix)) {
+                    $appendix_count++;
+                    $first_appendix = false;
+                }
+            } else if ($extension === 'pdf') {
+                // Handle PDF file
+                if (appendPDF($finalPdf, $additional_info_path, "Additional Event Information", $first_appendix)) {
+                    $appendix_count++;
+                    $first_appendix = false;
+                }
             }
         }
         // Append Budget Statement PDF (Post-Event)
@@ -138,17 +221,28 @@ function mergeAppendices($temp_file, $event, $budget_summary, $cocu_pdfs)
             }
         }
 
-        // Append COCU Statement PDFs
+        // Append COCU Statement PDFs or Images
         if (!empty($cocu_pdfs) && is_array($cocu_pdfs)) {
             foreach ($cocu_pdfs as $cocu_file) {
                 if (!empty($cocu_file)) {
-                    if (appendPDF($finalPdf, $cocu_file, "COCU Statement", $first_appendix)) {
-                        $appendix_count++;
-                        $first_appendix = false; // Only show separator page once
+                    // Check file extension
+                    $extension = strtolower(pathinfo($cocu_file, PATHINFO_EXTENSION));
+
+                    if (in_array($extension, ['jpg', 'jpeg', 'png'])) {
+                        // Handle image file
+                        if (appendImage($finalPdf, $cocu_file, "COCU Statement", $first_appendix)) {
+                            $appendix_count++;
+                            $first_appendix = false;
+                        }
+                    } else if ($extension === 'pdf') {
+                        // Handle PDF file
+                        if (appendPDF($finalPdf, $cocu_file, "COCU Statement", $first_appendix)) {
+                            $appendix_count++;
+                            $first_appendix = false;
+                        }
                     }
                 }
             }
-
         }
 
 

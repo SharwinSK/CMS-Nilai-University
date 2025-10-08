@@ -478,16 +478,19 @@ $action = 'ProposalHandler.php?mode=create';
                         </div>
                     </div>
                     <div class="form-col">
+                        <!-- CHANGE THE ENTIRE UPLOAD AREA SECTION TO: -->
                         <div class="form-group">
                             <label for="additionalDocument" class="required">Organization Chart</label>
                             <div class="upload-area" id="additionalDocUpload">
                                 <div>
                                     <p>📁 Drag and drop organization chart here or click to browse</p>
-                                    <input type="file" id="additionalDocument" name="additionalDocument" accept=".pdf"
+                                    <input type="file" id="additionalDocument" name="additionalDocument"
+                                        accept="image/jpeg,image/jpg,image/png,application/pdf,.pdf,.jpg,.jpeg,.png"
                                         style="display: none" required />
                                 </div>
                             </div>
-                            <div class="file-info">Required: Upload organization chart in PDF format only</div>
+                            <div class="file-info">Required: Upload organization chart (PDF, JPEG, or PNG format, max
+                                10MB)</div>
                             <div class="preview-container" id="additionalDocPreview"></div>
                         </div>
                     </div>
@@ -911,7 +914,7 @@ $action = 'ProposalHandler.php?mode=create';
             </select>
         </td>
         <td>
-            <input type="file" name="cocuStatement[]" id="cocuFile_${rowId}" accept=".pdf" disabled style="font-size: 11px; width: 100%;">
+         <input type="file" name="cocuStatement[]" id="cocuFile_${rowId}" accept=".pdf,.jpg,.jpeg,.png,image/jpeg,image/png,application/pdf" disabled style="font-size: 11px; width: 100%;">
         </td>
         <td>
             <button type="button" class="btn-delete-icon" onclick="deleteRow(this)" title="Delete row" ${isLoggedInStudent ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}>
@@ -921,7 +924,11 @@ $action = 'ProposalHandler.php?mode=create';
     `;
 
             tbody.appendChild(row);
-
+            // Add this at the end of addCommitteeRow function, after tbody.appendChild(row);
+            const cocuFileInput = row.querySelector(`#cocuFile_${rowId}`);
+            cocuFileInput.addEventListener('change', function () {
+                validateCocuFile(this);
+            });
             // Add email validation for ALL email inputs (both logged-in and new students)
             const emailInput = row.querySelector('input[name="committeeEmail[]"]');
 
@@ -973,6 +980,43 @@ $action = 'ProposalHandler.php?mode=create';
                     errorShown = false; // Reset error flag for valid emails
                 }
             });
+        }
+
+        function validateCocuFile(fileInput) {
+            const file = fileInput.files[0];
+            if (!file) return true;
+
+            const allowedTypes = ["application/pdf", "image/jpeg", "image/jpg", "image/png"];
+            const allowedExtensions = [".pdf", ".jpg", ".jpeg", ".png"];
+            const fileName = file.name.toLowerCase();
+            const extension = fileName.substring(fileName.lastIndexOf('.'));
+
+            // Validate file type and extension
+            if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(extension)) {
+                Swal.fire({
+                    icon: "error",
+                    title: "Invalid File Type",
+                    text: "COCU statement must be PDF, JPG, or PNG format.",
+                    confirmButtonColor: '#e74c3c'
+                });
+                fileInput.value = "";
+                return false;
+            }
+
+            // Validate file size (max 5MB for images, 2MB for PDF)
+            const maxSize = extension === '.pdf' ? 2 * 1024 * 1024 : 5 * 1024 * 1024;
+            if (file.size > maxSize) {
+                Swal.fire({
+                    icon: "error",
+                    title: "File Too Large",
+                    text: `Maximum file size is ${extension === '.pdf' ? '2MB' : '5MB'}.`,
+                    confirmButtonColor: '#e74c3c'
+                });
+                fileInput.value = "";
+                return false;
+            }
+
+            return true;
         }
 
         function toggleCocuUpload(rowId) {
@@ -1264,12 +1308,23 @@ $action = 'ProposalHandler.php?mode=create';
 
         function handleAdditionalDocUpload(file) {
             if (file) {
-                if (file.type !== "application/pdf") {
-                    Swal.fire("Invalid File", "Only PDF files are allowed.", "error");
+                // Check file type
+                const allowedTypes = ["application/pdf", "image/jpeg", "image/jpg", "image/png"];
+                const fileName = file.name.toLowerCase();
+                const extension = fileName.substring(fileName.lastIndexOf('.'));
+                const allowedExtensions = [".pdf", ".jpg", ".jpeg", ".png"];
+
+                console.log("File type:", file.type); // DEBUG
+                console.log("File extension:", extension); // DEBUG
+
+                // Validate file type and extension
+                if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(extension)) {
+                    Swal.fire("Invalid File", "Only PDF, JPG, and PNG formats are allowed.", "error");
                     document.getElementById("additionalDocument").value = "";
                     return;
                 }
 
+                // Validate file size (10MB)
                 if (file.size > 10 * 1024 * 1024) {
                     Swal.fire("File Too Large", "Maximum file size is 10MB.", "error");
                     document.getElementById("additionalDocument").value = "";
@@ -1277,23 +1332,44 @@ $action = 'ProposalHandler.php?mode=create';
                 }
 
                 const preview = document.getElementById("additionalDocPreview");
-                preview.innerHTML = `
-            <div style="margin-top: 10px; padding: 10px; background: #e8f5e8; border-radius: 5px;">
-                <span>✅ Organization Chart: ${file.name}</span>
-                <button type="button" class="btn btn-primary btn-sm" style="margin-left: 10px;" onclick="viewPDF('${file.name}')">View PDF</button>
-            </div>
-        `;
+
+                // Check if it's an image by extension or MIME type
+                const isImage = file.type.startsWith('image/') ||
+                    ['.jpg', '.jpeg', '.png'].includes(extension);
+
+                if (isImage) {
+                    // For images: show image preview
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        preview.innerHTML = `
+                    <div style="margin-top: 10px; padding: 10px; background: #e8f5e8; border-radius: 5px;">
+                        <img src="${e.target.result}" alt="Organization Chart Preview" 
+                             style="max-width: 300px; max-height: 300px; display: block; margin: 10px 0; border: 1px solid #ddd;">
+                        <span>✅ Organization Chart: ${file.name}</span>
+                    </div>
+                `;
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    // For PDFs: show file name with view button
+                    preview.innerHTML = `
+                <div style="margin-top: 10px; padding: 10px; background: #e8f5e8; border-radius: 5px;">
+                    <span>✅ Organization Chart: ${file.name}</span>
+                    <button type="button" class="btn btn-primary btn-sm" style="margin-left: 10px;" 
+                            onclick="viewPDF('additionalDocument')">View PDF</button>
+                </div>
+            `;
+                }
             }
         }
 
-        function viewPDF(fileName) {
-            const fileInput = document.getElementById("additionalDocument");
-            if (fileInput.files[0]) {
+        function viewPDF(inputId) {
+            const fileInput = document.getElementById(inputId);
+            if (fileInput && fileInput.files[0]) {
                 const fileURL = URL.createObjectURL(fileInput.files[0]);
                 window.open(fileURL, '_blank');
             }
         }
-
         function showPreviewMessage() {
             Swal.fire({
                 icon: 'info',
