@@ -138,4 +138,25 @@ function postEventApprovedCommittee($eventName, $eventRefNum, $committeeMembers)
         sendNotificationEmail($comEmail, $subject, $body);
     }
 }
+
+// 11. Proposal Auto Approved by System → Coordinator + Advisor + Student
+function proposalAutoApproved($eventName, $studentName, $studentEmail, $advisorEmail, $coordinatorEmail)
+{
+    // Email to Coordinator
+    $subjectCoor = "Proposal Automatically Approved by System";
+    $bodyCoor = "Dear Coordinator,\n\nThe proposal titled \"$eventName\" submitted by $studentName has been automatically approved by the system because the advisor did not review it within 48 hours.\n\nIt is now pending your review.\n\nThank you.";
+    sendNotificationEmail($coordinatorEmail, $subjectCoor, $bodyCoor);
+
+    // Email to Student
+    $subjectStudent = "Proposal Automatically Approved by System";
+    $bodyStudent = "Dear $studentName,\n\nYour event proposal titled \"$eventName\" has been automatically approved by the system because the advisor did not respond within the expected time.\n\nIt has now been forwarded to the coordinator for review.\n\nThank you.";
+    sendNotificationEmail($studentEmail, $subjectStudent, $bodyStudent);
+
+    // Email to Advisor
+    if (!empty($advisorEmail)) {
+        $subjectAdvisor = "Proposal Automatically Approved by System";
+        $bodyAdvisor = "Dear Advisor,\n\nThe proposal titled \"$eventName\" submitted by $studentName has been automatically approved by the system because it was not reviewed within 48 hours.\n\nIt has now been forwarded to the coordinator for further review.\n\nThank you.";
+        sendNotificationEmail($advisorEmail, $subjectAdvisor, $bodyAdvisor);
+    }
+}
 ?>

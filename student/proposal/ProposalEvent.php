@@ -2,11 +2,17 @@
 session_start();
 include('../../db/dbconfig.php');
 
+if (!$conn) {
+    die("Database connection failed");
+}
+
 // Guard session
 if (empty($_SESSION['Stu_ID'])) {
     header('Location: ../../auth/login.php');
     exit;
 }
+ini_set('display_errors', 0);
+error_reporting(0);
 
 $stu_id = $_SESSION['Stu_ID'];
 
@@ -21,6 +27,10 @@ if (!$student) {
 
 // Get clubs (ordered) & venues (ordered)
 $club_result = $conn->query("SELECT Club_ID, Club_Name FROM club ORDER BY Club_Name");
+
+if (!$club_result) {
+    die("Club query failed: " . $conn->error);
+}
 $venue_result = $conn->query("SELECT Venue_ID, Venue_Name FROM venue ORDER BY Venue_Name");
 $venues = [];
 while ($v = $venue_result->fetch_assoc()) {
@@ -38,7 +48,7 @@ $action = 'ProposalHandler.php?mode=create';
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Proposal Form </title>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <link href="../../assets/css/student/proposal.css?v=<?= time() ?>" rel="stylesheet" />
+    <link href="../../assets/css/student/proposal.css?v=<?php echo time(); ?>" rel="stylesheet">
 </head>
 
 <body>
@@ -580,6 +590,7 @@ $action = 'ProposalHandler.php?mode=create';
         function initializeForm() {
             // Add initial rows
             addEventFlowRow();
+            addCommitteeRow();
             addBudgetRow();
             updateRemainingHours();
         }
@@ -656,19 +667,10 @@ $action = 'ProposalHandler.php?mode=create';
             // Budget calculation
             document.getElementById("budgetBody").addEventListener("input", calculateBudget);
 
-            // Position change handler
-            document.getElementById("proposalPosition").addEventListener("change", updateFirstCommitteeMemberPosition);
+
 
             // FIXED: Set up form submission handler
             setupFormSubmissionHandler();
-        }
-
-        function updateFirstCommitteeMemberPosition() {
-            const position = document.getElementById("proposalPosition").value;
-            const firstPositionInput = document.querySelector('#committeeBody tr:first-child input[name="committeePosition[]"]');
-            if (firstPositionInput && position) {
-                firstPositionInput.value = position;
-            }
         }
 
         function setMinimumDates() {
@@ -1361,6 +1363,7 @@ $action = 'ProposalHandler.php?mode=create';
             if (fileInput && fileInput.files[0]) {
                 const fileURL = URL.createObjectURL(fileInput.files[0]);
                 window.open(fileURL, '_blank');
+                URL.revokeObjectURL(fileURL); // Clean up memory after opening
             }
         }
         function showPreviewMessage() {

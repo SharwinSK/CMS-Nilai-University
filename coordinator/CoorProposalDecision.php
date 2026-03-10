@@ -78,6 +78,22 @@ $budget = $stmt->get_result();
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     $action = $_POST['action'];
 
+    if ($action === 'update_dates') {
+        $ev_date = $_POST['ev_date'] ?? '';
+        $alt_date = !empty($_POST['alt_date']) ? $_POST['alt_date'] : null;
+
+        if (empty($ev_date)) {
+            echo json_encode(['status' => 'error', 'message' => 'Date required']);
+            exit();
+        }
+
+        $stmt = $conn->prepare("UPDATE events SET Ev_Date = ?, Ev_AlternativeDate = ? WHERE Ev_ID = ?");
+        $stmt->bind_param("sss", $ev_date, $alt_date, $ev_id);
+        $stmt->execute();
+
+        echo json_encode(['status' => 'success']);
+        exit();
+    }
     if ($action === 'approve') {
         $event_type = $_POST['event_type'] ?? '';
         if (empty($event_type)) {
@@ -213,6 +229,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 </button>
             </div>
 
+            <div style="text-align:right; margin-bottom:10px;">
+                <button id="editDateBtn" class="bulk-btn bulk-approve"
+                    style="position:static; padding:8px 16px; font-size:0.85rem;" onclick="toggleDateEdit()">✏️ Edit
+                    Dates</button>
+                <button id="saveDateBtn" class="bulk-btn bulk-approve"
+                    style="display:none; position:static; padding:8px 16px; font-size:0.85rem;" onclick="saveDates()">💾
+                    Save Dates</button>
+                <button id="cancelDateBtn" class="bulk-btn bulk-clear"
+                    style="display:none; position:static; padding:8px 16px; font-size:0.85rem;"
+                    onclick="toggleDateEdit()">✕ Cancel</button>
+            </div>
+
             <!-- Poster Section -->
             <div class="poster-section">
                 <img src="<?= str_replace('../../', '../', $details['Ev_Poster']) ?>" alt="Event Poster" class="poster"
@@ -301,7 +329,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">Event Date</div>
-                        <div class="detail-value"><?= date("F d, Y", strtotime($details['Ev_Date'])) ?></div>
+                        <div class="detail-value" id="display-date">
+                            <?= date("F d, Y", strtotime($details['Ev_Date'])) ?>
+                        </div>
+                        <input type="date" id="edit-date" value="<?= $details['Ev_Date'] ?>"
+                            style="display:none; padding:8px; border:2px solid #FF7A30; border-radius:6px; width:100%;" />
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">Start Time</div>
@@ -548,9 +580,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">Alternative Date</div>
-                        <div class="detail-value">
+                        <div class="detail-value" id="display-altdate">
                             <?= $details['Ev_AlternativeDate'] ? date("F d, Y", strtotime($details['Ev_AlternativeDate'])) : '-' ?>
                         </div>
+                        <input type="date" id="edit-altdate" value="<?= $details['Ev_AlternativeDate'] ?? '' ?>"
+                            style="display:none; padding:8px; border:2px solid #FF7A30; border-radius:6px; width:100%;" />
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">Additional Document</div>
@@ -727,6 +761,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
             updateApprovalStatus();
             updateRejectedSectionsDisplay();
+        }
+
+
+        function toggleDateEdit() {
+            const isEditing = document.getElementById('edit-date').style.display !== 'none';
+
+            document.getElementById('display-date').style.display = isEditing ? 'block' : 'none';
+            document.getElementById('edit-date').style.display = isEditing ? 'none' : 'block';
+            document.getElementById('display-altdate').style.display = isEditing ? 'block' : 'none';
+            document.getElementById('edit-altdate').style.display = isEditing ? 'none' : 'block';
+
+            document.getElementById('editDateBtn').style.display = isEditing ? 'inline-block' : 'none';
+            document.getElementById('saveDateBtn').style.display = isEditing ? 'none' : 'inline-block';
+            document.getElementById('cancelDateBtn').style.display = isEditing ? 'none' : 'inline-block';
+        }
+
+        function saveDates() {
+            const newDate = document.getElementById('edit-date').value;
+            const newAltDate = document.getElementById('edit-altdate').value;
+
+            if (!newDate) {
+                alert('Event date cannot be empty!');
+                return;
+            }
+
+            fetch(window.location.href, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({
+                    action: 'update_dates',
+                    ev_date: newDate,
+                    alt_date: newAltDate
+                })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        // Update the display text
+                        document.getElementById('display-date').textContent =
+                            new Date(newDate + 'T00:00:00').toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+                        document.getElementById('display-altdate').textContent =
+                            newAltDate ? new Date(newAltDate + 'T00:00:00').toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '-';
+                        toggleDateEdit();
+                        alert('Dates updated successfully!');
+                    } else {
+                        alert('Failed to update dates.');
+                    }
+                });
         }
 
         // Bulk action functions

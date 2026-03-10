@@ -3,7 +3,22 @@ include('../../db/dbconfig.php');
 include('../../model/sendMailTemplates.php');
 session_start();
 
-if ($_GET['mode'] !== 'create') {
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+function submissionError($message)
+{
+    echo "<script>
+        alert('$message');
+        window.location.href='../proposal/ProposalEvent.php';
+    </script>";
+    exit();
+}
+
+if (!isset($_SESSION['Stu_ID'])) {
+    header("Location: ../../auth/login.php");
+    exit();
+}
+
+if (!isset($_GET['mode']) || $_GET['mode'] !== 'create') {
     die("Invalid request mode.");
 }
 
@@ -37,7 +52,7 @@ if (!empty($_FILES["eventPoster"]["name"])) {
     if (move_uploaded_file($_FILES["eventPoster"]["tmp_name"], $target_file)) {
         $poster = $target_file;
     } else {
-        die("Poster upload failed.");
+        submissionError("Poster upload failed. Please try again.");
     }
 }
 
@@ -56,243 +71,273 @@ if (!empty($_FILES["additionalDocument"]["name"])) {
     if (move_uploaded_file($_FILES["additionalDocument"]["tmp_name"], $target_path)) {
         $additional_info_path = $target_path;
     } else {
-        die("Additional info upload failed.");
+        submissionError("Additional document upload failed. Please try again.");
     }
 }
 
-// === Insert into events ===
-$club_id = $_POST['club'];
-$proposal_position = $_POST['proposal_position']; // New field
-$ev_name = $_POST['eventName'];
-$ev_nature = $_POST['eventNature'];
-$ev_category = $_POST['eventCategory']; // New field
-$ev_objectives = $_POST['eventObjectives'];
-$ev_intro = $_POST['eventIntroduction'];
-$ev_details = $_POST['eventPurpose'];
-$ev_date = $_POST['eventDate'];
-$ev_start_time = $_POST['startTime'];
-$ev_end_time = $_POST['endTime'];
-$ev_pax = $_POST['estimatedParticipants'];
-$ev_venue_id = $_POST['venue'];
-$ev_alt_venue_id = !empty($_POST['altVenue']) ? $_POST['altVenue'] : null;
-$ev_alt_date = !empty($_POST['alternativeDate']) ? $_POST['alternativeDate'] : null;
+$conn->begin_transaction();
+try {
+    // === Insert into events ===
+    $club_id = $_POST['club'];
+    $proposal_position = $_POST['proposal_position']; // New field
+    $ev_name = $_POST['eventName'];
+    $ev_nature = $_POST['eventNature'];
+    $ev_category = $_POST['eventCategory']; // New field
+    $ev_objectives = $_POST['eventObjectives'];
+    $ev_intro = $_POST['eventIntroduction'];
+    $ev_details = $_POST['eventPurpose'];
+    $ev_date = $_POST['eventDate'];
+    $ev_start_time = $_POST['startTime'];
+    $ev_end_time = $_POST['endTime'];
+    $ev_pax = $_POST['estimatedParticipants'];
+    $ev_venue_id = $_POST['venue'];
+    $ev_alt_venue_id = !empty($_POST['altVenue']) ? $_POST['altVenue'] : null;
+    $ev_alt_date = !empty($_POST['alternativeDate']) ? $_POST['alternativeDate'] : null;
 
-$stmt = $conn->prepare("INSERT INTO events (
+    $stmt = $conn->prepare("INSERT INTO events (
     Ev_ID, Stu_ID, Proposal_Position, Club_ID, Ev_Name, Ev_ProjectNature, Ev_Category, Ev_Objectives, Ev_Intro, Ev_Details,
     Ev_Date, Ev_StartTime, Ev_EndTime, Ev_Pax,
     Ev_VenueID, Ev_AltVenueID, Ev_AlternativeDate, Ev_AdditionalInfo, Ev_Poster, Status_ID
 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)");
 
-$stmt->bind_param(
-    "sssisssssssssisisss",
-    $event_id,
-    $stu_id,
-    $proposal_position,
-    $club_id,
-    $ev_name,
-    $ev_nature,
-    $ev_category,
-    $ev_objectives,
-    $ev_intro,
-    $ev_details,
-    $ev_date,
-    $ev_start_time,
-    $ev_end_time,
-    $ev_pax,
-    $ev_venue_id,
-    $ev_alt_venue_id,
-    $ev_alt_date,
-    $additional_info_path,
-    $poster
-);
-if (!$stmt->execute()) {
-    die("Error inserting event data: " . $stmt->error);
-}
-$stmt->close();
+    $stmt->bind_param(
+        "sssisssssssssisisss",
+        $event_id,
+        $stu_id,
+        $proposal_position,
+        $club_id,
+        $ev_name,
+        $ev_nature,
+        $ev_category,
+        $ev_objectives,
+        $ev_intro,
+        $ev_details,
+        $ev_date,
+        $ev_start_time,
+        $ev_end_time,
+        $ev_pax,
+        $ev_venue_id,
+        $ev_alt_venue_id,
+        $ev_alt_date,
+        $additional_info_path,
+        $poster
+    );
+    if (!$stmt->execute()) {
+        $conn->rollback();
+        submissionError("Proposal submission failed. Your data was not saved. Please try again.");
+    }
+    $stmt->close();
 
-// === Insert into PersonInCharge ===
-$pic_id = $_POST['picId'];
-$pic_name = $_POST['picName'];
-$pic_phone = $_POST['picPhone'];
+    // === Insert into PersonInCharge ===
+    $pic_id = $_POST['picId'];
+    $pic_name = $_POST['picName'];
+    $pic_phone = $_POST['picPhone'];
 
-$stmt = $conn->prepare("INSERT INTO PersonInCharge (PIC_ID, Ev_ID, PIC_Name, PIC_PhnNum) VALUES (?, ?, ?, ?)");
-$stmt->bind_param("ssss", $pic_id, $event_id, $pic_name, $pic_phone);
-$stmt->execute();
-$stmt->close();
+    $stmt = $conn->prepare("INSERT INTO PersonInCharge (PIC_ID, Ev_ID, PIC_Name, PIC_PhnNum) VALUES (?, ?, ?, ?)");
+    $stmt->bind_param("ssss", $pic_id, $event_id, $pic_name, $pic_phone);
+    if (!$stmt->execute()) {
+        $conn->rollback();
+        submissionError("Proposal submission failed while saving PIC information.");
+    }
+    $stmt->close();
 
-// === Insert Committee Members === (FIXED VERSION)
-$committee_stmt = $conn->prepare("INSERT INTO Committee 
+    // === Insert Committee Members === (FIXED VERSION)
+    $committee_stmt = $conn->prepare("INSERT INTO Committee 
     (Com_ID, Ev_ID, Com_Position, Com_Name, Com_Email, Com_Department, Com_PhnNum, Com_JobScope, Com_Register, Com_COCUClaimers, Student_statement)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
-$cocu_dir = "../../uploads/cocustatement/";
-if (!is_dir($cocu_dir))
-    mkdir($cocu_dir, 0777, true);
+    $cocu_dir = "../../uploads/cocustatement/";
+    if (!is_dir($cocu_dir))
+        mkdir($cocu_dir, 0777, true);
 
-// Check if committee arrays exist and have data
-if (isset($_POST['committeeName']) && is_array($_POST['committeeName'])) {
-    foreach ($_POST['committeeName'] as $index => $name) {
-        // Validate that all required fields exist for this index
-        if (
-            !isset($_POST['committeeId'][$index]) ||
-            !isset($_POST['committeeEmail'][$index]) ||
-            !isset($_POST['committeePosition'][$index]) ||
-            !isset($_POST['committeeDepartment'][$index]) ||
-            !isset($_POST['committeePhone'][$index]) ||
-            !isset($_POST['committeeJobScope'][$index]) ||
-            !isset($_POST['committeeRegister'][$index]) ||
-            !isset($_POST['cocuClaimer'][$index])
-        ) {
-            continue; // Skip this iteration if any required field is missing
-        }
-
-        $id = trim($_POST['committeeId'][$index]);
-        $email = trim($_POST['committeeEmail'][$index]);
-        $position = trim($_POST['committeePosition'][$index]);
-        $department = trim($_POST['committeeDepartment'][$index]);
-        $phone = trim($_POST['committeePhone'][$index]);
-        $job = trim($_POST['committeeJobScope'][$index]);
-        $register = $_POST['committeeRegister'][$index];
-        $cocu_status = $_POST['cocuClaimer'][$index];
-        $cocu_statement_path = null;
-
-        // Validate that required fields are not empty
-        if (
-            empty($id) || empty($name) || empty($email) || empty($position) ||
-            empty($department) || empty($phone) || empty($job)
-        ) {
-            die("Error: All committee member fields are required. Missing data for member: " . htmlspecialchars($name));
-        }
-
-        // FIXED: File upload logic - use the same index as the committee member
-        if ($register === "Yes" && $cocu_status === "yes") {
-            // Use the same $index for file arrays as for committee data
+    // Check if committee arrays exist and have data
+    if (isset($_POST['committeeName']) && is_array($_POST['committeeName'])) {
+        foreach ($_POST['committeeName'] as $index => $name) {
+            // Validate that all required fields exist for this index
             if (
-                isset($_FILES['cocuStatement']['name'][$index]) &&
-                isset($_FILES['cocuStatement']['tmp_name'][$index])
+                !isset($_POST['committeeId'][$index]) ||
+                !isset($_POST['committeeEmail'][$index]) ||
+                !isset($_POST['committeePosition'][$index]) ||
+                !isset($_POST['committeeDepartment'][$index]) ||
+                !isset($_POST['committeePhone'][$index]) ||
+                !isset($_POST['committeeJobScope'][$index]) ||
+                !isset($_POST['committeeRegister'][$index]) ||
+                !isset($_POST['cocuClaimer'][$index])
             ) {
+                continue; // Skip this iteration if any required field is missing
+            }
 
-                $filename = $_FILES['cocuStatement']['name'][$index];
-                $tmp = $_FILES['cocuStatement']['tmp_name'][$index];
+            $id = trim($_POST['committeeId'][$index]);
+            $email = trim($_POST['committeeEmail'][$index]);
+            $position = trim($_POST['committeePosition'][$index]);
+            $department = trim($_POST['committeeDepartment'][$index]);
+            $phone = trim($_POST['committeePhone'][$index]);
+            $job = trim($_POST['committeeJobScope'][$index]);
+            $register = $_POST['committeeRegister'][$index];
+            $cocu_status = $_POST['cocuClaimer'][$index];
+            $cocu_statement_path = null;
 
-                if (!empty($filename) && !empty($tmp)) {
-                    $safe_filename = preg_replace("/[^a-zA-Z0-9\._-]/", "", $filename);
-                    $ext = pathinfo($safe_filename, PATHINFO_EXTENSION);
-                    $unique = $id . '_cocu_' . time() . '.' . $ext;
-                    $dest = $cocu_dir . $unique;
+            // Validate that required fields are not empty
+            if (
+                empty($id) || empty($name) || empty($email) || empty($position) ||
+                empty($department) || empty($phone) || empty($job)
+            ) {
+                $conn->rollback();
+                submissionError("Proposal submission failed. Committee member information is incomplete.");
+            }
 
-                    if (move_uploaded_file($tmp, $dest)) {
-                        $cocu_statement_path = $dest;
-                    } else {
-                        die("COCU Statement upload failed for member: " . htmlspecialchars($name));
+            // FIXED: File upload logic - use the same index as the committee member
+            if ($register === "Yes" && $cocu_status === "yes") {
+                // Use the same $index for file arrays as for committee data
+                if (
+                    isset($_FILES['cocuStatement']['name'][$index]) &&
+                    isset($_FILES['cocuStatement']['tmp_name'][$index])
+                ) {
+
+                    $filename = $_FILES['cocuStatement']['name'][$index];
+                    $tmp = $_FILES['cocuStatement']['tmp_name'][$index];
+
+                    if (!empty($filename) && !empty($tmp)) {
+                        $safe_filename = preg_replace("/[^a-zA-Z0-9\._-]/", "", $filename);
+                        $ext = pathinfo($safe_filename, PATHINFO_EXTENSION);
+                        $unique = $id . '_cocu_' . time() . '.' . $ext;
+                        $dest = $cocu_dir . $unique;
+
+                        if (move_uploaded_file($tmp, $dest)) {
+                            $cocu_statement_path = $dest;
+                        } else {
+                            $conn->rollback();
+                            submissionError("COCU statement upload failed. Please try again.");
+                        }
                     }
                 }
             }
-        }
 
-        // Insert the committee member
-        $committee_stmt->bind_param(
-            "sssssssssss",
-            $id,
-            $event_id,
-            $position,
-            $name,
-            $email,
-            $department,
-            $phone,
-            $job,
-            $register,
-            $cocu_status,
-            $cocu_statement_path
-        );
+            // Insert the committee member
+            $committee_stmt->bind_param(
+                "sssssssssss",
+                $id,
+                $event_id,
+                $position,
+                $name,
+                $email,
+                $department,
+                $phone,
+                $job,
+                $register,
+                $cocu_status,
+                $cocu_statement_path
+            );
 
-        if (!$committee_stmt->execute()) {
-            die("Error inserting committee member: " . $committee_stmt->error);
+            if (!$committee_stmt->execute()) {
+                $conn->rollback();
+                submissionError("Proposal submission failed while saving committee members. Please try again.");
+            }
         }
     }
-}
-$committee_stmt->close();
+    $committee_stmt->close();
 
-// === Insert Event Flow (Minutes) ===
-foreach ($_POST['eventFlowDate'] as $index => $date) {
-    $start = $_POST['eventFlowStart'][$index];
-    $end = $_POST['eventFlowEnd'][$index];
-    $hours = $_POST['eventFlowHours'][$index];
-    $activity = $_POST['eventFlowActivity'][$index];
-    $remarks = $_POST['eventFlowRemarks'][$index];
+    // === Insert Event Flow (Minutes) ===
+    foreach ($_POST['eventFlowDate'] as $index => $date) {
+        $start = $_POST['eventFlowStart'][$index];
+        $end = $_POST['eventFlowEnd'][$index];
+        $hours = $_POST['eventFlowHours'][$index];
+        $activity = $_POST['eventFlowActivity'][$index];
+        $remarks = $_POST['eventFlowRemarks'][$index];
 
-    $stmt = $conn->prepare("INSERT INTO eventminutes (Ev_ID, Date, Start_Time, End_Time, Hours, Activity, Remarks) 
+        $stmt = $conn->prepare("INSERT INTO eventminutes (Ev_ID, Date, Start_Time, End_Time, Hours, Activity, Remarks) 
                             VALUES (?, ?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("sssssss", $event_id, $date, $start, $end, $hours, $activity, $remarks);
-    $stmt->execute();
-}
-$stmt->close();
+        $stmt->bind_param("sssssss", $event_id, $date, $start, $end, $hours, $activity, $remarks);
+        if (!$stmt->execute()) {
+            $conn->rollback();
+            submissionError("Proposal submission failed while saving event flow.");
+        }
+    }
+    $stmt->close();
 
-// === Insert Budget ===
-$total_income = 0;
-$total_expense = 0;
+    // === Insert Budget ===
+    $total_income = 0;
+    $total_expense = 0;
 
-$stmt = $conn->prepare("INSERT INTO Budget (Ev_ID, Bud_Desc, Bud_Amount, Bud_Type, Bud_Remarks) VALUES (?, ?, ?, ?, ?)");
+    $stmt = $conn->prepare("INSERT INTO Budget (Ev_ID, Bud_Desc, Bud_Amount, Bud_Type, Bud_Remarks) VALUES (?, ?, ?, ?, ?)");
 
-foreach ($_POST['budgetDescription'] as $index => $desc) {
-    $amount = (float) $_POST['budgetAmount'][$index];
-    $type = ucfirst(strtolower($_POST['budgetType'][$index])); // Normalize value
-    $remarks = $_POST['budgetRemarks'][$index];
+    foreach ($_POST['budgetDescription'] as $index => $desc) {
+        $amount = (float) $_POST['budgetAmount'][$index];
+        $type = ucfirst(strtolower($_POST['budgetType'][$index])); // Normalize value
+        $remarks = $_POST['budgetRemarks'][$index];
 
-    if ($type == "Income")
-        $total_income += $amount;
-    else if ($type == "Expense")
-        $total_expense += $amount;
+        if ($type == "Income")
+            $total_income += $amount;
+        else if ($type == "Expense")
+            $total_expense += $amount;
 
-    $stmt->bind_param("ssdss", $event_id, $desc, $amount, $type, $remarks);
-    $stmt->execute();
-}
-$stmt->close();
+        $stmt->bind_param("ssdss", $event_id, $desc, $amount, $type, $remarks);
+        if (!$stmt->execute()) {
+            $conn->rollback();
+            submissionError("Proposal submission failed while saving budget information.");
+        }
+    }
+    $stmt->close();
 
-$surplus = $total_income - $total_expense;
-$prepared_by = $_POST['preparedBy'];
+    $surplus = $total_income - $total_expense;
+    $prepared_by = $_POST['preparedBy'];
 
-$stmt = $conn->prepare("INSERT INTO BudgetSummary (Ev_ID, Total_Income, Total_Expense, Surplus_Deficit, Prepared_By)
+    $stmt = $conn->prepare("INSERT INTO BudgetSummary (Ev_ID, Total_Income, Total_Expense, Surplus_Deficit, Prepared_By)
                         VALUES (?, ?, ?, ?, ?)");
-$stmt->bind_param("sddds", $event_id, $total_income, $total_expense, $surplus, $prepared_by);
-$stmt->execute();
-$stmt->close();
+    $stmt->bind_param("sddds", $event_id, $total_income, $total_expense, $surplus, $prepared_by);
+    if (!$stmt->execute()) {
+        $conn->rollback();
+        submissionError("Proposal submission failed while saving budget summary.");
+    }
+    $stmt->close();
 
-//Email Notification for the Advisor 
-$advisorQuery = $conn->prepare("SELECT Adv_ID, Adv_Name, Adv_Email 
+    //Email Notification for the Advisor 
+    $advisorQuery = $conn->prepare("SELECT Adv_ID, Adv_Name, Adv_Email 
                                 FROM advisor 
                                 WHERE Club_ID = ?");
 
-$advisorQuery->bind_param("s", $club_id);
-$advisorQuery->execute();
-$advisorResult = $advisorQuery->get_result();
-$advisorData = $advisorResult->fetch_assoc();
-$advisorQuery->close();
+    $advisorQuery->bind_param("s", $club_id);
+    $advisorQuery->execute();
+    $advisorResult = $advisorQuery->get_result();
+    $advisorData = $advisorResult->fetch_assoc();
+    $advisorQuery->close();
 
-$advisorName = $advisorData['Adv_Name'];
-$advisorEmail = $advisorData['Adv_Email'];
+    $advisorName = $advisorData['Adv_Name'];
+    $advisorEmail = $advisorData['Adv_Email'];
 
-// === Get Student Name ===
-$studentQuery = $conn->prepare("SELECT Stu_Name FROM student WHERE Stu_ID = ?");
-$studentQuery->bind_param("s", $stu_id);
-$studentQuery->execute();
-$studentResult = $studentQuery->get_result();
-$studentData = $studentResult->fetch_assoc();
-$studentQuery->close();
+    // === Get Student Name ===
+    $studentQuery = $conn->prepare("SELECT Stu_Name FROM student WHERE Stu_ID = ?");
+    $studentQuery->bind_param("s", $stu_id);
+    $studentQuery->execute();
+    $studentResult = $studentQuery->get_result();
+    $studentData = $studentResult->fetch_assoc();
+    $studentQuery->close();
 
-$studentName = $studentData['Stu_Name'];
+    $studentName = $studentData['Stu_Name'];
 
-// Send Email Notification to Advisor
-newProposalToAdvisor($studentName, $ev_name, $advisorName, $advisorEmail);
+    // Send Email Notification to Advisor
+    newProposalToAdvisor($studentName, $ev_name, $advisorName, $advisorEmail);
 
-// Store event details for PDF generation
-$_SESSION['last_event'] = [
-    'event_id' => $event_id,
-    'event_name' => $ev_name,
-    'event_date' => $ev_date,
-    'student_name' => $studentName,
-    'submission_date' => date('Y-m-d H:i:s')
-];
+    // Store event details for PDF generation
+    $_SESSION['last_event'] = [
+        'event_id' => $event_id,
+        'event_name' => $ev_name,
+        'event_date' => $ev_date,
+        'student_name' => $studentName,
+        'submission_date' => date('Y-m-d H:i:s')
+    ];
+    $conn->commit();
+
+} catch (mysqli_sql_exception $e) {
+
+    $conn->rollback();
+
+    submissionError("Proposal submission failed. Please check your committee member IDs and try again.");
+
+}
+?>
+
+
 ?>
 
 <!DOCTYPE html>
