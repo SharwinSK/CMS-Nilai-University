@@ -575,7 +575,6 @@ $action = 'ProposalHandler.php?mode=create';
             initializeForm();
             setupEventListeners();
             setMinimumDates();
-            addInitialCommitteeRow(); // Add the logged-in student as first committee member
         });
 
         function initializeForm() {
@@ -585,20 +584,6 @@ $action = 'ProposalHandler.php?mode=create';
             updateRemainingHours();
         }
 
-        // Add logged-in student as first committee member
-        function addInitialCommitteeRow() {
-            const studentName = document.getElementById('studentName').value;
-            const studentId = document.querySelector('input[name="student_id"]').value;
-            const studentProgram = '<?= $student['Stu_Program'] ?>';
-            const studentEmail = '<?= $student['Stu_Email'] ?>';
-
-            addCommitteeRow(true, {
-                name: studentName,
-                id: studentId,
-                email: studentEmail,
-                department: studentProgram
-            });
-        }
 
         // Fixed Email validation function
         function validateCommitteeEmail(email) {
@@ -917,9 +902,9 @@ $action = 'ProposalHandler.php?mode=create';
          <input type="file" name="cocuStatement[]" id="cocuFile_${rowId}" accept=".pdf,.jpg,.jpeg,.png,image/jpeg,image/png,application/pdf" disabled style="font-size: 11px; width: 100%;">
         </td>
         <td>
-            <button type="button" class="btn-delete-icon" onclick="deleteRow(this)" title="Delete row" ${isLoggedInStudent ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}>
-                🗑️
-            </button>
+          <button type="button" class="btn-delete-icon" onclick="deleteRow(this)" title="Delete row">
+🗑️
+</button>
         </td>
     `;
 
@@ -1059,19 +1044,7 @@ $action = 'ProposalHandler.php?mode=create';
         function deleteRow(button) {
             // Check if this is the first committee row (logged-in student)
             const row = button.closest("tr");
-            const tbody = row.parentNode;
-            const isCommitteeTable = tbody.id === "committeeBody";
-            const isFirstRow = isCommitteeTable && row === tbody.firstElementChild;
 
-            if (isFirstRow) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Cannot Delete',
-                    text: 'Cannot delete your own committee entry.',
-                    confirmButtonColor: '#6c757d'
-                });
-                return;
-            }
 
             Swal.fire({
                 title: 'Are you sure?',
@@ -1291,6 +1264,26 @@ $action = 'ProposalHandler.php?mode=create';
                 alert("Please add at least one committee member.");
                 isValid = false;
             }
+            for (let row of committeeRows) {
+
+                const inputs = row.querySelectorAll("input, select");
+
+                for (let field of inputs) {
+
+                    if (!field.value.trim()) {
+
+                        Swal.fire({
+                            icon: "error",
+                            title: "Incomplete Committee Information",
+                            text: "Please fill in all committee member details before submitting.",
+                            confirmButtonColor: "#e74c3c"
+                        });
+
+                        field.focus();
+                        return false;
+                    }
+                }
+            }
 
             if (budgetRows.length === 0) {
                 alert("Please add at least one budget entry.");
@@ -1439,6 +1432,20 @@ $action = 'ProposalHandler.php?mode=create';
         function setupFormSubmissionHandler() {
             document.getElementById("proposalForm").addEventListener("submit", function (e) {
                 e.preventDefault(); // Prevent auto-submit
+
+
+                // Check committee members
+                const committeeRows = document.querySelectorAll("#committeeBody tr");
+
+                if (committeeRows.length === 0) {
+                    Swal.fire({
+                        icon: "error",
+                        title: "Committee Members Required",
+                        text: "Please add at least one committee member before submitting.",
+                        confirmButtonColor: "#e74c3c"
+                    });
+                    return;
+                }
 
                 const totalHours = calculateTotalHours();
                 if (totalHours < 40) {
